@@ -2267,7 +2267,7 @@ struct module_struct
   int num_channels;
   int auto_loop_target;
   bool stereo, use_instruments;
-  bool it_module;
+  bool it_module, it_module_effects, it_module_portamento_link, it_module_linear_slides;
   bool finished;
 
   void speed_change()
@@ -2293,6 +2293,9 @@ struct module_struct
   {
     use_instruments = false;
     it_module = false;
+    it_module_effects = false;
+    it_module_portamento_link = false;
+    it_module_linear_slides = false;
     auto_loop_target = -1;
   }
 };
@@ -2314,6 +2317,15 @@ int snote_from_period(int period)
   return (qnote % 12) | (((qnote / 12) - 9) << 4);
 }
 
+int req_digits(int max)
+{
+  if (max < 10)
+    return 1;
+  if (max < 100)
+    return 2;
+  return 3;
+}
+
 struct channel_MODULE : public channel
 {
   module_struct *module;
@@ -2325,23 +2337,25 @@ struct channel_MODULE : public channel
   double vibrato_depth, vibrato_cycle_frequency, vibrato_cycle_offset;
   double vibrato_start_t;
   double tremolo_middle_intensity, tremolo_depth, tremolo_cycle_frequency, tremolo_cycle_offset;
+  double panbrello_middle, panbrello_depth, panbrello_cycle_frequency, panbrello_cycle_offset;
   double arpeggio_first_delta_offset, arpeggio_second_delta_offset, arpeggio_third_delta_offset;
   row *delayed_note;
   int note_delay_frames, note_cut_frames;
   int arpeggio_tick_offset;
   int tremor_ontime, tremor_offtime, tremor_frame_offset;
   int volume, target_volume;
+  double panning_slide_start, panning_slide_end;
   double retrigger_factor, retrigger_bias;
   int retrigger_ticks;
   bool volume_slide, portamento, vibrato, tremor, arpeggio, note_delay, retrigger, tremolo;
-  bool note_cut, p_volume_slide, p_portamento, p_vibrato, p_tremor, p_arpeggio, p_note_delay;
-  bool p_retrigger, p_tremolo, p_note_cut;
+  bool note_cut, panning_slide, panbrello, p_volume_slide, p_portamento, p_vibrato, p_tremor;
+  bool p_arpeggio, p_note_delay, p_retrigger, p_tremolo, p_note_cut, p_panning_slide, p_panbrello;
   int pattern_delay;
   double base_note_frequency;
 
   bool portamento_glissando;
-  Waveform::Type vibrato_waveform, tremolo_waveform;
-  bool vibrato_retrig, tremolo_retrig;
+  Waveform::Type vibrato_waveform, tremolo_waveform, panbrello_waveform;
+  bool vibrato_retrig, tremolo_retrig, panbrello_retrig;
 
   bool it_effects, it_portamento_link, it_linear_slides;
 
@@ -2362,6 +2376,20 @@ struct channel_MODULE : public channel
         tremolo_middle_intensity *= (new_intensity / intensity);
 
       intensity = new_intensity;
+    }
+    if (panning_slide)
+    {
+      double t = double(ticks_left) / module->ticks_per_module_row;
+      double new_panning = panning_slide_start * t + panning_slide_end * (1.0 - t);
+      if (new_panning < -1.0)
+        new_panning = -1.0;
+      else if (new_panning > 1.0)
+        new_panning = 1.0;
+
+      if (panbrello)
+        panbrello_middle = new_panning;
+
+      panning.from_linear_pan(new_panning, -1.0, +1.0);
     }
     if (portamento)
     {
@@ -2439,6 +2467,35 @@ struct channel_MODULE : public channel
         delta_offset_per_tick = note_frequency / ticks_per_second;
       }
     }
+    if (panbrello)
+    {
+      double t = double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
+
+      double t_panbrello = (panbrello_cycle_offset + t) * panbrello_cycle_frequency;
+      double t_offset = t_panbrello - floor(t_panbrello);
+      double value = panbrello_middle;
+      
+      switch (panbrello_waveform)
+      {
+        case Waveform::Sine:
+          value += panbrello_depth * sin(t_panbrello * 6.283185);
+          break;
+        case Waveform::RampDown:
+          if (t_offset < 0.5)
+            value -= t_offset * 2.0 * panbrello_depth;
+          else
+            value += (1.0 - t_offset) * 2.0 * panbrello_depth;
+          break;
+        case Waveform::Square:
+          if (t_offset < 0.5)
+            value += panbrello_depth;
+          else
+            value -= panbrello_depth;
+          break;
+      }
+
+      panning.from_linear_pan(value, -1.0, +1.0);
+    }
     if (tremor)
     {
       double frame = module->speed * double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
@@ -2480,14 +2537,18 @@ struct channel_MODULE : public channel
             note_off();
           else
           {
-            if (delayed_note->instrument != NULL)
+            if ((delayed_note->instrument != NULL) || module->it_module)
             {
               if (!delayed_note->effect.keepNote())
               {
-                current_sample = delayed_note->instrument;
+                if (delayed_note->instrument != NULL)
+                  current_sample = delayed_note->instrument;
 
-                recalc(delayed_note->znote, 1.0, false);
-                current_sample->begin_new_note(delayed_note, this, &current_sample_context, module->ticks_per_frame);
+                if (current_sample != NULL)
+                {
+                  recalc(delayed_note->znote, 1.0, false);
+                  current_sample->begin_new_note(delayed_note, this, &current_sample_context, module->ticks_per_frame);
+                }
               }
               if (delayed_note->volume < 0)
               {
@@ -2574,15 +2635,16 @@ struct channel_MODULE : public channel
       intensity = original_intensity * volume / 64.0;
     }
 
-    p_volume_slide = volume_slide; volume_slide = false;
-    p_portamento = p_portamento;   portamento = false;
-    p_vibrato = vibrato;           vibrato = false;
-    p_tremor = tremor;             tremor = false;
-    p_arpeggio = arpeggio;         arpeggio = false;
-    p_note_delay = note_delay;     note_delay = false;
-    p_retrigger = retrigger;       retrigger = false;
-    p_tremolo = tremolo;           tremolo = false;
-    p_note_cut = note_cut;         note_cut = false;
+    p_volume_slide = volume_slide;   volume_slide = false;
+    p_portamento = p_portamento;     portamento = false;
+    p_vibrato = vibrato;             vibrato = false;
+    p_tremor = tremor;               tremor = false;
+    p_arpeggio = arpeggio;           arpeggio = false;
+    p_note_delay = note_delay;       note_delay = false;
+    p_retrigger = retrigger;         retrigger = false;
+    p_tremolo = tremolo;             tremolo = false;
+    p_note_cut = note_cut;           note_cut = false;
+    p_panning_slide = panning_slide; panning_slide = false;
 
     ticks_left = module->ticks_per_module_row;
 
@@ -2731,11 +2793,11 @@ struct channel_MODULE : public channel
           cerr << string(9 + 18 * module->num_channels, '-') << endl;
 
         cerr << setfill(' ') << setw(3) << module->current_pattern << ":"
-             << setfill('0') << setw(2) << module->current_row << " | ";
+             << setfill('0') << setw(req_digits(module->pattern_list[module->current_pattern]->row_list.size())) << module->current_row << " | ";
       }
       cerr << string("C-C#D-D#E-F-F#G-G#A-A#B-????^^--").substr((row.snote & 15) * 2, 2)
            << char((row.snote >= 0) ? (48 + (row.snote >> 4)) : '-') << " ";
-      if (row.instrument <= 0)
+      if (row.instrument == NULL)
         cerr << "-- ";
       else
         cerr << setfill('0') << setw(2) << row.instrument->index << " ";
@@ -2779,14 +2841,16 @@ struct channel_MODULE : public channel
       else
       {
         if ((row.instrument != NULL) || module->it_module)
-        {                                 // TODO: sample delay
+        {
           if (!row.effect.keepNote())
           {
             if (row.instrument)
               current_sample = row.instrument;
-
-            recalc(row.znote, 1.0, false);
-            current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame);
+            if (current_sample != NULL)
+            {
+              recalc(row.znote, 1.0, false);
+              current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame);
+            }
           }
           if (row.volume < 0)
           {
@@ -3233,6 +3297,48 @@ struct channel_MODULE : public channel
 
           offset_major = info.data << 8;
           break;
+        case 'P': // pan slide
+          if (it_effects)
+          {
+            if (info.data == 0) // repeat
+              info = last_param['P'];
+            else
+              last_param['P'] = info;
+
+            panning_slide_start = panning.to_linear_pan(-1.0, +1.0);
+
+            if (info.low_nybble == 0) // pan left
+              panning_slide_end = panning_slide_start - (module->speed - 1) * info.high_nybble / 32.0, -1.0, +1.0;
+            else if (info.high_nybble == 0) // pan right
+              panning_slide_end = panning_slide_start + (module->speed - 1) * info.high_nybble / 32.0, -1.0, +1.0;
+            else if (info.low_nybble == 0xF) // fine pan left
+            {
+              panning.from_linear_pan(panning_slide_start - info.high_nybble / 32.0, -1.0, +1.0);
+              fine = true;
+            }
+            else if (info.high_nybble == 0xF) // fine pan right
+            {
+              panning.from_linear_pan(panning_slide_start + info.high_nybble / 32.0, -1.0, +1.0);
+              fine = true;
+            }
+
+            if (!fine)
+            {
+              if (panning_slide_end < -1.0)
+                panning_slide_end = -1.0;
+              if (panning_slide_end > 1.0)
+                panning_slide_end = 1.0;
+
+              if (panning_slide_end == panning_slide_start)
+                break;
+
+              panning_slide = true;
+            }
+          }
+          else
+            cerr << "Ignoring pre-IT command: " << row.effect.command
+              << setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
+          break;
         case 'Q': // retrigger
           if (info.data == 0)
             info = last_param['Q'];
@@ -3438,9 +3544,45 @@ struct channel_MODULE : public channel
               panning.from_amiga_pan(info.data);
           }
           break;
+        case 'Y': // panbrello, high = speed, low - depth
+          if (it_effects)
+          {
+            if ((info.low_nybble == 0) || (info.high_nybble == 0))
+            {
+              if (!panbrello_retrig)
+                panbrello_cycle_offset += 1.0;
+            }
+            else
+            {
+              if (p_panbrello) // already panbrelloing
+                panbrello_cycle_offset += 1.0;
+              else
+                panbrello_cycle_offset = 0.0;
+
+              if (it_linear_slides)
+                panbrello_depth = info.low_nybble * (255.0 / 128.0) / -192.0;
+              else
+                panbrello_depth = info.low_nybble * 4.0 * (255.0 / 128.0);
+
+              if (it_effects)
+                panbrello_depth *= 0.5;
+
+              double new_panbrello_cycle_frequency = (module->speed * info.high_nybble) / 64.0;
+
+              if (p_panbrello && (new_panbrello_cycle_frequency != panbrello_cycle_frequency))
+                panbrello_cycle_offset *= (panbrello_cycle_frequency / new_panbrello_cycle_frequency);
+
+              panbrello_cycle_frequency = new_panbrello_cycle_frequency;
+            }
+            panbrello = true;
+          }
+          else
+            cerr << "Ignoring pre-IT command: " << row.effect.command
+              << setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
+          break;
         default:
           cerr << "Unimplemented S3M/IT command: " << row.effect.command
-            << setfill('0') << setw(2) << hex << uppercase << info.data << nouppercase << dec << endl;
+            << setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
       }
     }
 
@@ -3485,9 +3627,9 @@ struct channel_MODULE : public channel
     original_intensity = intensity;
     target_volume = -1;
     volume = channel_volume;
-    it_effects = false;
-    it_portamento_link = false;
-    it_linear_slides = false;
+    it_effects = module->it_module_effects;
+    it_portamento_link = module->it_module_portamento_link;
+    it_linear_slides = module->it_module_linear_slides;
   }
 };
 

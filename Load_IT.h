@@ -700,7 +700,7 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
     }
   }
 
-  ret->samples_per_second = c5spd;
+  ret->samples_per_second = c5spd / 2.0; // impulse tracker octaves go lower than we can display!
 
   return ret;
 }
@@ -727,7 +727,7 @@ struct it_pattern_mask
 struct it_pattern_slot
 {
   int note, instrument, volume_panning;
-  unsigned char effect_command, effect_data;
+  int effect_command, effect_data;
 
   it_pattern_slot()
   {
@@ -779,11 +779,10 @@ void load_it_pattern(ifstream *file, pattern &p, vector<sample *> &samps, bool h
 
   it_pattern_slot last_row[64], cur_row[64];
 
+  cerr << ".";
+
   for (int i=0; i<pattern_rows; i++)
   {
-    if (i == 22)
-      cout << "." << flush;
-
     vector<row> rowdata(64);
 
     for (int j=0; j<64; j++)
@@ -791,7 +790,7 @@ void load_it_pattern(ifstream *file, pattern &p, vector<sample *> &samps, bool h
       cur_row[j].note = -1;
       cur_row[j].instrument = -1;
       cur_row[j].volume_panning = -1;
-      cur_row[j].effect_command = 0;
+      cur_row[j].effect_command = -1;
     }
 
     while (true)
@@ -817,8 +816,8 @@ void load_it_pattern(ifstream *file, pattern &p, vector<sample *> &samps, bool h
         c.volume_panning = *(data++);
       if (mask.has_effect())
       {
-        c.effect_command = *(data++);
-        c.effect_data = *(data++);
+        c.effect_command = (unsigned)*(data++);
+        c.effect_data = (unsigned)*(data++);
       }
       if (mask.use_last_note())
         c.note = l.note;
@@ -904,7 +903,19 @@ void load_it_pattern(ifstream *file, pattern &p, vector<sample *> &samps, bool h
       if (r.effect.present)
         has_note_events[channel];
     }
-    memcpy(last_row, cur_row, sizeof(last_row));
+
+    for (int i=0; i<64; i++)
+    {
+      if (cur_row[i].note != -1)
+        last_row[i].note = cur_row[i].note;
+      if (cur_row[i].instrument != -1)
+        last_row[i].instrument = cur_row[i].instrument;
+      if (cur_row[i].volume_panning != -1)
+        last_row[i].volume_panning = cur_row[i].volume_panning;
+      if (cur_row[i].effect_command != -1)
+        last_row[i].effect_command = cur_row[i].effect_command,
+        last_row[i].effect_data = cur_row[i].effect_data;
+    }
 
     p.row_list.push_back(rowdata);
   }
@@ -914,20 +925,27 @@ void load_it_convert_envelope(instrument_envelope &target, it_envelope_descripti
 {
   target.enabled = source.enabled;
 
-  target.looping = source.looping;
-  target.loop_begin_tick = source.envelope[source.loop_start_node].tick;
-  target.loop_end_tick = source.envelope[source.loop_end_node].tick;
+  if (target.enabled)
+  {
+    target.looping = source.looping;
+    target.loop_begin_tick = source.envelope[source.loop_start_node].tick;
+    target.loop_end_tick = source.envelope[source.loop_end_node].tick;
 
-  target.sustain_loop = source.sustain_loop;
-  target.sustain_loop_begin_tick = source.envelope[source.sustain_loop_start_node].tick;
-  target.sustain_loop_end_tick = source.envelope[source.sustain_loop_end_node].tick;
+    target.sustain_loop = source.sustain_loop;
+    target.sustain_loop_begin_tick = source.envelope[source.sustain_loop_start_node].tick;
+    target.sustain_loop_end_tick = source.envelope[source.sustain_loop_end_node].tick;
 
-  for (int i=0; i < int(source.envelope.size()); i++)
-    target.node.push_back(instrument_envelope_node(source.envelope[i].tick, source.envelope[i].yValue));
+    for (int i=0; i < int(source.envelope.size()); i++)
+      target.node.push_back(instrument_envelope_node(source.envelope[i].tick, source.envelope[i].yValue));
+  }
 }
 
 module_struct *load_it(ifstream *file, bool modplug_style = false)
-{
+{       // 12345678901234567890123456789012345678901234567890123456789012345678901234567890
+  cerr << "Sorry the IT loader takes so long! It's something to do with I'm not sure what" << endl
+       << "the bottleneck is, but it's somewhere inside of the pattern loading. I made a" << endl
+       << "progress indicator to distract you from the wait :-)" << endl << endl;
+
   char magic[4];
   file->read(magic, 4);
 
@@ -1067,6 +1085,8 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
   vector<pattern> pats;
   bool has_note_events[MAX_MODULE_CHANNELS] = { false }; // entire struct to 0
 
+  cerr << "Loading " << num_patterns << " patterns" << endl;
+  cerr << '.' << string(num_patterns, '-') << '.' << endl << ' ';
   for (int i=0; i<num_patterns; i++)
   {
     file->seekg(pattern_offset[i]);
@@ -1075,6 +1095,7 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
     load_it_pattern(file, pat, samps, has_note_events);
     pats.push_back(pat);
   }
+  cerr << endl << endl;
 
   int channels = flags.stereo() ? 2 : 1;
 
@@ -1170,6 +1191,9 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
   ret->tempo = settings.initial_tempo;
 
   ret->it_module = true;
+  ret->it_module_effects = !flags.old_effects();
+  ret->it_module_portamento_link = flags.portamento_memory_link();
+  ret->it_module_linear_slides = flags.linear_slides();
 
   return ret;
 }

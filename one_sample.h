@@ -32,12 +32,13 @@ struct pan_value
 
   inline void normalize()
   {
-    double total_weight;
+    double max_weight = -1.0;
 
     for (int i=0; i<num_scales; i++)
-      total_weight += sample_scale[i];
+      if (sample_scale[i] > max_weight)
+        max_weight = sample_scale[i];
     for (int i=0; i<num_scales; i++)
-      sample_scale[i] /= total_weight;
+      sample_scale[i] /= max_weight;
   }
 
   template <class T>
@@ -63,6 +64,26 @@ struct pan_value
       for (int i=2; i<num_scales; i++)
         sample_scale[i] = 0.0;
     }
+  }
+
+  template <class T>
+  inline T to_linear_pan(T lower_limit, T upper_limit)
+  {
+    pan_value tmp = *this;
+
+    tmp.normalize();
+
+    double value;
+
+    if (tmp.sample_scale[0] < 1.0)
+      value = -log(tmp.sample_scale[0]);
+    else
+      value = log(tmp.sample_scale[1]);
+
+    double middle     = (upper_limit + lower_limit) / 2.0;
+    double half_range = (upper_limit - lower_limit) / 2.0;
+
+    return (T)(middle + half_range * value);
   }
 
   inline void from_s3m_pan(int pan_value)

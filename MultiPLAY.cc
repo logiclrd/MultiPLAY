@@ -320,6 +320,9 @@ struct sample;
 struct sample_context
 {
   sample *created_with;
+  double samples_per_second;
+  double default_volume;
+  int num_samples;
 
   sample_context(sample *cw) : created_with(cw) {}
 };
@@ -335,9 +338,10 @@ struct sample
   double vibrato_depth, vibrato_cycle_frequency; // frequency relative to samples with samples_per_second per second
 
   virtual one_sample get_sample(int sample, double offset, sample_context *c = NULL) = 0;
-  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0.0, bool top_level = true) = 0;
+  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0.0, bool top_level = true, int *znote = NULL) = 0;
   virtual void exit_sustain_loop(sample_context *c = NULL) = 0; //..if it has one :-)
   virtual void kill_note(sample_context *c = NULL) = 0;
+  virtual bool past_end(int sample, double offset, sample_context *c = NULL) = 0;
 
   sample(int idx)
     : use_vibrato(false), index(idx + 1)
@@ -376,13 +380,14 @@ struct sample_builtintype : public sample
   int sample_channels;
 
   double sample_scale;
+  double default_volume;
 
   long loop_begin, loop_end;
   long sustain_loop_begin, sustain_loop_end;
 
   bool use_sustain_loop;
 
-  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0, bool top_level = true)
+  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0, bool top_level = true, int *znote = NULL)
   {
     if (c == NULL)
       throw "need sample context";
@@ -401,20 +406,27 @@ struct sample_builtintype : public sample
 
     context.last_looped_sample = 0;
     context.sustain_loop_exit_difference = 0;
+    context.samples_per_second = samples_per_second;
+    context.default_volume = default_volume;
+    context.num_samples = num_samples;
 
-    if (top_level)
+    if (p)
     {
-      p->volume_envelope = NULL;
-      p->panning_envelope = NULL;
-      p->pitch_envelope = NULL;
+      if (top_level)
+      {
+        p->volume_envelope = NULL;
+        p->panning_envelope = NULL;
+        p->pitch_envelope = NULL;
+      }
+      p->samples_this_note = 0;
     }
-    p->samples_this_note = 0;
   }
 
   virtual void exit_sustain_loop(sample_context *c)
   {
     sample_builtintype_context &context = *(sample_builtintype_context *)c;
-    context.sustain_loop_state = SustainLoopState::Finishing;
+    if (context.sustain_loop_state == SustainLoopState::Running)
+      context.sustain_loop_state = SustainLoopState::Finishing;
   }
 
   virtual void kill_note(sample_context *c = NULL)
@@ -422,8 +434,32 @@ struct sample_builtintype : public sample
     // no implementation required
   }
 
+  virtual bool past_end(int sample, double offset, sample_context *c = NULL)
+  {
+    if (c == NULL)
+      throw "need context for instrument";
+
+    if (loop_end != 0xFFFFFFFF)
+      return false;
+
+    sample_builtintype_context &context = *(sample_builtintype_context *)c;
+    switch (context.sustain_loop_state)
+    {
+      case SustainLoopState::Running:
+      case SustainLoopState::Finishing: return false;
+    }
+
+    if (context.sustain_loop_state == SustainLoopState::Finished)
+      sample -= context.sustain_loop_exit_difference;
+
+    return (sample >= num_samples);
+  }
+
   virtual one_sample get_sample(int sample, double offset, sample_context *c = NULL)
   {
+    if (c == NULL)
+      throw "need a sample context";
+
     sample_builtintype_context &context = *(sample_builtintype_context *)c;
 
     bool using_sustain_loop = false;
@@ -1234,8 +1270,8 @@ struct instrument_envelope
 
   void begin_sustain_loop(sustain_loop_position &susloop)
   {
-    loop_length = loop_end_tick - loop_begin_tick + 1; // have to calc this somewhere
-    sustain_loop_length = sustain_loop_end_tick - sustain_loop_begin_tick + 1;
+    loop_length = loop_end_tick - loop_begin_tick; // have to calc this somewhere
+    sustain_loop_length = sustain_loop_end_tick - sustain_loop_begin_tick;
 
     susloop.still_running = (sustain_loop == true); // for clarity
   }
@@ -1246,8 +1282,16 @@ struct instrument_envelope
     {
       if (tick > sustain_loop_end_tick)
       {
-        double repetitions = floor((tick - sustain_loop_begin_tick) / sustain_loop_length);
-        double new_tick = tick - repetitions * sustain_loop_length;
+        double new_tick;
+
+        if (sustain_loop_length)
+        {
+          double repetitions = floor((tick - sustain_loop_begin_tick) / sustain_loop_length);
+          new_tick = tick - repetitions * sustain_loop_length;
+        }
+        else
+          new_tick = sustain_loop_begin_tick;
+
         susloop.exit_diff = tick - new_tick;
       }
       else
@@ -1263,28 +1307,60 @@ struct instrument_envelope
     {
       if (tick > sustain_loop_end_tick)
       {
-        double repetitions = floor((tick - sustain_loop_begin_tick) / sustain_loop_length);
-        tick -= repetitions * sustain_loop_length;
+        if (sustain_loop_length)
+        {
+          double repetitions = floor((tick - sustain_loop_begin_tick) / sustain_loop_length);
+          tick -= repetitions * sustain_loop_length;
+        }
+        else
+          tick = sustain_loop_begin_tick;
       }
     }
     else
+    {
       tick -= susloop.exit_diff;
 
-    int idx = 0;
+      if (looping && (tick > loop_end_tick))
+      {
+        if (loop_length)
+        {
+          double repetitions = floor((tick - loop_begin_tick) / loop_length);
+          tick -= repetitions * loop_length;
+        }
+        else
+          tick = loop_begin_tick;
+      }
+    }
+
+    int idx = 1;
     int l = node.size() - 1;
 
     while (tick > node[idx].tick)
     {
-      tick -= node[idx].tick;
       idx++;
 
       if (idx >= l)
         return node[l].value;
     }
 
-    double t = tick / node[idx + 1].tick;
+    tick -= node[idx].tick;
 
-    return bilinear(node[idx].value, node[idx + 1].value, t);
+    double t = tick / (node[idx].tick - node[idx - 1].tick);
+
+    return bilinear(node[idx - 1].value, node[idx].value, t);
+  }
+  
+  bool past_end(double tick, sustain_loop_position &susloop)
+  {
+    if (susloop.still_running)
+      return false;
+    if (looping)
+      return false;
+
+    if (sustain_loop)
+      tick -= susloop.exit_diff;
+
+    return (tick > node.back().tick);
   }
 };
 
@@ -1294,32 +1370,41 @@ struct playback_envelope
   double sample_ticks_per_envelope_tick, envelope_ticks_per_sample_tick;
   sustain_loop_position susloop;
   playback_envelope *wrap;
-  bool scale;
+  bool scale, looping;
 
   playback_envelope(const playback_envelope &other)
     : wrap(other.wrap ? new playback_envelope(*other.wrap) : NULL),
       sample_ticks_per_envelope_tick(other.sample_ticks_per_envelope_tick),
       envelope_ticks_per_sample_tick(other.envelope_ticks_per_sample_tick),
-      susloop(other.susloop), scale(other.scale), env(other.env)
+      susloop(other.susloop), scale(other.scale), env(other.env),
+      looping(other.looping)
   {
   }
 
   playback_envelope(instrument_envelope &e, double ticks)
     : wrap(NULL), env(e), sample_ticks_per_envelope_tick(ticks),
-      envelope_ticks_per_sample_tick(1.0 / ticks)
+      envelope_ticks_per_sample_tick(1.0 / ticks),
+      looping(e.looping)
   {
   }
 
   playback_envelope(playback_envelope *w, instrument_envelope &e, double ticks, bool scale_envelope)
     : wrap(w), env(e), sample_ticks_per_envelope_tick(ticks),
-      envelope_ticks_per_sample_tick(1.0 / ticks), scale(scale_envelope)
+      envelope_ticks_per_sample_tick(1.0 / ticks), scale(scale_envelope),
+      looping(e.looping || w->looping)
   {
   }
 
-  void begin_note()
+  ~playback_envelope()
+  {
+    if (wrap)
+      delete wrap;
+  }
+
+  void begin_note(bool recurse = true)
   {
     env.begin_sustain_loop(susloop);
-    if (wrap)
+    if (wrap && recurse)
       wrap->begin_note();
   }
 
@@ -1353,6 +1438,24 @@ struct playback_envelope
   {
     return get_value_at(sample + offset);
   }
+
+  bool past_end(double sample_offset)
+  {
+    double tick = sample_offset * envelope_ticks_per_sample_tick;
+
+    if (env.past_end(tick, susloop))
+      return true;
+
+    if (wrap)
+      return wrap->past_end(sample_offset);
+
+    return false;
+  }
+
+  bool past_end(long sample, double offset)
+  {
+    return past_end(sample + offset);
+  }
 };
 
 double global_volume = 1.0;
@@ -1376,6 +1479,11 @@ struct channel
   long samples_this_note;
   playback_envelope *volume_envelope, *panning_envelope, *pitch_envelope;
 
+  vector<channel *> my_ancillary_channels;
+
+  bool fading;
+  double fade_per_tick, fade_value;
+
   int tempo;
   int octave;
   int note_length_denominator, this_note_length_denominator;
@@ -1396,7 +1504,7 @@ struct channel
     if ((znote != 0) || (!zero_means_no_note))
     {
       if ((current_waveform == Waveform::Sample) && (current_sample != NULL))
-        note_frequency = current_sample->samples_per_second * 2;
+        note_frequency = current_sample_context->samples_per_second * 2;
       else
         note_frequency = 987.766603;
       
@@ -1459,6 +1567,12 @@ struct channel
       panning_envelope->note_off(offset_major, offset);
     if (pitch_envelope != NULL)
       pitch_envelope->note_off(offset_major, offset);
+
+    if ((volume_envelope == NULL) || volume_envelope->looping)
+    {
+      fading = true;
+      fade_value = 1.0;
+    }
   }
 
   one_sample &calculate_next_tick()
@@ -1518,18 +1632,37 @@ struct channel
             return_sample.clear(output_channels);
       }
 
-      if (volume_envelope != NULL)
-        return_sample *= volume_envelope->get_value_at(offset_major, offset);
+      double sample_offset;
+      if (volume_envelope || panning_envelope || pitch_envelope)
+        sample_offset = samples_this_note;
+
+      if (fading)
+      {
+        if (fade_value > 0.0)
+          return_sample *= fade_value;
+        else
+          return_sample.clear();
+        fade_value -= fade_per_tick;
+      }
+      else if (volume_envelope != NULL)
+      {
+        if (volume_envelope->past_end(sample_offset))
+        {
+          fading = true;
+          fade_value = 1.0;
+        }
+        return_sample *= volume_envelope->get_value_at(sample_offset);
+      }
 
       if (panning_envelope != NULL)
-        return_sample *= pan_value(panning_envelope->get_value_at(offset_major, offset));
+        return_sample *= pan_value(panning_envelope->get_value_at(sample_offset));
 
       if (pitch_envelope != NULL)
       {
         double frequency = delta_offset_per_tick * ticks_per_second;
         double exponent = log(frequency) / log(2.0);
 
-        exponent += pitch_envelope->get_value_at(offset_major, offset) * (16.0 / 12.0);
+        exponent += pitch_envelope->get_value_at(sample_offset) * (16.0 / 12.0);
         if ((current_waveform == Waveform::Sample) && (current_sample->use_vibrato))
           exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
 
@@ -1552,12 +1685,22 @@ struct channel
           offset += delta_offset_per_tick;
       }
 
+      samples_this_note++;
+
       if ((offset > 1.0) || (offset < 0.0))
       {
-        double offset_floor = floor(offset);
+        if (offset > 2.0)
+        {
+          double offset_floor = floor(offset);
 
-        offset_major += long(offset_floor);
-        offset -= offset_floor;
+          offset_major += long(offset_floor);
+          offset -= offset_floor;
+        }
+        else
+        {
+          offset_major++;
+          offset -= 1.0;
+        }
       }
 
       if (ticks_left < dropoff_start)
@@ -1595,6 +1738,7 @@ struct channel
     volume_envelope = NULL;
     panning_envelope = NULL;
     pitch_envelope = NULL;
+    fading = false;
   }
 
   channel(pan_value &default_panning, bool looping)
@@ -1617,6 +1761,19 @@ struct channel
     volume_envelope = NULL;
     panning_envelope = NULL;
     pitch_envelope = NULL;
+    fading = false;
+  }
+
+  virtual ~channel()
+  {
+    if (volume_envelope)
+      delete volume_envelope;
+    if (panning_envelope)
+      delete panning_envelope;
+    if (pitch_envelope)
+      delete pitch_envelope;
+    if (current_sample_context)
+      delete current_sample_context;
   }
 };
 
@@ -1632,6 +1789,10 @@ struct channel_PLAY : public channel
       finished = true;
     
     in->seekg(0, ios::beg);
+  }
+
+  virtual ~channel_PLAY()
+  {
   }
   
   virtual bool advance_pattern(one_sample &sample)
@@ -1730,9 +1891,9 @@ struct channel_PLAY : public channel
             cerr << "Warning: invalid note length denominator " << this_note_length_denominator << endl;
             this_note_length_denominator = note_length_denominator;
           }
-          recalc(znote, duration_scale);
           if ((current_waveform == Waveform::Sample) && (current_sample != NULL))
-            current_sample->begin_new_note(NULL, this, &current_sample_context);
+            current_sample->begin_new_note(NULL, this, &current_sample_context, 0.02 * ticks_per_second, true, &znote);
+          recalc(znote, duration_scale);
           break;
         case 'n':
         case 'N':
@@ -1749,9 +1910,9 @@ struct channel_PLAY : public channel
             cerr << "Warning: Syntax error in input: N" << znote << endl;
             znote = 84;
           }
-          recalc(znote, duration_scale);
           if ((znote != 0) && (current_waveform == Waveform::Sample) && (current_sample != NULL))
-            current_sample->begin_new_note(NULL, this, &current_sample_context);
+            current_sample->begin_new_note(NULL, this, &current_sample_context, 0.02 * ticks_per_second, true, &znote);
+          recalc(znote, duration_scale);
           break;
         case 'l':
         case 'L':
@@ -1880,11 +2041,13 @@ struct channel_PLAY : public channel
               in->putback(ch);
               sample_number = expect_int(in);
 
-              if ((sample_number < 0) || (sample_number > int(samples.size())))
+              if ((sample_number < 0) || (sample_number >= int(samples.size())))
                 cerr << "Warning: Sample number " << sample_number << " out of range" << endl;
               else
               {
                 current_sample = samples[sample_number];
+                if (current_sample == NULL)
+                  current_sample_context = NULL;
                 current_waveform = Waveform::Sample;
               }
               break;
@@ -2013,9 +2176,20 @@ struct effect_struct
     }
   }
 
-  bool isnt(char effect)
+  bool isnt(char effect, char high_nybble = -1, char low_nybble = -1)
   {
-    return (command != effect);
+    if (command != effect)
+      return true;
+    if ((high_nybble != -1) && (info.high_nybble != high_nybble))
+      return true;
+    if ((low_nybble != -1) && (info.low_nybble != high_nybble))
+      return true;
+    return false;
+  }
+
+  bool is(char effect, char high_nybble = -1, char low_nybble = -1)
+  {
+    return !isnt(effect, high_nybble, low_nybble);
   }
 };
 
@@ -2255,7 +2429,6 @@ struct module_struct
   vector<sample *> samples;
   vector<module_sample_info> sample_info;
   bool channel_enabled[MAX_MODULE_CHANNELS];
-  map<sample *, int> sample_volume;
   int channel_map[MAX_MODULE_CHANNELS];
   pattern_loop_type pattern_loop[MAX_MODULE_CHANNELS];
   pan_value initial_panning[MAX_MODULE_CHANNELS];
@@ -2267,7 +2440,7 @@ struct module_struct
   int num_channels;
   int auto_loop_target;
   bool stereo, use_instruments;
-  bool it_module, it_module_effects, it_module_portamento_link, it_module_linear_slides;
+  bool it_module, it_module_new_effects, it_module_portamento_link, it_module_linear_slides;
   bool finished;
 
   void speed_change()
@@ -2293,7 +2466,7 @@ struct module_struct
   {
     use_instruments = false;
     it_module = false;
-    it_module_effects = false;
+    it_module_new_effects = false;
     it_module_portamento_link = false;
     it_module_linear_slides = false;
     auto_loop_target = -1;
@@ -2326,6 +2499,9 @@ int req_digits(int max)
   return 3;
 }
 
+vector<channel *> channels, ancillary_channels;
+typedef vector<channel *>::iterator iter_t;
+
 struct channel_MODULE : public channel
 {
   module_struct *module;
@@ -2334,9 +2510,9 @@ struct channel_MODULE : public channel
   double original_intensity, previous_intensity, target_intensity;
   double portamento_start, portamento_end, portamento_end_t;
   int portamento_speed, portamento_target_znote;
-  double vibrato_depth, vibrato_cycle_frequency, vibrato_cycle_offset;
-  double vibrato_start_t;
+  double vibrato_depth, vibrato_cycle_frequency, vibrato_cycle_offset, vibrato_start_t;
   double tremolo_middle_intensity, tremolo_depth, tremolo_cycle_frequency, tremolo_cycle_offset;
+  double tremolo_start_t;
   double panbrello_middle, panbrello_depth, panbrello_cycle_frequency, panbrello_cycle_offset;
   double arpeggio_first_delta_offset, arpeggio_second_delta_offset, arpeggio_third_delta_offset;
   row *delayed_note;
@@ -2344,20 +2520,22 @@ struct channel_MODULE : public channel
   int arpeggio_tick_offset;
   int tremor_ontime, tremor_offtime, tremor_frame_offset;
   int volume, target_volume;
-  double panning_slide_start, panning_slide_end;
+  double panning_slide_start, panning_slide_end, channel_volume_slide_start, channel_volume_slide_end;
   double retrigger_factor, retrigger_bias;
   int retrigger_ticks;
   bool volume_slide, portamento, vibrato, tremor, arpeggio, note_delay, retrigger, tremolo;
-  bool note_cut, panning_slide, panbrello, p_volume_slide, p_portamento, p_vibrato, p_tremor;
-  bool p_arpeggio, p_note_delay, p_retrigger, p_tremolo, p_note_cut, p_panning_slide, p_panbrello;
+  bool note_cut, panning_slide, panbrello, channel_volume_slide, p_volume_slide, p_portamento;
+  bool p_vibrato, p_tremor, p_arpeggio, p_note_delay, p_retrigger, p_tremolo, p_note_cut;
+  bool p_panning_slide, p_panbrello, p_channel_volume_slide;
   int pattern_delay;
   double base_note_frequency;
+  int set_offset_high;
 
   bool portamento_glissando;
   Waveform::Type vibrato_waveform, tremolo_waveform, panbrello_waveform;
   bool vibrato_retrig, tremolo_retrig, panbrello_retrig;
 
-  bool it_effects, it_portamento_link, it_linear_slides;
+  bool it_effects, it_new_effects, it_portamento_link, it_linear_slides;
 
   effect_info_type last_param[256];
 
@@ -2390,6 +2568,17 @@ struct channel_MODULE : public channel
         panbrello_middle = new_panning;
 
       panning.from_linear_pan(new_panning, -1.0, +1.0);
+    }
+    if (channel_volume_slide)
+    {
+      double t = double(ticks_left) / module->ticks_per_module_row;
+      double new_channel_volume = channel_volume_slide_start * t + channel_volume_slide_end * (1.0 - t);
+      if (new_channel_volume < 0.0)
+        new_channel_volume = 0.0;
+      else if (new_channel_volume > 1.0)
+        new_channel_volume = 1.0;
+
+      channel_volume = new_channel_volume;
     }
     if (portamento)
     {
@@ -2532,7 +2721,10 @@ struct channel_MODULE : public channel
         if (delayed_note->snote != -1)
         {
           if (delayed_note->snote == -2)
+          {
             current_sample = NULL;
+            current_sample_context = NULL;
+          }
           else if (delayed_note->snote == -3)
             note_off();
           else
@@ -2546,14 +2738,17 @@ struct channel_MODULE : public channel
 
                 if (current_sample != NULL)
                 {
-                  recalc(delayed_note->znote, 1.0, false);
-                  current_sample->begin_new_note(delayed_note, this, &current_sample_context, module->ticks_per_frame);
+                  int translated_znote = delayed_note->znote;
+                  current_sample->begin_new_note(delayed_note, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
+                  recalc(translated_znote, 1.0, false);
                 }
+                else
+                  current_sample_context = NULL;
               }
               if (delayed_note->volume < 0)
               {
-                if (current_sample != NULL)
-                  volume = module->sample_volume[current_sample];
+                if (current_sample_context != NULL)
+                  volume = (int)(current_sample_context->default_volume * 64.0);
                 else
                   volume = 64;
 
@@ -2570,7 +2765,8 @@ struct channel_MODULE : public channel
       {
         offset = 0.0;
         offset_major = 0;
-        current_sample->begin_new_note(/* TODO */ NULL, this, &current_sample_context, module->ticks_per_frame);
+        int ignored = 0;
+        current_sample->begin_new_note(&module->pattern_list[module->current_pattern]->row_list[module->current_row][unmapped_channel_number], this, &current_sample_context, module->ticks_per_frame, true, &ignored);
         intensity = intensity * retrigger_factor + retrigger_bias;
         if (intensity > original_intensity)
           intensity = original_intensity;
@@ -2582,33 +2778,38 @@ struct channel_MODULE : public channel
     if (tremolo)
     {
       double t = double(ticks_left) / module->ticks_per_module_row;
-      double t_tremolo = (tremolo_cycle_offset + t) * tremolo_cycle_frequency;
-      double t_offset = t_tremolo - floor(t_tremolo);
-      intensity = tremolo_middle_intensity;
 
-      switch (tremolo_waveform)
+      if (t > tremolo_start_t)
       {
-        case Waveform::Sine:
-          intensity += tremolo_depth * sin(t_tremolo * 6.283185);
-          break;
-        case Waveform::RampDown:
-          if (t_offset < 0.5)
-            intensity -= t_offset * 2.0 * tremolo_depth;
-          else
-            intensity += (1.0 - t_offset) * 2.0 * tremolo_depth;
-          break;
-        case Waveform::Square:
-          if (t_offset < 0.5)
-            intensity += tremolo_depth;
-          else
-            intensity -= tremolo_depth;
-          break;
-      }
+        t -= tremolo_start_t;
+        double t_tremolo = (tremolo_cycle_offset + t) * tremolo_cycle_frequency;
+        double t_offset = t_tremolo - floor(t_tremolo);
+        intensity = tremolo_middle_intensity;
 
-      if (intensity < 0.0)
-        intensity = 0.0;
-      if (intensity > original_intensity)
-        intensity = original_intensity;
+        switch (tremolo_waveform)
+        {
+          case Waveform::Sine:
+            intensity += tremolo_depth * sin(t_tremolo * 6.283185);
+            break;
+          case Waveform::RampDown:
+            if (t_offset < 0.5)
+              intensity -= t_offset * 2.0 * tremolo_depth;
+            else
+              intensity += (1.0 - t_offset) * 2.0 * tremolo_depth;
+            break;
+          case Waveform::Square:
+            if (t_offset < 0.5)
+              intensity += tremolo_depth;
+            else
+              intensity -= tremolo_depth;
+            break;
+        }
+
+        if (intensity < 0.0)
+          intensity = 0.0;
+        if (intensity > original_intensity)
+          intensity = original_intensity;
+      }
     }
     if (note_cut)
     {
@@ -2635,16 +2836,17 @@ struct channel_MODULE : public channel
       intensity = original_intensity * volume / 64.0;
     }
 
-    p_volume_slide = volume_slide;   volume_slide = false;
-    p_portamento = p_portamento;     portamento = false;
-    p_vibrato = vibrato;             vibrato = false;
-    p_tremor = tremor;               tremor = false;
-    p_arpeggio = arpeggio;           arpeggio = false;
-    p_note_delay = note_delay;       note_delay = false;
-    p_retrigger = retrigger;         retrigger = false;
-    p_tremolo = tremolo;             tremolo = false;
-    p_note_cut = note_cut;           note_cut = false;
-    p_panning_slide = panning_slide; panning_slide = false;
+    p_volume_slide = volume_slide;                 volume_slide = false;
+    p_portamento = p_portamento;                   portamento = false;
+    p_vibrato = vibrato;                           vibrato = false;
+    p_tremor = tremor;                             tremor = false;
+    p_arpeggio = arpeggio;                         arpeggio = false;
+    p_note_delay = note_delay;                     note_delay = false;
+    p_retrigger = retrigger;                       retrigger = false;
+    p_tremolo = tremolo;                           tremolo = false;
+    p_note_cut = note_cut;                         note_cut = false;
+    p_panning_slide = panning_slide;               panning_slide = false;
+    p_channel_volume_slide = channel_volume_slide; channel_volume_slide = false;
 
     ticks_left = module->ticks_per_module_row;
 
@@ -2794,8 +2996,8 @@ struct channel_MODULE : public channel
 
         cerr << setfill(' ') << setw(3) << module->current_pattern << ":"
              << setfill('0') << setw(req_digits(module->pattern_list[module->current_pattern]->row_list.size())) << module->current_row << " | ";
-      }
-      cerr << string("C-C#D-D#E-F-F#G-G#A-A#B-????^^--").substr((row.snote & 15) * 2, 2)
+      }                                      // .- escaped for trigraph avoidance
+      cerr << string("C-C#D-D#E-F-F#G-G#A-A#B-?\?==^^--").substr((row.snote & 15) * 2, 2)
            << char((row.snote >= 0) ? (48 + (row.snote >> 4)) : '-') << " ";
       if (row.instrument == NULL)
         cerr << "-- ";
@@ -2837,7 +3039,12 @@ struct channel_MODULE : public channel
     if (row.snote != -1)
     {
       if (row.snote == -2)
+      {
         current_sample = NULL;
+        current_sample_context = NULL;
+      }
+      else if (row.snote == -3)
+        note_off();
       else
       {
         if ((row.instrument != NULL) || module->it_module)
@@ -2848,14 +3055,17 @@ struct channel_MODULE : public channel
               current_sample = row.instrument;
             if (current_sample != NULL)
             {
-              recalc(row.znote, 1.0, false);
-              current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame);
+              int translated_znote = row.znote;
+              current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
+              recalc(translated_znote, 1.0, false);
             }
+            else
+              current_sample_context = NULL;
           }
           if (row.volume < 0)
           {
-            if (current_sample != NULL)
-              volume = module->sample_volume[current_sample];
+            if (current_sample_context != NULL)
+              volume = (int)(current_sample_context->default_volume * 64.0);
             else
               volume = 64;
 
@@ -2864,19 +3074,19 @@ struct channel_MODULE : public channel
         }
       }
     }
-    else if (row.instrument > 0)
+    else if (row.instrument != NULL)
     {
       if (!row.effect.keepNote())
       {
-        if (row.instrument != NULL)
-          current_sample = row.instrument;
-        recalc(current_znote, 1.0, false);
-        current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame);
+        current_sample = row.instrument;
+        int translated_znote = current_znote;
+        current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
+        recalc(translated_znote, 1.0, false);
       }
       if (row.volume < 0)
       {
-        if (current_sample != NULL)
-          volume = module->sample_volume[current_sample];
+        if (current_sample_context != NULL)
+          volume = (int)(current_sample_context->default_volume * 64.0);
         else
           volume = 64;
 
@@ -2888,8 +3098,9 @@ struct channel_MODULE : public channel
 
     double old_frequency, old_delta_offset_per_tick;
     int old_current_znote;
+    sample_context *temp_sc;
 
-    int second_note, third_note;
+    int second_note, third_note, target_offset;
     double portamento_target, before_finetune;
 
     bool fine = false;
@@ -3078,7 +3289,8 @@ struct channel_MODULE : public channel
               current_sample->kill_note(current_sample_context);
             }
             current_sample = row.instrument;
-            current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame);
+            int ignored;
+            current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &ignored);
           }
 
           old_frequency = note_frequency;
@@ -3121,12 +3333,12 @@ struct channel_MODULE : public channel
           if ((info.low_nybble == 0) || (info.high_nybble == 0))
           {
             if (!vibrato_retrig)
-              vibrato_cycle_offset += 1.0;
+              vibrato_cycle_offset += (1.0 - vibrato_start_t);
           }
           else
           {
             if (p_vibrato) // already vibratoing
-              vibrato_cycle_offset += 1.0;
+              vibrato_cycle_offset += (1.0 - vibrato_start_t);
             else
               vibrato_cycle_offset = 0.0;
 
@@ -3135,7 +3347,7 @@ struct channel_MODULE : public channel
             else
               vibrato_depth = info.low_nybble * 4.0 * (255.0 / 128.0);
 
-            if (it_effects)
+            if (it_new_effects)
               vibrato_depth *= 0.5;
 
             double new_vibrato_cycle_frequency = (module->speed * info.high_nybble) / 64.0;
@@ -3145,7 +3357,7 @@ struct channel_MODULE : public channel
 
             vibrato_cycle_frequency = new_vibrato_cycle_frequency;
 
-            if (it_effects)
+            if (it_new_effects)
               vibrato_start_t = 0.0;
             else
               vibrato_start_t = 1.0 / module->speed;
@@ -3176,15 +3388,25 @@ struct channel_MODULE : public channel
           else
             arpeggio_tick_offset = 0;
 
+          temp_sc = current_sample_context;
+
           arpeggio_first_delta_offset = delta_offset_per_tick;
-          
+
           second_note = row.znote + info.high_nybble;
+          current_sample->begin_new_note(&row, NULL, &current_sample_context, module->ticks_per_frame, true, &second_note);
           recalc(second_note, 1.0, false);
+          if (current_sample_context)
+            delete current_sample_context;
           arpeggio_second_delta_offset = delta_offset_per_tick;
 
           third_note = row.znote + info.low_nybble;
+          current_sample->begin_new_note(&row, NULL, &current_sample_context, module->ticks_per_frame, true, &third_note);
           recalc(third_note, 1.0, false);
+          if (current_sample_context)
+            delete current_sample_context;
           arpeggio_third_delta_offset = delta_offset_per_tick;
+
+          current_sample_context = temp_sc;
 
           note_frequency = old_frequency;
           delta_offset_per_tick = old_delta_offset_per_tick;
@@ -3194,7 +3416,7 @@ struct channel_MODULE : public channel
           break;
         case 'K': // S3M H00 and Dxy
           if (!vibrato_retrig)
-            vibrato_cycle_offset += 1.0;
+            vibrato_cycle_offset += (1.0 - vibrato_start_t);
           vibrato = true;
 
           if (info.data == 0) // repeat
@@ -3229,7 +3451,14 @@ struct channel_MODULE : public channel
           old_delta_offset_per_tick = delta_offset_per_tick;
           old_current_znote = current_znote;
 
+          temp_sc = current_sample_context;
+
+          current_sample->begin_new_note(&row, NULL, &current_sample_context, module->ticks_per_frame, true, &portamento_target_znote);
           recalc(portamento_target_znote, 1.0, false, false);
+          if (current_sample_context)
+            delete current_sample_context;
+
+          current_sample_context = temp_sc;
 
           if (it_linear_slides)
             portamento_target = log(note_frequency) / log(2.0);
@@ -3285,17 +3514,70 @@ struct channel_MODULE : public channel
           previous_intensity = intensity;
           volume_slide = true;
           break;
+        case 'M': // set channel volume
+          if (it_effects)
+          {
+            if (info.data > 64)
+              channel_volume = 1.0;
+            else
+              channel_volume = info.data / 64.0;
+          }
+          else
+            cerr << "Ignoring pre-IT command: M"
+              << setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
+          break;
+        case 'N': // channel volume slide
+          if (it_effects)
+          {
+            if (info.data == 0) // repeat
+              info = last_param['N'];
+            else
+              last_param['N'] = info;
+
+            channel_volume_slide_start = channel_volume;
+
+            if (info.low_nybble == 0) // slide up
+              channel_volume_slide_end = channel_volume_slide_start + (module->speed - 1) * info.high_nybble / 32.0, -1.0, +1.0;
+            else if (info.high_nybble == 0) // slide down
+              channel_volume_slide_end = channel_volume_slide_start - (module->speed - 1) * info.low_nybble / 32.0, -1.0, +1.0;
+            else if (info.low_nybble == 0xF) // fine slide up
+            {
+              channel_volume = channel_volume_slide_start - info.high_nybble / 64.0;
+              fine = true;
+            }
+            else if (info.high_nybble == 0xF) // fine slide down
+            {
+              channel_volume = channel_volume_slide_start + info.high_nybble / 64.0;
+              fine = true;
+            }
+
+            if (!fine)
+            {
+              if (channel_volume_slide_end == channel_volume_slide_start)
+                break;
+
+              channel_volume_slide = true;
+            }
+          }
+          else
+            cerr << "Ignoring pre-IT command: " << row.effect.command
+              << setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
+          break;
         case 'O': // sample offset
           if (info.data == 0)
             info = last_param['O'];
           else
             last_param['O'] = info;
 
-          if (it_effects)
-            if (current_sample && ((info.data << 8) > current_sample->num_samples))
-              break;
+          target_offset = (info.data << 8) + set_offset_high;
 
-          offset_major = info.data << 8;
+          if (it_new_effects)
+          {
+            if (current_sample_context && (target_offset > current_sample_context->num_samples))
+              break;
+          }
+
+          offset_major = target_offset;
           break;
         case 'P': // pan slide
           if (it_effects)
@@ -3310,7 +3592,7 @@ struct channel_MODULE : public channel
             if (info.low_nybble == 0) // pan left
               panning_slide_end = panning_slide_start - (module->speed - 1) * info.high_nybble / 32.0, -1.0, +1.0;
             else if (info.high_nybble == 0) // pan right
-              panning_slide_end = panning_slide_start + (module->speed - 1) * info.high_nybble / 32.0, -1.0, +1.0;
+              panning_slide_end = panning_slide_start + (module->speed - 1) * info.low_nybble / 32.0, -1.0, +1.0;
             else if (info.low_nybble == 0xF) // fine pan left
             {
               panning.from_linear_pan(panning_slide_start - info.high_nybble / 32.0, -1.0, +1.0);
@@ -3324,11 +3606,6 @@ struct channel_MODULE : public channel
 
             if (!fine)
             {
-              if (panning_slide_end < -1.0)
-                panning_slide_end = -1.0;
-              if (panning_slide_end > 1.0)
-                panning_slide_end = 1.0;
-
               if (panning_slide_end == panning_slide_start)
                 break;
 
@@ -3379,22 +3656,29 @@ struct channel_MODULE : public channel
             if (row.snote >= 0)
               tremolo_middle_intensity = original_intensity * (volume / 64.0);
             if (tremolo_retrig)
-              tremolo_cycle_offset += 1.0;
+              tremolo_cycle_offset += (1.0 - tremolo_start_t);
           }
           else
           {
             if (p_tremolo) // already tremoloing
-              tremolo_cycle_offset += 1.0;
+              tremolo_cycle_offset += (1.0 - tremolo_start_t);
             else
               tremolo_cycle_offset = 0.0;
             tremolo_middle_intensity = intensity;
             tremolo_depth = original_intensity * (info.low_nybble * 4.0 * (255.0 / 64.0)) / 64.0;
+            if (it_new_effects)
+              tremolo_depth *= 0.5;
             double new_tremolo_cycle_frequency = double(info.high_nybble * module->speed) / 64.0;
 
             if (p_tremolo && (new_tremolo_cycle_frequency != tremolo_cycle_frequency))
               tremolo_cycle_offset *= (tremolo_cycle_frequency / new_tremolo_cycle_frequency);
 
             tremolo_cycle_frequency = new_tremolo_cycle_frequency;
+
+            if (it_new_effects)
+              tremolo_start_t = 0.0;
+            else
+              vibrato_start_t = 1.0 / module->speed;
           }
           tremolo = true;
           break;
@@ -3454,13 +3738,7 @@ struct channel_MODULE : public channel
                 case 0x0: tremolo_waveform = Waveform::Sine;     break;
                 case 0x1: tremolo_waveform = Waveform::RampDown; break;
                 case 0x2: tremolo_waveform = Waveform::Square;   break;
-                case 0x3:
-                  switch ((rand() >> 2) % 3)
-                  {
-                    case 0: tremolo_waveform = Waveform::Sine;     break;
-                    case 1: tremolo_waveform = Waveform::RampDown; break;
-                    case 2: tremolo_waveform = Waveform::Square;   break;
-                  }
+                case 0x3: tremolo_waveform = Waveform::Random;   break;
               }
               if (info.low_nybble & 0x4)
                 tremolo_retrig = false;
@@ -3471,18 +3749,96 @@ struct channel_MODULE : public channel
                 cerr << "Warning: bit 3 ignored in effect S4"
                   << hex << uppercase << info.low_nybble << nouppercase << dec << endl;
               break;
+            case 0x5: // set panbrello waveform
+              if (it_effects)
+              {
+                switch (info.low_nybble & 0x3)
+                {
+                  case 0x0: panbrello_waveform = Waveform::Sine;     break;
+                  case 0x1: panbrello_waveform = Waveform::RampDown; break;
+                  case 0x2: panbrello_waveform = Waveform::Square;   break;
+                  case 0x3: panbrello_waveform = Waveform::Random;   break;
+                }
+                if (info.low_nybble & 0x4)
+                  panbrello_retrig = false;
+                else
+                  panbrello_retrig = true;
+
+                if (info.low_nybble & 0x8)
+                  cerr << "Warning: bit 3 ignored in effect S5"
+                    << hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+              }
+              else
+                cerr << "Ignoring pre-IT command: S5"
+                  << hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+              break;
+            case 0x6: // pattern delay in ticks
+              // TODO
+              cerr << "Unimplemented IT command: " << row.effect.command
+                << setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
+              break;
+            case 0x7: // past note cut/off/fade, temporary new note action
+              if (it_effects)
+              {
+                switch (info.low_nybble)
+                {
+                  case 3: // set NNA to cut       ignore instrument-interpreted values
+                  case 4: // set NNA to continue 
+                  case 5: // set NNA to note off
+                  case 6: // set NNA to fade
+                    break;
+                  case 0: // note cut
+                    for (int i = ancillary_channels.size() - 1; i >= 0; i--)
+                    {
+                      iter_t my_own = find(my_ancillary_channels.begin(), my_ancillary_channels.end(), ancillary_channels[i]);
+
+                      if (my_own != my_ancillary_channels.end())
+                      {
+                        ancillary_channels.erase(ancillary_channels.begin() + i);
+                        my_ancillary_channels.erase(my_own);
+                        delete *my_own;
+                      }
+                    }
+                    break;
+                  case 1: // note off
+                    for (iter_t i = my_ancillary_channels.begin(), l = my_ancillary_channels.end();
+                         i != l;
+                         ++i)
+                      (*i)->note_off();
+                    break;
+                  case 2: // fade
+                    for (iter_t i = my_ancillary_channels.begin(), l = my_ancillary_channels.end();
+                         i != l;
+                         ++i)
+                    {
+                      (*i)->fading = true;
+                      (*i)->fade_value = 1.0;
+                    }
+                    break;
+                  default:
+                    cerr << "Warning: argument meaning unspecified in effect S7"
+                      << hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+                }
+              }
+              else
+                cerr << "Ignoring pre-IT command: S7"
+                  << hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+              break;
             case 0x8: // set pan position
               if (module->stereo)
                 panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + info.low_nybble - 8);
               break;
-            case 0xA: // old ST panning
-              if (module->stereo)
-              {
-                if (info.low_nybble > 7)
-                  panning.from_s3m_pan(module->base_pan[unmapped_channel_number] - info.low_nybble);
-                else
-                  panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + info.low_nybble);
-              }
+            case 0xA: // old ST panning, IT set high offset
+              if (it_effects)
+                set_offset_high = info.low_nybble << 16;
+              else
+                if (module->stereo)
+                {
+                  if (info.low_nybble > 7)
+                    panning.from_s3m_pan(module->base_pan[unmapped_channel_number] - info.low_nybble);
+                  else
+                    panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + info.low_nybble);
+                }
               break;
             case 0xC: // note cut
               note_cut = true;
@@ -3495,6 +3851,7 @@ struct channel_MODULE : public channel
                 note_delay_frames = info.low_nybble;
                 delayed_note = &row;
                 current_sample = NULL;
+                current_sample_context = NULL;
               }
               break;
             case 0xE: // pattern delay
@@ -3502,7 +3859,7 @@ struct channel_MODULE : public channel
               break;
             default:
               cerr << "Unimplemented S3M/IT command: " << row.effect.command
-                << setfill('0') << setw(2) << hex << uppercase << info.data << nouppercase << dec << endl;
+                << setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
           }
           break;
         case 'U': // fine vibrato
@@ -3523,7 +3880,7 @@ struct channel_MODULE : public channel
             else
               vibrato_depth = info.low_nybble * (255.0 / 128.0);
 
-            if (it_effects)
+            if (it_new_effects)
               vibrato_depth *= 0.5;
 
             double new_vibrato_cycle_frequency = (module->speed * info.high_nybble) / 64.0;
@@ -3627,9 +3984,15 @@ struct channel_MODULE : public channel
     original_intensity = intensity;
     target_volume = -1;
     volume = channel_volume;
-    it_effects = module->it_module_effects;
+    it_effects = module->it_module;
+    it_new_effects = module->it_module_new_effects;
     it_portamento_link = module->it_module_portamento_link;
     it_linear_slides = module->it_module_linear_slides;
+    set_offset_high = 0;
+  }
+
+  virtual ~channel_MODULE()
+  {
   }
 };
 
@@ -3665,38 +4028,33 @@ namespace DuplicateCheckAction
   };
 }
 
-vector<channel *> channels, ancillary_channels;
-typedef vector<channel *>::iterator iter_t;
-vector<iter_t> finished_ancillary_channels;
-
 struct channel_DYNAMIC : channel
 {
-  bool fading;
-  double fade_per_tick;
-
   virtual bool advance_pattern(one_sample &sample)
-  { // nothing to do here
-    if (fading)
-    {
-      intensity -= fade_per_tick;
-      if (intensity <= 0.0)
-        finished = true;
-    }
+  {
+    ticks_left = 1; // always have ticks left
+    rest_ticks = 0;
+    dropoff_start = 0;
+    finished = finished
+            || (fading && (fade_value <= 0.0))
+            || (current_sample == NULL)
+            || current_sample->past_end(offset_major, offset, current_sample_context);
     return false;
   }
 
-  channel_DYNAMIC(pan_value &initial_panning, sample *sample, sample_context *context, double frequency, double intensity, double fade_per_tick)
-    : channel(initial_panning, false)
+  channel_DYNAMIC(channel &spawner, sample *sample, sample_context *context, double fade_per_tick)
+    : channel(spawner.panning, false)
   {
-    fading = false;
-
     this->current_waveform = Waveform::Sample;
     this->current_sample = sample;
     this->current_sample_context = context;
-    this->note_frequency = frequency;
-    this->delta_offset_per_tick = frequency / ticks_per_second;
-    this->intensity = intensity;
+    this->note_frequency = spawner.note_frequency;
+    this->delta_offset_per_tick = spawner.note_frequency / ticks_per_second;
+    this->intensity = spawner.intensity;
     this->fade_per_tick = fade_per_tick;
+    this->offset_major = spawner.offset_major;
+    this->offset = spawner.offset;
+    this->samples_this_note = spawner.samples_this_note;
   }
 };
 
@@ -3729,6 +4087,7 @@ struct sample_instrument : sample
   NewNoteAction::Type new_note_action;
 
   sample *note_sample[120];
+  int tone_offset[120];
 
   instrument_envelope volume_envelope, panning_envelope, pitch_envelope;
 
@@ -3737,13 +4096,28 @@ struct sample_instrument : sample
   {
   }
 
-  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **context = NULL, double effect_tick_length = 0, bool top_level = true)
+  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **context = NULL, double effect_tick_length = 0, bool top_level = true, int *znote = NULL)
   {
     if (context == NULL)
       throw "need context for instrument";
 
-    if (new_note_action != NewNoteAction::Cut)
+    NewNoteAction::Type effective_nna = new_note_action;
+
+    if (r->effect.present && (r->effect.is('S', 7)))
     {
+      switch (r->effect.info.low_nybble)
+      {
+        case 3: effective_nna = NewNoteAction::Cut;          break;
+        case 4: effective_nna = NewNoteAction::ContinueNote; break;
+        case 5: effective_nna = NewNoteAction::NoteOff;      break;
+        case 6: effective_nna = NewNoteAction::NoteFade;     break;
+      }
+    }
+
+    if ((effective_nna != NewNoteAction::Cut) && (*context != NULL) && (p != NULL))
+    {
+      // TODO: duplicate checking
+
       double fade_per_tick;
 
       if (typeid(*(*context)->created_with) == typeid(sample_instrument))
@@ -3755,10 +4129,12 @@ struct sample_instrument : sample
           fade_ticks = dropoff_min_length;
         if (fade_ticks > dropoff_max_length)
           fade_ticks = dropoff_max_length;
-        fade_per_tick = p->intensity / fade_ticks;
+        fade_per_tick = 1.0 / fade_ticks;
       }
 
-      channel_DYNAMIC *ancillary = new channel_DYNAMIC(p->panning, (*context)->created_with, *context, p->note_frequency, p->intensity, fade_per_tick);
+      channel_DYNAMIC *ancillary;
+      
+      ancillary = new channel_DYNAMIC(*p, (*context)->created_with, *context, fade_per_tick);
 
       if (p->volume_envelope)
         ancillary->volume_envelope = new playback_envelope(*p->volume_envelope);
@@ -3767,19 +4143,21 @@ struct sample_instrument : sample
       if (p->pitch_envelope)
         ancillary->pitch_envelope = new playback_envelope(*p->pitch_envelope);
 
-      switch (new_note_action)
+      switch (effective_nna)
       {
         case NewNoteAction::ContinueNote:
           break;
         case NewNoteAction::NoteFade:
           ancillary->fading = true;
+          ancillary->fade_value = 1.0;
           break;
         case NewNoteAction::NoteOff:
-          (*context)->created_with->exit_sustain_loop(*context);
+          ancillary->note_off();
           break;
       }
 
       ancillary_channels.push_back(ancillary);
+      p->my_ancillary_channels.push_back(ancillary);
     }
     else if (*context)
     {
@@ -3794,40 +4172,79 @@ struct sample_instrument : sample
       *context = c;
       int inote = (r->snote >> 4) * 12 + (r->snote & 15);
       c->cur_sample = note_sample[inote];
+      c->cur_sample_context = NULL;
+      (*znote) += tone_offset[inote];
 
-      if (top_level)
+      if (c->cur_sample != NULL)
       {
-        if (volume_envelope.enabled)
-          p->volume_envelope = new playback_envelope(volume_envelope, effect_tick_length);
-        else
-          p->volume_envelope = NULL;
+        if (p != NULL)
+        {
+          if (top_level)
+          {
+            if (p->volume_envelope != NULL)
+            {
+              delete p->volume_envelope;
+              p->volume_envelope = NULL;
+            }
+            if (volume_envelope.enabled)
+            {
+              p->volume_envelope = new playback_envelope(volume_envelope, effect_tick_length);
+              p->volume_envelope->begin_note();
+            }
 
-        if (panning_envelope.enabled)
-          p->panning_envelope = new playback_envelope(panning_envelope, effect_tick_length);
-        else
-          p->panning_envelope = NULL;
+            if (p->panning_envelope != NULL)
+            {
+              delete p->panning_envelope;
+              p->panning_envelope = NULL;
+            }
+            if (panning_envelope.enabled)
+            {
+              p->panning_envelope = new playback_envelope(panning_envelope, effect_tick_length);
+              p->panning_envelope->begin_note();
+            }
 
-        if (pitch_envelope.enabled)
-          p->pitch_envelope = new playback_envelope(pitch_envelope, effect_tick_length);
-        else
-          p->pitch_envelope = NULL;
+            if (p->pitch_envelope != NULL)
+            {
+              delete p->pitch_envelope;
+              p->pitch_envelope = NULL;
+            }
+            if (pitch_envelope.enabled)
+            {
+              p->pitch_envelope = new playback_envelope(pitch_envelope, effect_tick_length);
+              p->pitch_envelope->begin_note();
+            }
+          }
+          else
+          {
+            if (volume_envelope.enabled)
+            {
+              p->volume_envelope = new playback_envelope(p->volume_envelope, volume_envelope, effect_tick_length, true);
+              p->volume_envelope->begin_note(false);
+            }
+
+            if (panning_envelope.enabled)
+            {
+              p->panning_envelope = new playback_envelope(p->panning_envelope, panning_envelope, effect_tick_length, false);
+              p->panning_envelope->begin_note(false);
+            }
+
+            if (pitch_envelope.enabled)
+            {
+              p->pitch_envelope = new playback_envelope(p->pitch_envelope, pitch_envelope, effect_tick_length, false);
+              p->pitch_envelope->begin_note(false);
+            }
+          }
+        }
+
+        c->cur_sample->begin_new_note(r, p, &c->cur_sample_context, effect_tick_length, false, znote);
+        c->samples_per_second = c->cur_sample_context->samples_per_second;
+        c->default_volume = c->cur_sample_context->default_volume;
+        c->num_samples = c->cur_sample_context->num_samples;
       }
-      else
-      {
-        if (volume_envelope.enabled)
-          p->volume_envelope = new playback_envelope(p->volume_envelope, volume_envelope, effect_tick_length, true);
-
-        if (panning_envelope.enabled)
-          p->panning_envelope = new playback_envelope(p->panning_envelope, panning_envelope, effect_tick_length, false);
-
-        if (pitch_envelope.enabled)
-          p->pitch_envelope = new playback_envelope(p->pitch_envelope, pitch_envelope, effect_tick_length, false);
-      }
-
-      c->cur_sample->begin_new_note(r, p, &c->cur_sample_context, effect_tick_length, false);
     }
 
-    p->samples_this_note = 0;
+    if (p != NULL)
+      p->samples_this_note = 0;
   }
 
   virtual void kill_note(sample_context *c = NULL)
@@ -3837,9 +4254,11 @@ struct sample_instrument : sample
 
     sample_instrument_context &context = *(sample_instrument_context *)c;
 
-    context.cur_sample->kill_note(context.cur_sample_context);
-
-    context.cur_sample = NULL; // doesn't get much more killed than this
+    if (context.cur_sample != NULL)
+    {
+      context.cur_sample->kill_note(context.cur_sample_context);
+      context.cur_sample = NULL; // doesn't get much more killed than this
+    }
   }
 
   virtual void exit_sustain_loop(sample_context *c = NULL)
@@ -3849,9 +4268,25 @@ struct sample_instrument : sample
 
     sample_instrument_context &context = *(sample_instrument_context *)c;
 
-    context.cur_sample->exit_sustain_loop(context.cur_sample_context);
+    if (context.cur_sample != NULL)
+    {
+      context.cur_sample->exit_sustain_loop(context.cur_sample_context);
 
-    context.sustain_loop_state = SustainLoopState::Finishing;
+      context.sustain_loop_state = SustainLoopState::Finishing;
+    }
+  }
+
+  virtual bool past_end(int sample, double offset, sample_context *c = NULL)
+  {
+    if (c == NULL)
+      throw "need context for instrument";
+
+    sample_instrument_context &context = *(sample_instrument_context *)c;
+
+    if (context.cur_sample != NULL)
+      return context.cur_sample->past_end(sample, offset, c);
+    else
+      return true;
   }
 
   virtual one_sample get_sample(int sample, double offset, sample_context *c = NULL)
@@ -3864,7 +4299,7 @@ struct sample_instrument : sample
     one_sample ret(output_channels);
     
     if (context.cur_sample != NULL)
-      ret = context.cur_sample->get_sample(sample, offset);
+      ret = global_volume * context.cur_sample->get_sample(sample, offset, context.cur_sample_context);
 
     return ret;
   }
@@ -4306,7 +4741,6 @@ int main(int argc, char *argv[])
   {
     one_sample sample(output_channels);
     int count = 0;
-    bool finished_channels_exist = false;
 
     for (iter_t i = channels.begin(), l = channels.end();
          i != l;
@@ -4319,35 +4753,23 @@ int main(int argc, char *argv[])
       count++;
     }
 
-    for (iter_t i = ancillary_channels.begin(), l = ancillary_channels.end();
-         i != l;
-         ++i)
+    for (int i = ancillary_channels.size() - 1; i >= 0; i--)
     {
-      if ((*i)->finished)
+      channel &chan = *ancillary_channels[i];
+
+      if (chan.finished)
       {
-        finished_channels_exist = true;
-        finished_ancillary_channels.push_back(i);
+        delete &chan;
+        ancillary_channels.erase(ancillary_channels.begin() + i);
         continue;
       }
 
-      sample += (*i)->calculate_next_tick();
+      sample += chan.calculate_next_tick();
       count++;
     }
 
     if (count == 0)
       break;
-
-    if (finished_channels_exist)
-    {
-      finished_channels_exist = false;
-      
-      for (vector<iter_t>::iterator i = finished_ancillary_channels.begin(), l = finished_ancillary_channels.end();
-           i != l;
-           ++i)
-        ancillary_channels.erase(*i);
-
-      finished_ancillary_channels.clear();
-    }
 
     sample *= global_volume;
 

@@ -71,6 +71,7 @@ struct it_instrument_description
   NewNoteAction::Type new_note_action;
 
   int note_sample[120];
+  int tone_offset[120];
 
   it_envelope_description volume_envelope, pan_envelope, pitch_envelope;
 };
@@ -139,6 +140,7 @@ void load_it_old_instrument(ifstream *file, it_instrument_description &desc, int
   file->ignore(6);
 
   unsigned char instrument_for_note[120] = { 0 }; // empty array
+  int note_difference[120] = { 0 }; // empty
 
   for (int i=0; i<120; i++)
   {
@@ -147,8 +149,8 @@ void load_it_old_instrument(ifstream *file, it_instrument_description &desc, int
     file->read((char *)&note, 1);
     file->read((char *)&instrument, 1);
 
-    if (note < 120)
-      instrument_for_note[note] = instrument;
+    instrument_for_note[i] = instrument;
+    note_difference[i] = note - i;
   }
 
   char rendered_volume_envelope[200];
@@ -183,7 +185,10 @@ void load_it_old_instrument(ifstream *file, it_instrument_description &desc, int
   desc.duplicate_check_action = DuplicateCheckAction::Cut;
 
   for (int i=0; i<120; i++)
+  {
     desc.note_sample[i] = instrument_for_note[i];
+    desc.tone_offset[i] = note_difference[i];
+  }
 
   desc.volume_envelope.enabled = instrument_flags.use_volume_envelope();
   desc.volume_envelope.looping = instrument_flags.use_volume_loop();
@@ -251,8 +256,8 @@ void load_it_new_instrument_envelope(ifstream *file, it_envelope_description &de
 
   desc.loop_start_node = loop_begin;
   desc.loop_end_node = loop_end;
-  desc.sustain_loop_start_node = loop_begin;
-  desc.sustain_loop_end_node = loop_end;
+  desc.sustain_loop_start_node = sustain_loop_begin;
+  desc.sustain_loop_end_node = sustain_loop_end;
 
   desc.envelope = nodes;
 }
@@ -315,6 +320,7 @@ void load_it_new_instrument(ifstream *file, it_instrument_description &desc, int
   midi_bank = from_lsb2_u(lsb_bytes);
 
   unsigned char instrument_for_note[120] = { 0 }; // empty array
+  int note_difference[120] = { 0 }; // empty
 
   for (int i=0; i<120; i++)
   {
@@ -323,8 +329,8 @@ void load_it_new_instrument(ifstream *file, it_instrument_description &desc, int
     file->read((char *)&note, 1);
     file->read((char *)&instrument, 1);
 
-    if (note < 120)
-      instrument_for_note[note] = instrument;
+    instrument_for_note[i] = instrument;
+    note_difference[i] = note - i;
   }
 
   it_envelope_description volume_envelope, pan_envelope, pitch_envelope;
@@ -352,7 +358,10 @@ void load_it_new_instrument(ifstream *file, it_instrument_description &desc, int
   desc.duplicate_check_action = (DuplicateCheckAction::Type)duplicate_check_action;
 
   for (int i=0; i<120; i++)
+  {
     desc.note_sample[i] = instrument_for_note[i];
+    desc.tone_offset[i] = note_difference[i];
+  }
 
   desc.volume_envelope = volume_envelope;
   desc.pan_envelope = pan_envelope;
@@ -550,7 +559,7 @@ void load_it_sample_uncompressed(ifstream *file, int channels, long sample_lengt
     }
 }
 
-sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int *volume)
+sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
 {
   bool new_format = cwt.compatible_exceeds(2.15);
 
@@ -641,8 +650,6 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
   if (flags.sustain_loop() == false)
     susloop_end = -1; // special value to mean 'no loop'
 
-  *volume = global_volume;
-
   file->seekg(sample_pointer);
 
   if (flags.compressed())
@@ -667,6 +674,7 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
       }
 
       ret = new sample_builtintype<signed short>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
+      ((sample_builtintype<signed short> *)ret)->default_volume = default_volume / 64.0;
     }
     else
     {
@@ -682,6 +690,7 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
       }
 
       ret = new sample_builtintype<signed char>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
+      ((sample_builtintype<signed char> *)ret)->default_volume = default_volume / 64.0;
     }
   }
   else
@@ -691,12 +700,14 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
       signed short *data[MAX_CHANNELS];
       load_it_sample_uncompressed<signed short>(file, channels, sample_length, conversion, data);
       ret = new sample_builtintype<signed short>(i, channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
+      ((sample_builtintype<signed short> *)ret)->default_volume = default_volume / 64.0;
     }
     else
     {
       signed char *data[MAX_CHANNELS];
       load_it_sample_uncompressed<signed char>(file, channels, sample_length, conversion, data);
       ret = new sample_builtintype<signed char>(i, channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
+      ((sample_builtintype<signed char> *)ret)->default_volume = default_volume / 64.0;
     }
   }
 
@@ -746,10 +757,10 @@ int snote_from_inote(int inote)
     return (octave << 4) | note;
   }
 
-  if (inote = 254)
+  if (inote == 254)
     return -2;
 
-  if (inote = 255)
+  if (inote == 255)
     return -3;
 
   return -1; // oh well, just ignore it, I guess
@@ -809,15 +820,15 @@ void load_it_pattern(ifstream *file, pattern &p, vector<sample *> &samps, bool h
       it_pattern_slot &c = cur_row[channel], &l = last_row[channel];
 
       if (mask.has_note())
-        c.note = *(data++);
+        c.note = (unsigned char)*(data++);
       if (mask.has_instrument())
         c.instrument = *(data++);
       if (mask.has_volume_panning())
         c.volume_panning = *(data++);
       if (mask.has_effect())
       {
-        c.effect_command = (unsigned)*(data++);
-        c.effect_data = (unsigned)*(data++);
+        c.effect_command = (unsigned char)*(data++);
+        c.effect_data = (unsigned char)*(data++);
       }
       if (mask.use_last_note())
         c.note = l.note;
@@ -901,7 +912,7 @@ void load_it_pattern(ifstream *file, pattern &p, vector<sample *> &samps, bool h
       r.effect = effect_struct(effect_type_it, char(c.effect_command), c.effect_data);
 
       if (r.effect.present)
-        has_note_events[channel];
+        has_note_events[channel] = true;
     }
 
     for (int i=0; i<64; i++)
@@ -942,9 +953,9 @@ void load_it_convert_envelope(instrument_envelope &target, it_envelope_descripti
 
 module_struct *load_it(ifstream *file, bool modplug_style = false)
 {       // 12345678901234567890123456789012345678901234567890123456789012345678901234567890
-  cerr << "Sorry the IT loader takes so long! It's something to do with I'm not sure what" << endl
-       << "the bottleneck is, but it's somewhere inside of the pattern loading. I made a" << endl
-       << "progress indicator to distract you from the wait :-)" << endl << endl;
+  cerr << "Sorry the IT loader takes so long! It's something to do with pattern loading," << endl
+       << "but I'm not sure what exactly the bottleneck is. I made a progress indicator to" << endl
+       << "distract you from the wait :-)" << endl << endl;
 
   char magic[4];
   file->read(magic, 4);
@@ -1069,17 +1080,59 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
   }
 
   vector<sample *> samps;
-  map<sample *,int> samp_vols;
 
   for (int i=0; i<num_samples; i++)
   {
     file->seekg(sample_header_offset[i]);
-    
-    int volume;
-    sample *smp = load_it_sample(file, i, cwt, &volume);
-
+    sample *smp = load_it_sample(file, i, cwt);
     samps.push_back(smp);
-    samp_vols[smp] = volume;
+  }
+
+  int channels = flags.stereo() ? 2 : 1;
+
+  if (flags.use_instruments()) // this conversion MUST be done before loading patterns
+  {
+    vector<sample *> instruments;
+
+    for (int i=0; i<num_instruments; i++)
+    {
+      it_instrument_description &id = insts[i];
+      
+      sample_instrument *is = new sample_instrument(i);
+
+      is->global_volume = id.global_volume;
+      is->default_pan.set_channels(channels).from_linear_pan(id.default_pan, 0, 64);
+      is->use_default_pan = id.use_default_pan;
+
+      is->pitch_pan_center = id.pitch_pan_center;
+      is->pitch_pan_separation = id.pitch_pan_separation;
+
+      is->volume_variation_pctg = id.volume_variation_pctg;
+      is->panning_variation = id.panning_variation;
+
+      is->fade_out = id.fade_out;
+
+      is->duplicate_note_check = id.duplicate_note_check;
+      is->duplicate_check_action = id.duplicate_check_action;
+      is->new_note_action = id.new_note_action;
+
+      for (int i=0; i<120; i++)
+      {
+        is->tone_offset[i] = id.tone_offset[i];
+        if (id.note_sample[i])
+          is->note_sample[i] = samps[id.note_sample[i] - 1];
+        else
+          is->note_sample[i] = NULL;
+      }
+
+      load_it_convert_envelope(is->volume_envelope, id.volume_envelope);
+      load_it_convert_envelope(is->panning_envelope, id.pan_envelope);
+      load_it_convert_envelope(is->pitch_envelope, id.pitch_envelope);
+
+      instruments.push_back(is);
+    }
+
+    samps = instruments;
   }
 
   vector<pattern> pats;
@@ -1097,50 +1150,6 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
   }
   cerr << endl << endl;
 
-  int channels = flags.stereo() ? 2 : 1;
-
-  if (flags.use_instruments())
-  {
-    vector<sample *> instruments;
-
-    for (int i=0; i<num_instruments; i++)
-    {
-      it_instrument_description &id = insts[i];
-      
-      sample_instrument *is = new sample_instrument(i);
-
-      is->global_volume = id.global_volume / 128.0;
-      is->default_pan.set_channels(channels).from_linear_pan(id.default_pan, 0, 64);
-      is->use_default_pan = id.use_default_pan;
-
-      is->pitch_pan_center = id.pitch_pan_center;
-      is->pitch_pan_separation = id.pitch_pan_separation;
-
-      is->volume_variation_pctg = id.volume_variation_pctg;
-      is->panning_variation = id.panning_variation;
-
-      is->fade_out = id.fade_out;
-
-      is->duplicate_note_check = id.duplicate_note_check;
-      is->duplicate_check_action = id.duplicate_check_action;
-      is->new_note_action = id.new_note_action;
-
-      for (int i=0; i<120; i++)
-        if (id.note_sample[i])
-          is->note_sample[i] = samps[i - 1];
-        else
-          is->note_sample[i] = NULL;
-
-      load_it_convert_envelope(is->volume_envelope, id.volume_envelope);
-      load_it_convert_envelope(is->panning_envelope, id.pan_envelope);
-      load_it_convert_envelope(is->pitch_envelope, id.pitch_envelope);
-
-      instruments.push_back(is);
-    }
-
-    samps = instruments;
-  }
-
   module_struct *ret = new module_struct();
 
   ret->name = songname;
@@ -1149,7 +1158,6 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
 
   ret->patterns = pats;
   ret->samples = samps;
-  ret->sample_volume = samp_vols;
 
   for (int i=0; i<order_list_length; i++)
   {
@@ -1191,7 +1199,7 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
   ret->tempo = settings.initial_tempo;
 
   ret->it_module = true;
-  ret->it_module_effects = !flags.old_effects();
+  ret->it_module_new_effects = !flags.old_effects();
   ret->it_module_portamento_link = flags.portamento_memory_link();
   ret->it_module_linear_slides = flags.linear_slides();
 

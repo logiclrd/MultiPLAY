@@ -274,10 +274,10 @@ reinterpret:
     }
 
     smp->sample_data[0] = new signed char[smp->num_samples];
-
     file->read((char *)&smp->sample_data[0][0], smp->num_samples);
 
     smp->samples_per_second = mod_finetune[8 ^ sample_description[i].finetune];
+    smp->default_volume = sample_description[i].volume / 64.0;
   }
 
   module_struct *ret = new module_struct();
@@ -286,9 +286,6 @@ reinterpret:
   ret->num_channels = num_channels;
   ret->speed = 6;
   ret->tempo = 125;
-
-  for (int i=0; i<num_samples; i++)
-    ret->sample_volume[samps[i]] = sample_description[i].volume;
 
   ret->stereo = true;
 

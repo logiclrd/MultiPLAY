@@ -202,7 +202,6 @@ module_struct *load_s3m(ifstream *file)
       default_panning_value[i].default_specified(false);
 
   vector<sample *> samps;
-  map<sample *, int> samp_vols;
 
   for (int i=0; i<num_samples; i++)
   {
@@ -328,6 +327,7 @@ module_struct *load_s3m(ifstream *file)
           smp->loop_begin = loop_begin;
           smp->loop_end = loop_end - 1;
         }
+        smp->default_volume = volume / 64.0;
 
         samps.push_back(smp);
       }
@@ -373,6 +373,7 @@ module_struct *load_s3m(ifstream *file)
           smp->loop_begin = loop_begin;
           smp->loop_end = loop_end - 1;
         }
+        smp->default_volume = volume / 64.0;
 
         samps.push_back(smp);
       }
@@ -422,6 +423,7 @@ module_struct *load_s3m(ifstream *file)
           smp->loop_begin = loop_begin;
           smp->loop_end = loop_end - 1;
         }
+        smp->default_volume = volume / 64.0;
 
         samps.push_back(smp);
       }
@@ -455,12 +457,11 @@ module_struct *load_s3m(ifstream *file)
           smp->loop_begin = loop_begin;
           smp->loop_end = loop_end - 1;
         }
+        smp->default_volume = volume / 64.0;
 
         samps.push_back(smp);
       }
     }
-
-    samp_vols[samps.back()] = volume;
   }
 
   vector<pattern> pats;
@@ -535,7 +536,6 @@ module_struct *load_s3m(ifstream *file)
 
   ret->patterns = pats;
   ret->samples = samps;
-  ret->sample_volume = samp_vols;
 
   for (int i=0; i<pattern_list_length; i++)
   {

@@ -206,6 +206,8 @@ module_struct *load_mtm(ifstream *file)
 
       smp->samples_per_second = mod_finetune[8 ^ sample_description[i].finetune];
 
+      smp->default_volume = sample_description[i].default_volume / 64.0;
+
       samps.push_back(smp);
 
       if (sample_description[i].byte_length & 1)
@@ -238,6 +240,8 @@ module_struct *load_mtm(ifstream *file)
       smp->sample_data[0] = data_sgn;
 
       smp->samples_per_second = mod_finetune[8 ^ sample_description[i].finetune];
+
+      smp->default_volume = sample_description[i].default_volume / 64.0;
 
       samps.push_back(smp);
     }
@@ -295,10 +299,6 @@ module_struct *load_mtm(ifstream *file)
   ret->num_channels = 32;
   ret->speed = 6;
   ret->tempo = 125;
-
-  for (int i=0; i<num_samples; i++)
-    ret->sample_volume[samps[i]] = sample_description[i].default_volume;
-
   ret->stereo = true;
 
   for (int i=0; i<32; i++)

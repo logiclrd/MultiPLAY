@@ -401,7 +401,7 @@ struct it_sample_conversion_flags
 template <class T>
 T *load_it_sample_compressed(ifstream *file, long sample_length, bool double_delta)
 {
-  int max_bit_width = sizeof(T) * 8 + 1, bits_to_store_bit_width = int(log(max_bit_width - 1) / log(2.0));
+  int max_bit_width = sizeof(T) * 8 + 1, bits_to_store_bit_width = int(lg(max_bit_width - 1));
   unsigned char lsb_bytes[2];
 
   int delta2, delta3;
@@ -646,9 +646,9 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
   int channels = flags.stereo() ? 2 : 1;
 
   if (flags.looping() == false)
-    loop_end = -1; // special value to mean 'no loop'
+    loop_end = 0xFFFFFFFF; // special value to mean 'no loop'
   if (flags.sustain_loop() == false)
-    susloop_end = -1; // special value to mean 'no loop'
+    susloop_end = 0xFFFFFFFF; // special value to mean 'no loop'
 
   file->seekg(sample_pointer);
 
@@ -935,20 +935,22 @@ void load_it_pattern(ifstream *file, pattern &p, vector<sample *> &samps, bool h
 void load_it_convert_envelope(instrument_envelope &target, it_envelope_description &source)
 {
   target.enabled = source.enabled;
-
-  if (target.enabled)
+  target.looping = source.looping;
+  if (target.looping)
   {
-    target.looping = source.looping;
     target.loop_begin_tick = source.envelope[source.loop_start_node].tick;
     target.loop_end_tick = source.envelope[source.loop_end_node].tick;
+  }
 
-    target.sustain_loop = source.sustain_loop;
+  target.sustain_loop = source.sustain_loop;
+  if (target.sustain_loop)
+  {
     target.sustain_loop_begin_tick = source.envelope[source.sustain_loop_start_node].tick;
     target.sustain_loop_end_tick = source.envelope[source.sustain_loop_end_node].tick;
-
-    for (int i=0; i < int(source.envelope.size()); i++)
-      target.node.push_back(instrument_envelope_node(source.envelope[i].tick, source.envelope[i].yValue));
   }
+
+  for (int i=0; i < int(source.envelope.size()); i++)
+    target.node.push_back(instrument_envelope_node(source.envelope[i].tick, source.envelope[i].yValue));
 }
 
 module_struct *load_it(ifstream *file, bool modplug_style = false)

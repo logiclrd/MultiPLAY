@@ -1,6 +1,6 @@
 #include <signal.h>
 
-void unix_break_handler()
+void unix_break_handler(int signal)
 {
   cerr << "Caught Break...shutting down." << endl;
   start_shutdown();
@@ -8,5 +8,5 @@ void unix_break_handler()
 
 void register_break_handler()
 {
-  sigset(SIGINT, unix_break_handler);
+  signal(SIGINT, unix_break_handler);
 }

@@ -1,13 +1,21 @@
 #ifndef __BIT_MEMORY_STREAM_H__
 #define __BIT_MEMORY_STREAM_H__
 
+#include <locale>
+
 const unsigned int bit_value[]
   = { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536,
       131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216, 33554432,
-      67108864, 134217728, 268435456, 536870912, 1073741824, 2147483648 };
+      67108864, 134217728, 268435456, 536870912, 1073741824, 2147483648U };
 
 struct bit_memory_stream
 {
+#ifdef _HAS
+  typedef ios_base::seek_dir seek_dir;
+#else
+  typedef ios_base::seekdir seek_dir;
+#endif
+
   char *memory;
   long bits;
 
@@ -29,7 +37,7 @@ struct bit_memory_stream
     return index;
   }
 
-  void seekg(long offset, ios_base::seek_dir dir = ios::beg)
+  void seekg(long offset, seek_dir dir = ios::beg)
   {
     long base;
 

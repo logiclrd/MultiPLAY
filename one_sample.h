@@ -86,6 +86,17 @@ struct pan_value
     return (T)(middle + half_range * value);
   }
 
+  inline void to_surround_sound()
+  {
+    sample_scale[0] = 1.0;
+    if (num_scales > 0)
+    {
+      sample_scale[1] = -1.0;
+      for (int i=2; i<num_scales; i++)
+        sample_scale[i] = 0.0;
+    }
+  }
+
   inline void from_s3m_pan(int pan_value)
   { // pan_value 0 == left, pan_value 15 == right
     if (num_scales == 1)
@@ -110,15 +121,7 @@ struct pan_value
     if (pan_value > 0x80)
     {
       if (pan_value == 0xA4)
-      {
-        sample_scale[0] = 1.0;
-        if (num_scales > 0)
-        {
-          sample_scale[1] = -1.0;
-          for (int i=2; i<num_scales; i++)
-            sample_scale[i] = 0.0;
-        }
-      }
+        to_surround_sound();
       else
         cerr << "Amiga pan of value "
           << setfill('0') << setw(2) << hex << uppercase << pan_value << nouppercase << dec

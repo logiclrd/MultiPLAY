@@ -63,7 +63,8 @@ sdl_mutex_lock::sdl_mutex_lock(sdl_mutex_lock &other) {} // private (unavailable
 
 sdl_mutex_lock_release sdl_mutex_lock::temp_release()
 {
-  return sdl_mutex_lock_release(this);
+  sdl_mutex_lock_release temp(this);
+  return temp;
 }
 
 void sdl_mutex_lock::release()
@@ -207,7 +208,7 @@ inline void emit_sdl_byte(unsigned char byte)
       }
 
       {
-        sdl_mutex_lock_release release(lock.temp_release());
+        sdl_mutex_lock_release release(&lock);
         sdl_mutex_lock lock(sdl_silly_lock);
         SDL_CondWait(sdl_buffer_available_event, sdl_buffer_lock);
       } // ~sdl_mutex_lock, ~sdl_mutex_lock_release
@@ -282,7 +283,7 @@ inline void emit_sample_to_sdl_buffer(one_sample &sample)
     switch (sdl_audio_spec.format)
     {
       case AUDIO_U8:
-        emit_sdl_byte(unsigned char(128 + s * 127));
+        emit_sdl_byte(static_cast<unsigned char>(128 + s * 127));
         break;
       case AUDIO_S8:
         char s8;
@@ -296,14 +297,14 @@ inline void emit_sample_to_sdl_buffer(one_sample &sample)
 #endif
         unsigned short u16;
         
-        u16 = unsigned short(32768 + s * 32767);
+        u16 = static_cast<unsigned short>(32768 + s * 32767);
         
         emit_sdl_byte(u16 & 0xFF);
         emit_sdl_byte(u16 >> 8);
 
         break;
       case AUDIO_U16MSB:
-        u16 = unsigned short(32768 + s * 32767);
+        u16 = static_cast<unsigned short>(32768 + s * 32767);
         
         emit_sdl_byte(u16 >> 8);
         emit_sdl_byte(u16 & 0xFF);

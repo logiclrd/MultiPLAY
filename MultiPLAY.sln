@@ -1,0 +1,47 @@
+Microsoft Visual Studio Solution File, Format Version 7.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MultiPLAY", "MultiPLAY.vcproj", "{828DC06A-7E14-4146-A5FF-227E7F578218}"
+EndProject
+Global
+	GlobalSection(SourceCodeControl) = preSolution
+		SccNumberOfProjects = 2
+		SccProjectName0 = \u0022$/MultiPLAY\u0022,\u0020ICAAAAAA
+		SccLocalPath0 = .
+		SccProvider0 = MSSCCI:Microsoft\u0020Visual\u0020SourceSafe
+		CanCheckoutShared = false
+		SolutionUniqueID = {DE1821F7-27D1-40A6-8A29-92C046244C7A}
+		SccProjectUniqueName1 = MultiPLAY.vcproj
+		SccLocalPath1 = .
+		CanCheckoutShared = false
+	EndGlobalSection
+	GlobalSection(SolutionConfiguration) = preSolution
+		ConfigName.0 = Debug
+		ConfigName.1 = Debug DirectX
+		ConfigName.2 = Debug SDL
+		ConfigName.3 = Release
+		ConfigName.4 = Release All
+		ConfigName.5 = Release DirectX
+		ConfigName.6 = Release SDL
+	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Debug.ActiveCfg = Debug|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Debug.Build.0 = Debug|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Debug DirectX.ActiveCfg = Debug DirectX|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Debug DirectX.Build.0 = Debug DirectX|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Debug SDL.ActiveCfg = Debug SDL|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Debug SDL.Build.0 = Debug SDL|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Release.ActiveCfg = Release|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Release.Build.0 = Release|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Release All.ActiveCfg = Release All|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Release All.Build.0 = Release All|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Release DirectX.ActiveCfg = Release DirectX|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Release DirectX.Build.0 = Release DirectX|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Release SDL.ActiveCfg = Release SDL|Win32
+		{828DC06A-7E14-4146-A5FF-227E7F578218}.Release SDL.Build.0 = Release SDL|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

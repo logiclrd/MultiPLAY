@@ -205,7 +205,7 @@ struct one_sample
   double sample[MAX_CHANNELS];
   int num_samples, cur_sample;
 
-  inline one_sample(int channels)
+  inline one_sample(int channels = MAX_CHANNELS)
   {
     if (channels > MAX_CHANNELS)
       throw "Too many channels in one_sample initialization";
@@ -320,6 +320,19 @@ struct one_sample
 
     for (int i=0; i<num_samples; i++)
       ret.sample[i] = sample[i] * scale;
+
+    return ret;
+  }
+
+  inline one_sample operator +(const one_sample &other) const
+  {
+    one_sample ret(other);
+
+    if (ret.num_samples != num_samples)
+      ret.set_channels(num_samples);
+
+    for (int i=0; i<num_samples; i++)
+      ret.sample[i] += sample[i];
 
     return ret;
   }

@@ -339,13 +339,18 @@ inline void emit_sample_to_sdl_buffer(one_sample &sample)
 void shutdown_sdl()
 {
   sdl_shutting_down = true;
-  
-  SDL_mutexV(sdl_buffer_lock); // needed for some reason, dunno why. it's unlocked everywhere else.
 
+  if (sdl_playing)
   {
-    sdl_mutex_lock lock(sdl_silly_lock);
-    SDL_CondWait(sdl_finished_event, sdl_silly_lock);
-  } // ~sdl_mutex_lock
+    SDL_mutexV(sdl_buffer_lock); // needed for some reason, dunno why. it's unlocked everywhere else.
+
+    {
+      sdl_mutex_lock lock(sdl_silly_lock);
+      SDL_CondWait(sdl_finished_event, sdl_silly_lock);
+    } // ~sdl_mutex_lock
+    
+    sdl_playing = false;
+  }
 
   SDL_CloseAudio();
 

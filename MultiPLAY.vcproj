@@ -367,6 +367,9 @@
 				RelativePath="one_sample.h">
 			</File>
 			<File
+				RelativePath="uLaw-aLaw.h">
+			</File>
+			<File
 				RelativePath="unix_break_handler.h">
 			</File>
 			<File
@@ -388,6 +391,9 @@
 					RelativePath="Load_S3M.h">
 				</File>
 				<File
+					RelativePath="Load_Sample.h">
+				</File>
+				<File
 					RelativePath="Load_XM.h">
 				</File>
 			</Filter>
@@ -399,6 +405,19 @@
 				</File>
 				<File
 					RelativePath="Output-SDL.h">
+				</File>
+			</Filter>
+			<Filter
+				Name="Channels"
+				Filter="">
+				<File
+					RelativePath="Channel_DYNAMIC.h">
+				</File>
+				<File
+					RelativePath="Channel_MODULE.h">
+				</File>
+				<File
+					RelativePath="Channel_PLAY.h">
 				</File>
 			</Filter>
 		</Filter>

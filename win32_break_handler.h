@@ -7,7 +7,7 @@ BOOL __stdcall win32_break_handler(DWORD ctrl_code)
   if (ctrl_code == CTRL_CLOSE_EVENT)
     while (!shutdown_complete)
       Sleep(200);
-  return FALSE;
+  return TRUE;
 }
 
 void register_break_handler()

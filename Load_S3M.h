@@ -180,7 +180,7 @@ module_struct *load_s3m(ifstream *file)
   for (int i=0; i<num_samples; i++)
   {
     file->read((char *)&lsb_bytes[0], 2);
-    sample_parapointer[i] = from_lsb2(lsb_bytes);
+    sample_parapointer[i] = from_lsb2_u(lsb_bytes);
   }
 
   ArrayAllocator<unsigned short> pattern_parapointer_allocator(num_patterns);
@@ -188,7 +188,7 @@ module_struct *load_s3m(ifstream *file)
   for (int i=0; i<num_patterns; i++)
   {
     file->read((char *)&lsb_bytes[0], 2);
-    pattern_parapointer[i] = from_lsb2(lsb_bytes);
+    pattern_parapointer[i] = from_lsb2_u(lsb_bytes);
   }
 
   s3m_channel_default_pan default_panning_value[32];
@@ -206,7 +206,7 @@ module_struct *load_s3m(ifstream *file)
   for (int i=0; i<num_samples; i++)
   {
     file->seekg(sample_parapointer[i] * 16, ios::beg);
-    
+
     int type = file->get();
 
     if (type != 1)
@@ -222,7 +222,7 @@ module_struct *load_s3m(ifstream *file)
     file->ignore(1);
 
     file->read((char *)&lsb_bytes[0], 2);
-    int parapointer = from_lsb2(lsb_bytes);;
+    int parapointer = from_lsb2_u(lsb_bytes);;
 
     unsigned long length, loop_begin, loop_end;
 

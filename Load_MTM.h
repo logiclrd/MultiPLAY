@@ -174,13 +174,13 @@ module_struct *load_mtm(ifstream *file)
   {
     if (sample_description[i].byte_length == 0)
     {
-      samps.push_back(new sample_builtintype<signed char>(1));
+      samps.push_back(new sample_builtintype<signed char>(i, 1));
       continue;
     }
 
     if (sample_description[i].sixteen_bit)
     {
-      sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(1);
+      sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(i, 1);
 
       smp->num_samples = sample_description[i].byte_length >> 1;
 
@@ -216,7 +216,7 @@ module_struct *load_mtm(ifstream *file)
     }
     else
     {
-      sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(1);
+      sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(i, 1);
 
       smp->num_samples = sample_description[i].byte_length;
 

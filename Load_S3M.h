@@ -212,7 +212,7 @@ module_struct *load_s3m(ifstream *file)
 
     if (type != 1)
     {
-      samps.push_back(new sample_builtintype<char>(1));
+      samps.push_back(new sample_builtintype<char>(i, 1));
       continue;
     }
 
@@ -316,7 +316,7 @@ module_struct *load_s3m(ifstream *file)
           for (unsigned int i=0; i<length; i++)
             data_sgn[i] = (short)(int(data[i]) - 32768);
 
-        sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(flags.stereo() ? 2 : 1);
+        sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(i, flags.stereo() ? 2 : 1);
 
         smp->num_samples = length;
         smp->sample_data[0] = data_sgn;
@@ -361,7 +361,7 @@ module_struct *load_s3m(ifstream *file)
             data_right[j] = from_lsb2(uc_data_right + 2*j);
         }
 
-        sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(flags.stereo() ? 2 : 1);
+        sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(i, flags.stereo() ? 2 : 1);
 
         smp->num_samples = length;
         smp->sample_data[0] = data;
@@ -410,7 +410,7 @@ module_struct *load_s3m(ifstream *file)
           for (unsigned int i=0; i<length; i++)
             data_sgn[i] = (char)(int(data[i]) - 128);
 
-        sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(flags.stereo() ? 2 : 1);
+        sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(i, flags.stereo() ? 2 : 1);
 
         smp->num_samples = length;
         smp->sample_data[0] = data_sgn;
@@ -443,7 +443,7 @@ module_struct *load_s3m(ifstream *file)
         else
           file->read((char *)data, length);
 
-        sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(flags.stereo() ? 2 : 1);
+        sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(i, flags.stereo() ? 2 : 1);
 
         smp->num_samples = length;
         smp->sample_data[0] = data;

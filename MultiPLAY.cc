@@ -326,6 +326,8 @@ struct sample_context
 
 struct sample
 {
+  int index;
+
   int num_samples;
   double samples_per_second;
 
@@ -333,12 +335,12 @@ struct sample
   double vibrato_depth, vibrato_cycle_frequency; // frequency relative to samples with samples_per_second per second
 
   virtual one_sample get_sample(int sample, double offset, sample_context *c = NULL) = 0;
-  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0.0) = 0;
+  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0.0, bool top_level = true) = 0;
   virtual void exit_sustain_loop(sample_context *c = NULL) = 0; //..if it has one :-)
   virtual void kill_note(sample_context *c = NULL) = 0;
 
-  sample()
-    : use_vibrato(false)
+  sample(int idx)
+    : use_vibrato(false), index(idx + 1)
   {
   }
 };
@@ -380,7 +382,7 @@ struct sample_builtintype : public sample
 
   bool use_sustain_loop;
 
-  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0)
+  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0, bool top_level = true)
   {
     if (c == NULL)
       throw "need sample context";
@@ -390,7 +392,7 @@ struct sample_builtintype : public sample
 
     *c = new sample_builtintype_context(this);
 
-    sample_builtintype_context &context = *(sample_builtintype_context *)c;
+    sample_builtintype_context &context = *(sample_builtintype_context *)*c;
 
     if (use_sustain_loop) // reset sustain loop
       context.sustain_loop_state = SustainLoopState::Running;
@@ -400,6 +402,12 @@ struct sample_builtintype : public sample
     context.last_looped_sample = 0;
     context.sustain_loop_exit_difference = 0;
 
+    if (top_level)
+    {
+      p->volume_envelope = NULL;
+      p->panning_envelope = NULL;
+      p->pitch_envelope = NULL;
+    }
     p->samples_this_note = 0;
   }
 
@@ -512,10 +520,11 @@ struct sample_builtintype : public sample
     return ret.scale(sample_scale).set_channels(output_channels);
   }
 
-  sample_builtintype(int sample_channels,
+  sample_builtintype(int index, int sample_channels,
                      T **data = NULL, int num_samples = 0,
                      long loop_begin = 0, long loop_end = 0xFFFFFFFF,
                      long susloop_begin = 0, long susloop_end = 0xFFFFFFFF)
+    : sample(index)
   {
     switch (sizeof(T))
     {
@@ -648,7 +657,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
           {
             sample_builtintype<signed char> *smp;
 
-            smp = new sample_builtintype<signed char>(format_chunk.wChannels);
+            smp = new sample_builtintype<signed char>(0, format_chunk.wChannels);
 
             smp->num_samples = chunk.raw.chunkSize / format_chunk.wBlockAlign;
             smp->samples_per_second = format_chunk.dwSamplesPerSec;
@@ -676,7 +685,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
           {
             sample_builtintype<signed short> *smp;
 
-            smp = new sample_builtintype<signed short>(format_chunk.wChannels);
+            smp = new sample_builtintype<signed short>(0, format_chunk.wChannels);
 
             smp->num_samples = chunk.raw.chunkSize / format_chunk.wBlockAlign;
             smp->samples_per_second = format_chunk.dwSamplesPerSec;
@@ -703,7 +712,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
           {
             sample_builtintype<signed long> *smp;
 
-            smp = new sample_builtintype<signed long>(format_chunk.wChannels);
+            smp = new sample_builtintype<signed long>(0, format_chunk.wChannels);
 
             smp->num_samples = chunk.raw.chunkSize / format_chunk.wBlockAlign;
             smp->samples_per_second = format_chunk.dwSamplesPerSec;
@@ -731,7 +740,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
           {
             sample_builtintype<signed long> *smp;
 
-            smp = new sample_builtintype<signed long>(format_chunk.wChannels);
+            smp = new sample_builtintype<signed long>(0, format_chunk.wChannels);
 
             smp->num_samples = chunk.raw.chunkSize / format_chunk.wBlockAlign;
             smp->samples_per_second = format_chunk.dwSamplesPerSec;
@@ -758,7 +767,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
           {
             sample_builtintype<signed long> *smp;
 
-            smp = new sample_builtintype<signed long>(format_chunk.wChannels);
+            smp = new sample_builtintype<signed long>(0, format_chunk.wChannels);
 
             smp->num_samples = chunk.raw.chunkSize / format_chunk.wBlockAlign;
             smp->samples_per_second = format_chunk.dwSamplesPerSec;
@@ -856,7 +865,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
           {
             sample_builtintype<signed char> *smp;
 
-            smp = new sample_builtintype<signed char>(common_chunk.numChannels);
+            smp = new sample_builtintype<signed char>(0, common_chunk.numChannels);
 
             smp->num_samples = common_chunk.numSampleFrames;
             smp->samples_per_second = common_chunk.sampleRate.toDouble();
@@ -888,7 +897,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
           {
             sample_builtintype<signed short> *smp;
 
-            smp = new sample_builtintype<signed short>(common_chunk.numChannels);
+            smp = new sample_builtintype<signed short>(0, common_chunk.numChannels);
 
             smp->num_samples = common_chunk.numSampleFrames;
             smp->samples_per_second = common_chunk.sampleRate.toDouble();
@@ -920,7 +929,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
           {
             sample_builtintype<signed long> *smp;
 
-            smp = new sample_builtintype<signed long>(common_chunk.numChannels);
+            smp = new sample_builtintype<signed long>(0, common_chunk.numChannels);
 
             smp->num_samples = common_chunk.numSampleFrames;
             smp->samples_per_second = common_chunk.sampleRate.toDouble();
@@ -953,7 +962,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
           {
             sample_builtintype<signed long> *smp;
 
-            smp = new sample_builtintype<signed long>(common_chunk.numChannels);
+            smp = new sample_builtintype<signed long>(0, common_chunk.numChannels);
 
             smp->num_samples = common_chunk.numSampleFrames;
             smp->samples_per_second = common_chunk.sampleRate.toDouble();
@@ -987,7 +996,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
 
             sample_builtintype<signed long> *smp;
 
-            smp = new sample_builtintype<signed long>(common_chunk.numChannels);
+            smp = new sample_builtintype<signed long>(0, common_chunk.numChannels);
 
             smp->num_samples = common_chunk.numSampleFrames;
             smp->samples_per_second = common_chunk.sampleRate.toDouble();
@@ -1075,7 +1084,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
         for (int i=0; i<length; i++)
           data_sgn[i] = (signed char)(int(data[i]) - 128);
 
-      sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(1);
+      sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(0, 1);
 
       smp->num_samples = length;
       smp->sample_data[0] = data_sgn;
@@ -1124,7 +1133,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
         for (int i=0; i<length; i++)
           data_sgn[i] = (signed short)(int(data[i]) - 32768);
 
-      sample_builtintype<signed short > *smp = new sample_builtintype<signed short >(1);
+      sample_builtintype<signed short > *smp = new sample_builtintype<signed short >(0, 1);
 
       smp->num_samples = length >> 1;
       smp->sample_data[0] = data_sgn;
@@ -1179,7 +1188,7 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
         for (int i=0; i<length; i++)
           data_sgn[i] = (signed short)(int(data[i]) - 32768);
 
-      sample_builtintype<signed short > *smp = new sample_builtintype<signed short >(1);
+      sample_builtintype<signed short > *smp = new sample_builtintype<signed short >(0, 1);
 
       smp->num_samples = length >> 1;
       smp->sample_data[0] = data_sgn;
@@ -1191,6 +1200,160 @@ sample *sample_from_file(ifstream *file, sample_filetype filetype_hint = sample_
 
   throw "format was not recognized";
 }
+
+struct instrument_envelope_node
+{
+  int tick;
+  double value;
+
+  instrument_envelope_node(int t, double v)
+    : tick(t), value(v)
+  {
+  }
+};
+
+struct sustain_loop_position
+{
+  bool still_running;
+  double exit_diff;
+};
+
+struct instrument_envelope
+{
+  bool enabled, looping, sustain_loop;
+
+  int loop_begin_tick, loop_end_tick, sustain_loop_begin_tick, sustain_loop_end_tick;
+  double loop_length, sustain_loop_length; // to reduce conversions
+
+  vector<instrument_envelope_node> node;
+
+  instrument_envelope()
+  {
+    enabled = false;
+  }
+
+  void begin_sustain_loop(sustain_loop_position &susloop)
+  {
+    loop_length = loop_end_tick - loop_begin_tick + 1; // have to calc this somewhere
+    sustain_loop_length = sustain_loop_end_tick - sustain_loop_begin_tick + 1;
+
+    susloop.still_running = (sustain_loop == true); // for clarity
+  }
+
+  void exit_sustain_loop(double tick, sustain_loop_position &susloop)
+  {
+    if (susloop.still_running)
+    {
+      if (tick > sustain_loop_end_tick)
+      {
+        double repetitions = floor((tick - sustain_loop_begin_tick) / sustain_loop_length);
+        double new_tick = tick - repetitions * sustain_loop_length;
+        susloop.exit_diff = tick - new_tick;
+      }
+      else
+        susloop.exit_diff = 0.0;
+
+      susloop.still_running = false;
+    }
+  }
+
+  double get_value_at(double tick, sustain_loop_position &susloop)
+  {
+    if (susloop.still_running)
+    {
+      if (tick > sustain_loop_end_tick)
+      {
+        double repetitions = floor((tick - sustain_loop_begin_tick) / sustain_loop_length);
+        tick -= repetitions * sustain_loop_length;
+      }
+    }
+    else
+      tick -= susloop.exit_diff;
+
+    int idx = 0;
+    int l = node.size() - 1;
+
+    while (tick > node[idx].tick)
+    {
+      tick -= node[idx].tick;
+      idx++;
+
+      if (idx >= l)
+        return node[l].value;
+    }
+
+    double t = tick / node[idx + 1].tick;
+
+    return bilinear(node[idx].value, node[idx + 1].value, t);
+  }
+};
+
+struct playback_envelope
+{
+  instrument_envelope &env;
+  double sample_ticks_per_envelope_tick, envelope_ticks_per_sample_tick;
+  sustain_loop_position susloop;
+  playback_envelope *wrap;
+  bool scale;
+
+  playback_envelope(const playback_envelope &other)
+    : wrap(other.wrap ? new playback_envelope(*other.wrap) : NULL),
+      sample_ticks_per_envelope_tick(other.sample_ticks_per_envelope_tick),
+      envelope_ticks_per_sample_tick(other.envelope_ticks_per_sample_tick),
+      susloop(other.susloop), scale(other.scale), env(other.env)
+  {
+  }
+
+  playback_envelope(instrument_envelope &e, double ticks)
+    : wrap(NULL), env(e), sample_ticks_per_envelope_tick(ticks),
+      envelope_ticks_per_sample_tick(1.0 / ticks)
+  {
+  }
+
+  playback_envelope(playback_envelope *w, instrument_envelope &e, double ticks, bool scale_envelope)
+    : wrap(w), env(e), sample_ticks_per_envelope_tick(ticks),
+      envelope_ticks_per_sample_tick(1.0 / ticks), scale(scale_envelope)
+  {
+  }
+
+  void begin_note()
+  {
+    env.begin_sustain_loop(susloop);
+    if (wrap)
+      wrap->begin_note();
+  }
+
+  void note_off(double sample_offset)
+  {
+    double tick = sample_offset * envelope_ticks_per_sample_tick;
+    env.exit_sustain_loop(tick, susloop);
+    if (wrap)
+      wrap->note_off(sample_offset);
+  }
+
+  void note_off(long sample, double offset)
+  {
+    note_off(sample + offset);
+  }
+
+  double get_value_at(double sample_offset)
+  {
+    double tick = sample_offset * envelope_ticks_per_sample_tick;
+
+    if (!wrap)
+      return env.get_value_at(tick, susloop);
+
+    if (scale)
+      return env.get_value_at(tick, susloop) * wrap->get_value_at(sample_offset);
+    else
+      return env.get_value_at(tick, susloop) + wrap->get_value_at(sample_offset);
+  }
+
+  double get_value_at(long sample, double offset)
+  {
+    return get_value_at(sample + offset);
+  }
+};
 
 double global_volume = 1.0;
 vector<sample *> samples;
@@ -1211,6 +1374,7 @@ struct channel
   pan_value panning;
   one_sample return_sample;
   long samples_this_note;
+  playback_envelope *volume_envelope, *panning_envelope, *pitch_envelope;
 
   int tempo;
   int octave;
@@ -1284,6 +1448,19 @@ struct channel
     throw "no implementation for advance_pattern";
   }
 
+  void note_off()
+  {
+    if (current_sample != NULL)
+      current_sample->exit_sustain_loop(current_sample_context);
+
+    if (volume_envelope != NULL)
+      volume_envelope->note_off(offset_major, offset);
+    if (panning_envelope != NULL)
+      panning_envelope->note_off(offset_major, offset);
+    if (pitch_envelope != NULL)
+      pitch_envelope->note_off(offset_major, offset);
+  }
+
   one_sample &calculate_next_tick()
   {
     return_sample.clear(output_channels);
@@ -1341,18 +1518,39 @@ struct channel
             return_sample.clear(output_channels);
       }
 
-      if ((current_waveform == Waveform::Sample) && (current_sample->use_vibrato))
+      if (volume_envelope != NULL)
+        return_sample *= volume_envelope->get_value_at(offset_major, offset);
+
+      if (panning_envelope != NULL)
+        return_sample *= pan_value(panning_envelope->get_value_at(offset_major, offset));
+
+      if (pitch_envelope != NULL)
       {
         double frequency = delta_offset_per_tick * ticks_per_second;
         double exponent = log(frequency) / log(2.0);
-        
-        exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
+
+        exponent += pitch_envelope->get_value_at(offset_major, offset) * (16.0 / 12.0);
+        if ((current_waveform == Waveform::Sample) && (current_sample->use_vibrato))
+          exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
 
         frequency = pow(2.0, exponent);
         offset += (frequency / ticks_per_second);
       }
       else
-        offset += delta_offset_per_tick;
+      {
+        if ((current_waveform == Waveform::Sample) && (current_sample && current_sample->use_vibrato))
+        {
+          double frequency = delta_offset_per_tick * ticks_per_second;
+          double exponent = log(frequency) / log(2.0);
+          
+          exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
+
+          frequency = pow(2.0, exponent);
+          offset += (frequency / ticks_per_second);
+        }
+        else
+          offset += delta_offset_per_tick;
+      }
 
       if ((offset > 1.0) || (offset < 0.0))
       {
@@ -1394,6 +1592,9 @@ struct channel
     current_waveform = default_waveform;
     current_sample = NULL;
     current_sample_context = NULL;
+    volume_envelope = NULL;
+    panning_envelope = NULL;
+    pitch_envelope = NULL;
   }
 
   channel(pan_value &default_panning, bool looping)
@@ -1413,6 +1614,9 @@ struct channel
     current_waveform = default_waveform;
     current_sample = NULL;
     current_sample_context = NULL;
+    volume_envelope = NULL;
+    panning_envelope = NULL;
+    pitch_envelope = NULL;
   }
 };
 
@@ -2268,7 +2472,7 @@ struct channel_MODULE : public channel
           if (delayed_note->snote == -2)
             current_sample = NULL;
           else if (delayed_note->snote == -3)
-            current_sample->exit_sustain_loop(current_sample_context);
+            note_off();
           else
           {
             if (delayed_note->instrument != NULL)
@@ -2526,7 +2730,7 @@ struct channel_MODULE : public channel
       if (row.instrument <= 0)
         cerr << "-- ";
       else
-        cerr << setfill('0') << setw(2) << row.instrument << " ";
+        cerr << setfill('0') << setw(2) << row.instrument->index << " ";
       if (row.volume >= 0)
       {
         if (row.volume > 64)
@@ -3310,31 +3514,6 @@ namespace DuplicateCheckAction
   };
 }
 
-struct instrument_envelope_node
-{
-  int tick;
-  double value;
-
-  instrument_envelope_node(int t, double v)
-    : tick(t), value(v)
-  {
-  }
-};
-
-struct instrument_envelope
-{
-  bool enabled, looping, sustain_loop;
-
-  int loop_begin_tick, loop_end_tick, sustain_loop_begin_tick, sustain_loop_end_tick;
-
-  vector<instrument_envelope_node> node;
-
-  instrument_envelope()
-  {
-    enabled = false;
-  }
-};
-
 vector<channel *> channels, ancillary_channels;
 typedef vector<channel *>::iterator iter_t;
 vector<iter_t> finished_ancillary_channels;
@@ -3373,6 +3552,7 @@ struct channel_DYNAMIC : channel
 struct sample_instrument_context : sample_context
 {
   sample *cur_sample;
+  sample_context *cur_sample_context;
   double cur_volume;
   int ticks_retrieved; // makes the big assumption that samples are read once linearly per invocation
   SustainLoopState::Type sustain_loop_state;
@@ -3401,7 +3581,12 @@ struct sample_instrument : sample
 
   instrument_envelope volume_envelope, panning_envelope, pitch_envelope;
 
-  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **context = NULL, double effect_tick_length = 0)
+  sample_instrument(int idx)
+    : sample(idx)
+  {
+  }
+
+  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **context = NULL, double effect_tick_length = 0, bool top_level = true)
   {
     if (context == NULL)
       throw "need context for instrument";
@@ -3413,7 +3598,7 @@ struct sample_instrument : sample
       if (typeid(*(*context)->created_with) == typeid(sample_instrument))
         fade_per_tick = (((sample_instrument *)(*context)->created_with)->fade_out / 1024.0) / effect_tick_length;
       else
-      { // anti-click (finally!)
+      { // anti-click (finally! though only for instruments)
         double fade_ticks = dropoff_proportion * effect_tick_length;
         if (fade_ticks < dropoff_min_length)
           fade_ticks = dropoff_min_length;
@@ -3423,6 +3608,13 @@ struct sample_instrument : sample
       }
 
       channel_DYNAMIC *ancillary = new channel_DYNAMIC(p->panning, (*context)->created_with, *context, p->note_frequency, p->intensity, fade_per_tick);
+
+      if (p->volume_envelope)
+        ancillary->volume_envelope = new playback_envelope(*p->volume_envelope);
+      if (p->panning_envelope)
+        ancillary->panning_envelope = new playback_envelope(*p->panning_envelope);
+      if (p->pitch_envelope)
+        ancillary->pitch_envelope = new playback_envelope(*p->pitch_envelope);
 
       switch (new_note_action)
       {
@@ -3438,9 +3630,12 @@ struct sample_instrument : sample
 
       ancillary_channels.push_back(ancillary);
     }
-
-    if (*context)
+    else if (*context)
+    {
       delete *context;
+      *context = NULL;
+    }
+
     if (r->snote >= 0)
     {
       sample_instrument_context *c = new sample_instrument_context(this);
@@ -3448,6 +3643,37 @@ struct sample_instrument : sample
       *context = c;
       int inote = (r->snote >> 4) * 12 + (r->snote & 15);
       c->cur_sample = note_sample[inote];
+
+      if (top_level)
+      {
+        if (volume_envelope.enabled)
+          p->volume_envelope = new playback_envelope(volume_envelope, effect_tick_length);
+        else
+          p->volume_envelope = NULL;
+
+        if (panning_envelope.enabled)
+          p->panning_envelope = new playback_envelope(panning_envelope, effect_tick_length);
+        else
+          p->panning_envelope = NULL;
+
+        if (pitch_envelope.enabled)
+          p->pitch_envelope = new playback_envelope(pitch_envelope, effect_tick_length);
+        else
+          p->pitch_envelope = NULL;
+      }
+      else
+      {
+        if (volume_envelope.enabled)
+          p->volume_envelope = new playback_envelope(p->volume_envelope, volume_envelope, effect_tick_length, true);
+
+        if (panning_envelope.enabled)
+          p->panning_envelope = new playback_envelope(p->panning_envelope, panning_envelope, effect_tick_length, false);
+
+        if (pitch_envelope.enabled)
+          p->pitch_envelope = new playback_envelope(p->pitch_envelope, pitch_envelope, effect_tick_length, false);
+      }
+
+      c->cur_sample->begin_new_note(r, p, &c->cur_sample_context, effect_tick_length, false);
     }
 
     p->samples_this_note = 0;
@@ -3460,6 +3686,8 @@ struct sample_instrument : sample
 
     sample_instrument_context &context = *(sample_instrument_context *)c;
 
+    context.cur_sample->kill_note(context.cur_sample_context);
+
     context.cur_sample = NULL; // doesn't get much more killed than this
   }
 
@@ -3469,6 +3697,8 @@ struct sample_instrument : sample
       throw "need context for instrument";
 
     sample_instrument_context &context = *(sample_instrument_context *)c;
+
+    context.cur_sample->exit_sustain_loop(context.cur_sample_context);
 
     context.sustain_loop_state = SustainLoopState::Finishing;
   }
@@ -3480,15 +3710,10 @@ struct sample_instrument : sample
 
     sample_instrument_context &context = *(sample_instrument_context *)c;
 
-
     one_sample ret(output_channels);
     
     if (context.cur_sample != NULL)
-    {
       ret = context.cur_sample->get_sample(sample, offset);
-
-      // TODO: apply envelopes
-    }
 
     return ret;
   }

@@ -384,6 +384,9 @@
 				<File
 					RelativePath="Load_S3M.h">
 				</File>
+				<File
+					RelativePath="Load_XM.h">
+				</File>
 			</Filter>
 			<Filter
 				Name="Output"

@@ -560,7 +560,7 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
   if (string(magic, 4) != "IMPS")
   {
     cerr << "Warning: sample #" << i << " does not have a valid header" << endl;
-    return new sample_builtintype<signed char>(1);
+    return new sample_builtintype<signed char>(i, 1);
   }
 
   char dos_filename[13];
@@ -578,7 +578,7 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
   flags.value = file->get();
 
   if (flags.sample_present() == false)
-    return new sample_builtintype<signed char>(1);
+    return new sample_builtintype<signed char>(i, 1);
     
   int default_volume = file->get();
 
@@ -650,7 +650,7 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
     if (flags.stereo())
     {
       cerr << "Unable to load sample #" << i << ": compression on stereo samples is not defined" << endl;
-      return new sample_builtintype<signed char>(1);
+      return new sample_builtintype<signed char>(i, 1);
     }
 
     if (flags.sixteen_bit())
@@ -663,10 +663,10 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
       catch (const char *msg)
       {
         cerr << "Unable to load sample #" << i << ": cannot decode compressed format (" << msg << ")" << endl;
-        return new sample_builtintype<signed char>(1);
+        return new sample_builtintype<signed char>(i, 1);
       }
 
-      ret = new sample_builtintype<signed short>(1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
+      ret = new sample_builtintype<signed short>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
     }
     else
     {
@@ -678,10 +678,10 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
       catch (const char *msg)
       {
         cerr << "Unable to load sample #" << i << ": cannot decode compressed format (" << msg << ")" << endl;
-        return new sample_builtintype<signed char>(1);
+        return new sample_builtintype<signed char>(i, 1);
       }
 
-      ret = new sample_builtintype<signed char>(1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
+      ret = new sample_builtintype<signed char>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
     }
   }
   else
@@ -690,13 +690,13 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
     {
       signed short *data[MAX_CHANNELS];
       load_it_sample_uncompressed<signed short>(file, channels, sample_length, conversion, data);
-      ret = new sample_builtintype<signed short>(channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
+      ret = new sample_builtintype<signed short>(i, channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
     }
     else
     {
       signed char *data[MAX_CHANNELS];
       load_it_sample_uncompressed<signed char>(file, channels, sample_length, conversion, data);
-      ret = new sample_builtintype<signed char>(channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
+      ret = new sample_builtintype<signed char>(i, channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
     }
   }
 
@@ -1062,7 +1062,7 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
     {
       it_instrument_description &id = insts[i];
       
-      sample_instrument *is = new sample_instrument();
+      sample_instrument *is = new sample_instrument(i);
 
       is->global_volume = id.global_volume / 128.0;
       is->default_pan.set_channels(channels).from_linear_pan(id.default_pan, 0, 64);

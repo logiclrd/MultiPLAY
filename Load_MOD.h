@@ -149,7 +149,7 @@ reinterpret:
   vector<sample *> samps;
 
   for (int i=0; i<num_samples; i++) // pre-create samples
-    samps.push_back(new sample_builtintype<signed char>(1));
+    samps.push_back(new sample_builtintype<signed char>(i, 1));
 
   for (int i=0; i<num_patterns; i++)
   {

@@ -12,6 +12,24 @@ struct pan_value
       sample_scale[i] = 1.0;
   }
 
+  pan_value(double position)
+  {
+    num_scales = 2;
+
+    if (position > 0)
+      sample_scale[0] = exp(-position);
+    else
+      sample_scale[0] = 1.0;
+
+    if (position < 0)
+      sample_scale[1] = exp(position);
+    else
+      sample_scale[1] = 1.0;
+
+    for (int i=2; i<MAX_CHANNELS; i++)
+      sample_scale[i] = 0.0;
+  }
+
   inline void normalize()
   {
     double total_weight;
@@ -242,7 +260,7 @@ struct one_sample
     return *this *= scale_value;;
   }
 
-  inline one_sample &operator +=(one_sample &other)
+  inline one_sample &operator +=(const one_sample &other)
   {
     if (num_samples != other.num_samples)
       throw "Trying to add a sample with an incorrect number of channels";
@@ -257,6 +275,17 @@ struct one_sample
   {
     for (int i=0; i<num_samples; i++)
       sample[i] *= scale;
+
+    return *this;
+  }
+
+  inline one_sample &operator *=(const pan_value &other)
+  {
+    if (num_samples != other.num_scales)
+      throw "Trying to pan a sample with an incorrect number of channels";
+
+    for (int i=0; i<num_samples; i++)
+      sample[i] *= other.sample_scale[i];
 
     return *this;
   }

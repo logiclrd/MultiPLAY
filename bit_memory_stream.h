@@ -25,6 +25,7 @@ struct bit_memory_stream
   {
     this->memory = memory;
     this->bits = bits;
+    index = 0;
   }
 
   long size()
@@ -98,7 +99,7 @@ struct bit_memory_stream
 
   int read_int(int num_bits = 32)
   {
-    int value;
+    int value = 0;
 
     for (int i=0; i<num_bits; i++)
       if (get())

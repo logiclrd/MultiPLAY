@@ -404,12 +404,14 @@ T *load_it_sample_compressed(ifstream *file, long sample_length, bool double_del
   int max_bit_width = sizeof(T) * 8 + 1, bits_to_store_bit_width = int(lg(max_bit_width - 1));
   unsigned char lsb_bytes[2];
 
-  int delta2, delta3;
+  T delta2, delta3;
   int bit_width;
 
   T *ret = new T[sample_length];
   int offset = 0;
 
+  int block_last_sample = 0;
+  
   while (offset < sample_length)
   {
     file->read((char *)&lsb_bytes[0], 2);
@@ -425,7 +427,11 @@ T *load_it_sample_compressed(ifstream *file, long sample_length, bool double_del
     delta2 = delta3 = 0;
     bit_width = max_bit_width;
 
-    while (!block_bits.eof())
+    block_last_sample += 0x8000;
+    if (block_last_sample > sample_length)
+      block_last_sample = sample_length;
+
+    while ((!block_bits.eof()) && (offset < block_last_sample))
     {
       int aux = block_bits.read_int(bit_width);
 
@@ -461,13 +467,14 @@ T *load_it_sample_compressed(ifstream *file, long sample_length, bool double_del
 
         border -= (max_bit_width >> 1);
 
-        aux -= border;
-        if (aux >= bit_width)
-          aux++;
+        int temp_aux = aux - border;
 
-        if ((aux > 0) && (aux <= max_bit_width))
+        if (temp_aux >= bit_width)
+          temp_aux++;
+
+        if ((temp_aux > 0) && (temp_aux <= max_bit_width))
         {
-          bit_width = aux;
+          bit_width = temp_aux;
           continue;
         }
       }
@@ -484,21 +491,16 @@ T *load_it_sample_compressed(ifstream *file, long sample_length, bool double_del
 
       int delta;
 
-      if (bit_width == max_bit_width)
-        delta = aux;
-      else
-      {
-        int sign_bit = bit_value[bit_width - 1];
+      int sign_bit = bit_value[bit_width - 1];
 
-        if (0 == (aux & sign_bit)) // positive
-        {
-          delta = aux;
-        }
-        else // negative (sign bit set)
-        {
-          int positive = ((~aux) & (sign_bit - 1)) + 1;
-          delta = -positive;
-        }
+      if (0 == (aux & sign_bit)) // positive
+      {
+        delta = aux;
+      }
+      else // negative (sign bit set)
+      {
+        int positive = ((~aux) & (sign_bit - 1)) + 1;
+        delta = -positive;
       }
 
       delta2 += delta;
@@ -675,6 +677,16 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
 
       ret = new sample_builtintype<signed short>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
       ((sample_builtintype<signed short> *)ret)->default_volume = default_volume / 64.0;
+
+      {
+        stringstream s;
+
+        s << "compressed_" << i << ".raw";
+
+        ofstream sample(s.str().c_str(), ios::binary);
+
+        sample.write((char *)data, sample_length * sizeof(data[0]));
+      }
     }
     else
     {
@@ -691,6 +703,16 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
 
       ret = new sample_builtintype<signed char>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
       ((sample_builtintype<signed char> *)ret)->default_volume = default_volume / 64.0;
+
+      {
+        stringstream s;
+
+        s << "compressed_" << i << ".raw";
+
+        ofstream sample(s.str().c_str(), ios::binary);
+
+        sample.write((char *)data, sample_length * sizeof(data[0]));
+      }
     }
   }
   else
@@ -701,6 +723,16 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
       load_it_sample_uncompressed<signed short>(file, channels, sample_length, conversion, data);
       ret = new sample_builtintype<signed short>(i, channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
       ((sample_builtintype<signed short> *)ret)->default_volume = default_volume / 64.0;
+
+      {
+        stringstream s;
+
+        s << "uncompressed_" << i << ".raw";
+
+        ofstream sample(s.str().c_str(), ios::binary);
+
+        sample.write((char *)data[0], sample_length * sizeof(data[0]));
+      }
     }
     else
     {
@@ -708,6 +740,16 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
       load_it_sample_uncompressed<signed char>(file, channels, sample_length, conversion, data);
       ret = new sample_builtintype<signed char>(i, channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
       ((sample_builtintype<signed char> *)ret)->default_volume = default_volume / 64.0;
+
+      {
+        stringstream s;
+
+        s << "uncompressed_" << i << ".raw";
+
+        ofstream sample(s.str().c_str(), ios::binary);
+
+        sample.write((char *)data[0], sample_length * sizeof(data[0]));
+      }
     }
   }
 
@@ -953,6 +995,14 @@ void load_it_convert_envelope(instrument_envelope &target, it_envelope_descripti
     target.node.push_back(instrument_envelope_node(source.envelope[i].tick, source.envelope[i].yValue));
 }
 
+int dec_as_hex(char hexrep)
+{
+  int hex_upper = (hexrep >> 4) & 15;
+  int hex_lower = hexrep & 15;
+
+  return hex_upper * 10 + hex_lower;
+}
+
 module_struct *load_it(ifstream *file, bool modplug_style = false)
 {       // 12345678901234567890123456789012345678901234567890123456789012345678901234567890
   cerr << "Sorry the IT loader takes so long! It's something to do with pattern loading," << endl
@@ -989,9 +1039,9 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
 
   file->read((char *)&lsb_bytes[0], 4);
   cwt.major_version = lsb_bytes[1];
-  cwt.minor_version = lsb_bytes[0];
+  cwt.minor_version = dec_as_hex(lsb_bytes[0]);
   cwt.compatible_with_major_version = lsb_bytes[3];
-  cwt.compatible_with_minor_version = lsb_bytes[2];
+  cwt.compatible_with_minor_version = dec_as_hex(lsb_bytes[2]);
 
   it_flags flags;
 

@@ -104,6 +104,11 @@ double lg(double x)
   return log(x) * (1.0 / LOG2);
 }
 
+double p2(double x)
+{
+  return exp(LOG2 * x);
+}
+
 int output_channels;
 
 int expect_int(istream *in)
@@ -168,7 +173,7 @@ double expect_duration(istream *in, int &note_length_denominator)
 }
 
 int ticks_per_second;
-double inter_note = pow(2.0, 1.0 / 12.0);
+double inter_note = p2(1.0 / 12.0);
 
 int from_lsb2(unsigned char in[2])
 {
@@ -269,9 +274,9 @@ struct ieee_extended
     }
 
     if (sign)
-      return mantissa * -pow(2.0, exponent);
+      return mantissa * -p2(exponent);
     else
-      return mantissa * pow(2.0, exponent);
+      return mantissa * p2(exponent);
   }
 };
 
@@ -1704,7 +1709,7 @@ struct channel
         if ((current_waveform == Waveform::Sample) && (current_sample->use_vibrato))
           exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
 
-        frequency = pow(2.0, exponent);
+        frequency = p2(exponent);
         offset += (frequency / ticks_per_second);
       }
       else
@@ -1716,7 +1721,7 @@ struct channel
           
           exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
 
-          frequency = pow(2.0, exponent);
+          frequency = p2(exponent);
           offset += (frequency / ticks_per_second);
         }
         else
@@ -2658,7 +2663,7 @@ struct channel_MODULE : public channel
       if (it_linear_slides)
       {
         double exponent = portamento_start * (1.0 - t) + portamento_end * t;
-        note_frequency = pow(2.0, exponent);
+        note_frequency = p2(exponent);
       }
       else
       {
@@ -2671,7 +2676,7 @@ struct channel_MODULE : public channel
         double exponent = lg(note_frequency * 1.16363636363636363);
         long note = (long)exponent * 12;
         exponent = note / 12.0;
-        note_frequency = pow(2.0, exponent) / 1.16363636363636363;
+        note_frequency = p2(exponent) / 1.16363636363636363;
       }
 
       delta_offset_per_tick = note_frequency / ticks_per_second;
@@ -2714,7 +2719,7 @@ struct channel_MODULE : public channel
         double note_frequency;
         
         if (it_linear_slides)
-          note_frequency = pow(2.0, value);
+          note_frequency = p2(value);
         else
           note_frequency = 14317056.0 / value;
 
@@ -3342,7 +3347,7 @@ struct channel_MODULE : public channel
           if (fine)
           {
             if (it_linear_slides)
-              note_frequency = pow(2.0, portamento_target);
+              note_frequency = p2(portamento_target);
             else
               note_frequency = 14317056.0 / portamento_target;
 
@@ -3390,7 +3395,7 @@ struct channel_MODULE : public channel
           if (fine)
           {
             if (it_linear_slides)
-              note_frequency = pow(2.0, portamento_target);
+              note_frequency = p2(portamento_target);
             else
               note_frequency = 14317056.0 / portamento_target;
             delta_offset_per_tick = note_frequency / ticks_per_second;
@@ -4264,11 +4269,17 @@ struct sample_instrument_context : sample_context
   sample_instrument_context(sample *cw) : sample_context(cw) {}
 };
 
+#include "DSP.h"
+
 struct sample_instrument : sample
 {
   double global_volume;
+
   pan_value default_pan;
   bool use_default_pan;
+
+  DSP dsp;
+  bool use_dsp;
 
   int pitch_pan_separation, pitch_pan_center;
 
@@ -4286,6 +4297,7 @@ struct sample_instrument : sample
   sample_instrument(int idx)
     : sample(idx)
   {
+    use_dsp = false;
   }
   
   virtual void occlude_note(channel *p = NULL, sample_context **context = NULL, sample *new_sample = NULL, row *r = NULL)
@@ -4536,6 +4548,9 @@ struct sample_instrument : sample
     if (context.cur_sample != NULL)
       ret = global_volume * context.cur_sample->get_sample(sample, offset, context.cur_sample_context);
 
+    if (use_dsp)
+      ret = dsp.compute_next(ret);
+
     return ret;
   }
 };
@@ -4611,9 +4626,9 @@ void show_usage(char *cmd_name)
   //       12345678901234567890123456789012345678901234567890123456789012345678901234567890
   cerr << "usage: " << cmd_name << " [-play <PLAY files>] [-samples <sample files>]" << endl
        << "       " << indentws << " [-module <S3M filenames>] [-frame-based_portamento]" << endl
-       << "       " << indentws << " [-max_time <seconds>] [-max_ticks <ticks>]" << endl
-       << "       " << indentws << " [-output <output_file>] {-stereo | -mono}" << endl
-       << "       " << indentws << " {-lsb | -msb | -system_byte_order}" << endl
+       << "       " << indentws << " [-max_time <seconds>] [-max_ticks <ticks>] [-compress]" << endl
+       << "       " << indentws << " [-output <output_file>] [-amplify <factor>]" << endl
+       << "       " << indentws << " {-stereo | -mono} {-lsb | -msb | -system_byte_order}" << endl
        << "       " << indentws << " { {-8 | -16} [-unsigned] | {-32 | -64} }" << endl
        << "       " << indentws << " [-sample_rate <samples_per_sec>] [-looping]" << endl
        << "       " << indentws
@@ -4621,9 +4636,9 @@ void show_usage(char *cmd_name)
                                 << " [-directx]"
 #endif
 #ifdef SDL
-                                                 << " [-sdl]"
+                                            << " [-sdl]"
 #endif
-                                                              << endl
+                                                    << endl
        << endl
        << "8- and 16-bit sample sizes are integers, -32 and -64 are floating-point (IEEE" << endl
        << "standard). The default output filename is 'output.raw'. The default byte order" << endl
@@ -4699,6 +4714,9 @@ int main(int argc, char *argv[])
   vector<string> play_filenames, play_sample_filenames, module_filenames;
   vector<module_struct *> modules;
   bool lsb_output = false, msb_output = false;
+  bool amplify = false;
+  double amplify_by = 1.0;
+  bool compress = false;
 
   ticks_per_second = 44100;
 
@@ -4801,6 +4819,17 @@ int main(int argc, char *argv[])
       else
         ticks_per_second = abs(atoi(argv[i]));
     }
+    else if (arg == "-amplify")
+    {
+      i++;
+      if (i >= argc)
+        cerr << argv[0] << ": missing argument for parameter -amplify" << endl;
+      else
+        amplify = true,
+        amplify_by = atof(argv[i]);
+    }
+    else if (arg == "-compress")
+      compress = true;
 #ifdef DIRECTX
     else if (arg == "-directx")
       direct_output_type = direct_output::directx;
@@ -5007,6 +5036,30 @@ int main(int argc, char *argv[])
       break;
 
     sample *= global_volume;
+
+    if (amplify)
+      sample *= amplify_by;
+
+    if (compress)
+    {
+      bool overdriven = false;
+      sample.reset();
+
+      while (sample.has_next())
+      {
+        double this_sample = sample.next_sample();
+
+        if ((this_sample < -1.0) || (this_sample > 1.0))
+        {
+          amplify = true;
+          amplify_by /= fabs(this_sample);
+          overdriven = true;
+        }
+      }
+
+      if (overdriven)
+        cerr << "Warning: overdriven output was detected. Output has been compressed." << endl;
+    }
 
     switch (direct_output_type)
     {

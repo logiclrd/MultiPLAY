@@ -626,10 +626,10 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
 
   switch (auto_vibrato_waveform_char)
   {
-    case 0: auto_vibrato_waveform = Waveform::Sine;
-    case 1: auto_vibrato_waveform = Waveform::RampDown;
-    case 2: auto_vibrato_waveform = Waveform::Square;
-    case 3: auto_vibrato_waveform = Waveform::Random;
+    case 0: auto_vibrato_waveform = Waveform::Sine;     break;
+    case 1: auto_vibrato_waveform = Waveform::RampDown; break;
+    case 2: auto_vibrato_waveform = Waveform::Square;   break;
+    case 3: auto_vibrato_waveform = Waveform::Random;   break;
   }
 
   sample *ret;
@@ -700,8 +700,7 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt, int 
     }
   }
 
-
-  // TODO: load sample
+  ret->samples_per_second = c5spd;
 
   return ret;
 }
@@ -718,6 +717,11 @@ struct it_pattern_mask
   bool use_last_instrument()     { return (0 != (value &  32)); }
   bool use_last_volume_panning() { return (0 != (value &  64)); }
   bool use_last_effect()         { return (0 != (value & 128)); }
+
+  it_pattern_mask()
+  {
+    value = 0;
+  }
 };
 
 struct it_pattern_slot
@@ -754,7 +758,7 @@ int snote_from_inote(int inote)
 const unsigned char it_pattern_slide_table[10]
   = { 0, 1, 4, 8, 16, 32, 64, 96, 128, 255 };
 
-void load_it_pattern(ifstream *file, pattern &p, vector<sample *> samps)
+void load_it_pattern(ifstream *file, pattern &p, vector<sample *> &samps, bool has_note_events[MAX_MODULE_CHANNELS])
 {
   unsigned char lsb_data[2];
 
@@ -766,42 +770,55 @@ void load_it_pattern(ifstream *file, pattern &p, vector<sample *> samps)
 
   file->ignore(4);
 
-  unsigned char *data = new unsigned char[pattern_bytes];
+  ArrayAllocator<char> data_allocator(pattern_bytes);
+  char *data = data_allocator.getArray();
 
-  file->read((char *)&data[0], pattern_bytes);
+  file->read(&data[0], pattern_bytes);
 
-  it_pattern_mask mask;
-  mask.value = 0;
+  it_pattern_mask masks[64];
 
   it_pattern_slot last_row[64], cur_row[64];
 
   for (int i=0; i<pattern_rows; i++)
   {
+    if (i == 22)
+      cout << "." << flush;
+
     vector<row> rowdata(64);
+
+    for (int j=0; j<64; j++)
+    {
+      cur_row[j].note = -1;
+      cur_row[j].instrument = -1;
+      cur_row[j].volume_panning = -1;
+      cur_row[j].effect_command = 0;
+    }
 
     while (true)
     {
-      char channel_byte = file->get();
+      char channel_byte = *(data++);
       if (channel_byte == 0) // end of row
         break;
 
       int channel = (channel_byte - 1) & 63;
 
-      if (channel & 128)
-        mask.value = file->get(); // else use old value
+      it_pattern_mask &mask = masks[channel];
+
+      if (channel_byte & 128)
+        mask.value = *(data++); // else use old value
 
       it_pattern_slot &c = cur_row[channel], &l = last_row[channel];
 
       if (mask.has_note())
-        c.note = file->get();
+        c.note = *(data++);
       if (mask.has_instrument())
-        c.instrument = file->get();
+        c.instrument = *(data++);
       if (mask.has_volume_panning())
-        c.volume_panning = file->get();
+        c.volume_panning = *(data++);
       if (mask.has_effect())
       {
-        file->read((char *)&c.effect_command, 1);
-        file->read((char *)&c.effect_data, 1);
+        c.effect_command = *(data++);
+        c.effect_data = *(data++);
       }
       if (mask.use_last_note())
         c.note = l.note;
@@ -820,8 +837,11 @@ void load_it_pattern(ifstream *file, pattern &p, vector<sample *> samps)
       r.snote = snote_from_inote(c.note);
       r.znote = znote_from_snote(r.snote);
 
+      if (r.snote >= 0)
+        has_note_events[channel] = true;
+
       if ((c.instrument > 0) && (c.instrument <= int(samps.size())))
-        r.instrument = samps[c.instrument];
+        r.instrument = samps[c.instrument - 1];
       else
         r.instrument = NULL;
       
@@ -880,6 +900,9 @@ void load_it_pattern(ifstream *file, pattern &p, vector<sample *> samps)
       }
 
       r.effect = effect_struct(effect_type_it, char(c.effect_command), c.effect_data);
+
+      if (r.effect.present)
+        has_note_events[channel];
     }
     memcpy(last_row, cur_row, sizeof(last_row));
 
@@ -1042,13 +1065,14 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
   }
 
   vector<pattern> pats;
+  bool has_note_events[MAX_MODULE_CHANNELS] = { false }; // entire struct to 0
 
   for (int i=0; i<num_patterns; i++)
   {
     file->seekg(pattern_offset[i]);
 
     pattern pat;
-    load_it_pattern(file, pat, samps);
+    load_it_pattern(file, pat, samps, has_note_events);
     pats.push_back(pat);
   }
 
@@ -1120,11 +1144,13 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
 
   memset(ret->base_pan, 0, sizeof(ret->base_pan));
 
-  {
-    int i, j;
+  int count = 0;
 
-    for (i=0, j=0; i<64; i++)
+  for (int i=0; i<64; i++)
+  {
+    if (has_note_events[i])
     {
+      count++;
       ret->channel_enabled[i] = true;
       ret->channel_map[i] = i;
       if (ret->stereo)
@@ -1135,16 +1161,15 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
         ret->initial_panning[i].from_amiga_pan(ret->base_pan[i]);
       }
     }
-
-    for (i=32; i<MAX_MODULE_CHANNELS; i++)
+    else
       ret->channel_enabled[i] = false;
-
-    ret->num_channels = j;
   }
+  ret->num_channels = count;
 
   ret->speed = settings.initial_speed;
   ret->tempo = settings.initial_tempo;
 
-  return ret;
+  ret->it_module = true;
 
+  return ret;
 }

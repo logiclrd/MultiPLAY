@@ -499,7 +499,7 @@ module_struct *load_s3m(ifstream *file)
 
           int instrument = file->get();
           if ((instrument > 0) && (instrument <= int(samps.size())))
-            rowdata[channel].instrument = samps[instrument];
+            rowdata[channel].instrument = samps[instrument - 1];
           else
             rowdata[channel].instrument = NULL;
           if (!--bytes_left) break;

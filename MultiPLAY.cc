@@ -1976,6 +1976,7 @@ struct effect_struct
     switch (type)
     {
       case effect_type_s3m:
+      case effect_type_it:
         switch (command)
         {
           case 'G':
@@ -1997,6 +1998,7 @@ struct effect_struct
     switch (type)
     {
       case effect_type_s3m:
+      case effect_type_it:
         switch (command)
         {
           case 'D':
@@ -2206,6 +2208,7 @@ void effect_struct::init(effect_type type, char command, unsigned char info, row
       this->info = info;
       break;
     case effect_type_s3m:
+    case effect_type_it:
       if ((command < 1) || (command > 26))
       {
         present = false; // no further processing required
@@ -2237,7 +2240,7 @@ struct pattern_loop_type
   }
 };
 
-#define MAX_MODULE_CHANNELS 32
+#define MAX_MODULE_CHANNELS 64
 
 struct module_sample_info
 {
@@ -2264,6 +2267,7 @@ struct module_struct
   int num_channels;
   int auto_loop_target;
   bool stereo, use_instruments;
+  bool it_module;
   bool finished;
 
   void speed_change()
@@ -2288,6 +2292,7 @@ struct module_struct
   module_struct()
   {
     use_instruments = false;
+    it_module = false;
     auto_loop_target = -1;
   }
 };
@@ -2659,6 +2664,9 @@ struct channel_MODULE : public channel
         if (i >= row_list.size())
           break;
 
+        if (row_list[i].effect.present == false)
+          continue;
+
         switch (row_list[i].effect.command)
         {
           case 'A': // speed
@@ -2770,11 +2778,12 @@ struct channel_MODULE : public channel
         current_sample = NULL;
       else
       {
-        if (row.instrument != NULL)
-        {
+        if ((row.instrument != NULL) || module->it_module)
+        {                                 // TODO: sample delay
           if (!row.effect.keepNote())
           {
-            current_sample = row.instrument;
+            if (row.instrument)
+              current_sample = row.instrument;
 
             recalc(row.znote, 1.0, false);
             current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame);
@@ -3386,7 +3395,7 @@ struct channel_MODULE : public channel
               pattern_delay = info.low_nybble;
               break;
             default:
-              cerr << "Unimplemented S3M command: " << row.effect.command
+              cerr << "Unimplemented S3M/IT command: " << row.effect.command
                 << setfill('0') << setw(2) << hex << uppercase << info.data << nouppercase << dec << endl;
           }
           break;
@@ -3430,7 +3439,7 @@ struct channel_MODULE : public channel
           }
           break;
         default:
-          cerr << "Unimplemented S3M command: " << row.effect.command
+          cerr << "Unimplemented S3M/IT command: " << row.effect.command
             << setfill('0') << setw(2) << hex << uppercase << info.data << nouppercase << dec << endl;
       }
     }
@@ -4017,7 +4026,7 @@ int main(int argc, char *argv[])
 
     if (module)
     {
-      for (int i=0; i<32; i++)
+      for (int i=0; i<MAX_MODULE_CHANNELS; i++)
         if (module->channel_enabled[i])
           channels.push_back(new channel_MODULE(i, module, 64, looping));
 

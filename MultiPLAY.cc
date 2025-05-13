@@ -234,6 +234,29 @@ namespace MultiPLAY
     int num_samples;
 
     sample_context(sample *cw) : created_with(cw) { }
+    virtual ~sample_context() {}
+
+    sample_context *clone()
+    {
+      sample_context *ret = create_new();
+
+      copy_to(ret);
+
+      return ret;
+    }
+
+    virtual sample_context *create_new()
+    {
+      return new sample_context(NULL);
+    }
+
+    virtual void copy_to(sample_context *other)
+    {
+      other->created_with = this->created_with;
+      other->samples_per_second = this->samples_per_second;
+      other->default_volume = this->default_volume;
+      other->num_samples = this->num_samples;
+    }
   };
 
   struct sample
@@ -841,6 +864,25 @@ namespace MultiPLAY
     SustainLoopState::Type sustain_loop_state;
 
     sample_builtintype_context(sample *cw) : sample_context(cw) { }
+
+    virtual sample_context *create_new()
+    {
+      return new sample_builtintype_context(NULL);
+    }
+
+    virtual void copy_to(sample_context *other)
+    {
+      sample_builtintype_context *target = dynamic_cast<sample_builtintype_context *>(other);
+
+      if (target == NULL)
+        throw "Copy sample context to wrong type";
+
+      sample_context::copy_to(target);
+
+      target->last_looped_sample = this->last_looped_sample;
+      target->sustain_loop_exit_difference = this->sustain_loop_exit_difference;
+      target->sustain_loop_state = this->sustain_loop_state;
+    }
   };
 
   template <class T>
@@ -865,9 +907,7 @@ namespace MultiPLAY
       if (*c)
       {
         (*c)->created_with->occlude_note(p, c, this, r);
-
-        if (*c)
-          delete *c;
+        delete *c;
       }
 
       *c = new sample_builtintype_context(this);
@@ -1568,6 +1608,39 @@ namespace MultiPLAY
     int inote;
 
     sample_instrument_context(sample *cw) : sample_context(cw) {}
+
+    virtual ~sample_instrument_context()
+    {
+      sample_context::~sample_context();
+      if (cur_sample_context != NULL)
+        delete cur_sample_context;
+    }
+
+    virtual sample_context *create_new()
+    {
+      return new sample_instrument_context(NULL);
+    }
+
+    virtual void copy_to(sample_context *other)
+    {
+      sample_instrument_context *target = dynamic_cast<sample_instrument_context *>(other);
+
+      if (target == NULL)
+        throw "Copy sample context to wrong type";
+
+      sample_context::copy_to(target);
+
+      target->cur_sample = this->cur_sample;;
+      if (this->cur_sample_context != NULL)
+        target->cur_sample_context = this->cur_sample_context->clone();
+      else
+        target->cur_sample_context = NULL;
+      target->cur_volume = this->cur_volume;
+      target->sustain_loop_state = this->sustain_loop_state;
+      target->owner_channel = this->owner_channel;
+      target->effect_tick_length = this->effect_tick_length;
+      target->inote = this->inote;
+    }
   };
 
   #include "DSP.h"
@@ -1685,8 +1758,6 @@ namespace MultiPLAY
 
         ancillary_channels.push_back(ancillary);
         p->my_ancillary_channels.push_back(ancillary);
-
-        *context = NULL; // protect the context from deletion
       }
     }
 
@@ -1698,8 +1769,7 @@ namespace MultiPLAY
       if (*context)
       {
         (*context)->created_with->occlude_note(p, context, this, r);
-        if (*context)
-          delete *context;
+        delete *context;
         *context = NULL;
       }
 

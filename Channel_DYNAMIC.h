@@ -20,7 +20,7 @@ struct channel_DYNAMIC : channel
   {
     this->current_waveform = Waveform::Sample;
     this->current_sample = sample;
-    this->current_sample_context = context;
+    this->current_sample_context = context->clone();
     this->note_frequency = spawner.note_frequency;
     this->delta_offset_per_tick = spawner.note_frequency / ticks_per_second;
     this->intensity = spawner.intensity;

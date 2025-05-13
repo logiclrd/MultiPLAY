@@ -2168,360 +2168,368 @@ int main(int argc, char *argv[])
 
   output_channels = stereo_output ? 2 : 1;
 
-  for (int i=0; i < int(module_filenames.size()); i++)
+  try
   {
-    module_struct *module;
-    
-    try
+    for (int i=0; i < int(module_filenames.size()); i++)
     {
-      module = load_module(module_filenames[i]);
-    }
-    catch (const char *message)
-    {
-      cerr << argv[0] << ": unable to load module file " << module_filenames[i] << ": " << message << endl;
-      continue;
-    }
-
-    if (module)
-    {
-      for (int i=0; i<MAX_MODULE_CHANNELS; i++)
-        if (module->channel_enabled[i])
-          channels.push_back(new channel_MODULE(i, module, 64, looping));
-
-      modules.push_back(module);
-    }
-  }
-
-  for (int i=0; i < int(play_filenames.size()); i++)
-  {
-    ifstream *file = new ifstream(play_filenames[i].c_str(), ios::binary);
-    if (!file->is_open())
-    {
-      delete file;
-      cerr << argv[0] << ": unable to open input file: " << play_filenames[i] << endl;
-    }
-    else
-      channels.push_back(new channel_PLAY(file, looping));
-  }
-
-  for (int i=0; i < int(play_sample_filenames.size()); i++)
-  {
-    ifstream file(play_sample_filenames[i].c_str(), ios::binary);
-    if (!file.is_open())
-      cerr << argv[0] << ": unable to open sample file: " << play_sample_filenames[i] << endl;
-    else
-    {
-      MultiPLAY::sample *this_sample;
+      module_struct *module;
 
       try
       {
-        this_sample = sample_from_file(&file);
+        module = load_module(module_filenames[i]);
       }
-      catch (const char *error)
+      catch (const char *message)
       {
-        cerr << argv[0] << ": unable to load sample file: " << play_sample_filenames[i] << " (" << error << ")" << endl;
-        continue;
-      }
-      samples.push_back(this_sample);
-    }
-  }
-
-  if (ulaw || alaw)
-    if (direct_output_type == direct_output::none)
-    {
-      bits = 16;
-      unsigned_samples = false;
-      init_ulaw_alaw();
-    }
-    else
-      cerr << argv[0] << ": " << (ulaw ? "u" : "A") << "-Law can't be used with direct output systems (they expect PCM)" << endl;
-
-  if ((bits > 16) && unsigned_samples)
-  {
-    cerr << argv[0] << ": cannot use unsigned samples with floating-point output (32 and 64 bit precision)" << endl;
-    return 1;
-  }
-
-  int status;
-
-  ofstream output;
-
-retry_output:
-  switch (direct_output_type)
-  {
-    case direct_output::none:
-      if (!output_file)
-      {
-#if defined(SDL) && defined(SDL_DEFAULT)
-        direct_output_type = direct_output::sdl;
-        goto retry_output;
-#elif defined(DIRECTX) && defined(DIRECTX_DEFAULT)
-        direct_output_type == direct_output::directx;
-        goto retry_output;
-#else
-        cerr << argv[0] << ": no output specified, use -output to write a raw PCM or aLaw/uLaw file" << endl;
-        return 1;
-#endif
-      }
-
-      output.open(output_filename.c_str(), ios::binary);
-
-      if (!output.is_open())
-      {
-        cerr << argv[0] << ": unable to open output file: " << output_filename << endl;
-        return 1;
-      }
-      status = 0; // squelch warning if no direct output modes are enabled
-      break;
-#ifdef DIRECTX
-    case direct_output::directx:
-      status = init_directx(ticks_per_second, output_channels, bits);
-
-      if (status)
-        return status;
-      break;
-#endif
-#ifdef SDL
-    case direct_output::sdl:
-      status = init_sdl(ticks_per_second, output_channels, bits);
-
-      if (status)
-        return status;
-      break;
-#endif
-  }
-
-  for (int i=0; i < int(modules.size()); i++)
-    modules[i]->initialize();
-
-  if (max_time >= 0.0)
-    max_ticks = long(max_time * ticks_per_second);
-
-  for (int i=0; i < int(modules.size()); i++)
-  {
-    module_struct *module = modules[i];
-
-    cerr << "Rendering " << module->filename << ":" << endl
-      << "  \"" << trim(module->name) << "\"" << endl
-      << "  " << module->num_channels << " channels" << endl;
-  }
-
-  switch (direct_output_type)
-  {
-    case direct_output::none:
-      cerr << "Output to: " << output_filename << endl;
-      break;
-#ifdef DIRECTX
-    case direct_output::directx:
-      cerr << "Direct output: DirectX" << endl;
-      break;
-#endif
-#ifdef SDL
-    case direct_output::sdl:
-      cerr << "Direct output: SDL" << endl;
-      break;
-#endif
-  }
-
-  cerr << "  " << output_channels << " output channels" << endl
-    << "  " << ticks_per_second << " samples per second" << endl
-    << "  " << bits << " bits per sample";
-
-  if (bits > 16)
-    cerr << " (floating-point)";
-
-  if (unsigned_samples)
-    cerr << " (unsigned)";
-
-  cerr << endl;
-
-  if (ulaw)
-    cerr << "  mu-Law sample encoding" << endl;
-
-  if (looping)
-    cerr << "  looping" << endl;
-
-  if (max_ticks > 0)
-    cerr << "  time limit " << max_ticks << " samples (" << (double(max_ticks) / ticks_per_second) << " seconds)" << endl;
-
-  while (true)
-  {
-    one_sample sample(output_channels);
-    int count = 0;
-
-    for (iter_t i = channels.begin(), l = channels.end();
-        i != l;
-        ++i)
-    {
-      if ((*i)->finished)
-        continue;
-
-      sample += (*i)->calculate_next_tick();
-      count++;
-    }
-
-    for (int i = ancillary_channels.size() - 1; i >= 0; i--)
-    {
-      channel &chan = *ancillary_channels[i];
-
-      if (chan.finished)
-      {
-        delete &chan;
-        ancillary_channels.erase(ancillary_channels.begin() + i);
+        cerr << argv[0] << ": unable to load module file " << module_filenames[i] << ": " << message << endl;
         continue;
       }
 
-      sample += chan.calculate_next_tick();
-      count++;
+      if (module)
+      {
+        for (int i=0; i<MAX_MODULE_CHANNELS; i++)
+          if (module->channel_enabled[i])
+            channels.push_back(new channel_MODULE(i, module, 64, looping));
+
+        modules.push_back(module);
+      }
     }
 
-    if (count == 0)
-      break;
-
-    sample *= global_volume;
-
-    if (amplify)
-      sample *= amplify_by;
-
-    if (compress)
+    for (int i=0; i < int(play_filenames.size()); i++)
     {
-      bool overdriven = false;
-      sample.reset();
-
-      while (sample.has_next())
+      ifstream *file = new ifstream(play_filenames[i].c_str(), ios::binary);
+      if (!file->is_open())
       {
-        double this_sample = sample.next_sample();
+        delete file;
+        cerr << argv[0] << ": unable to open input file: " << play_filenames[i] << endl;
+      }
+      else
+        channels.push_back(new channel_PLAY(file, looping));
+    }
 
-        if ((this_sample < -1.0) || (this_sample > 1.0))
+    for (int i=0; i < int(play_sample_filenames.size()); i++)
+    {
+      ifstream file(play_sample_filenames[i].c_str(), ios::binary);
+      if (!file.is_open())
+        cerr << argv[0] << ": unable to open sample file: " << play_sample_filenames[i] << endl;
+      else
+      {
+        MultiPLAY::sample *this_sample;
+
+        try
         {
-          amplify = true;
-          amplify_by /= fabs(this_sample);
-          overdriven = true;
+          this_sample = sample_from_file(&file);
         }
+        catch (const char *error)
+        {
+          cerr << argv[0] << ": unable to load sample file: " << play_sample_filenames[i] << " (" << error << ")" << endl;
+          continue;
+        }
+        samples.push_back(this_sample);
       }
+    }
 
-      if (overdriven)
-        cerr << "Warning: overdriven output was detected. Output has been compressed." << endl;
+    if (ulaw || alaw)
+      if (direct_output_type == direct_output::none)
+      {
+        bits = 16;
+        unsigned_samples = false;
+        init_ulaw_alaw();
+      }
+      else
+        cerr << argv[0] << ": " << (ulaw ? "u" : "A") << "-Law can't be used with direct output systems (they expect PCM)" << endl;
+
+    if ((bits > 16) && unsigned_samples)
+    {
+      cerr << argv[0] << ": cannot use unsigned samples with floating-point output (32 and 64 bit precision)" << endl;
+      return 1;
+    }
+
+    int status;
+
+    ofstream output;
+
+  retry_output:
+    switch (direct_output_type)
+    {
+      case direct_output::none:
+        if (!output_file)
+        {
+  #if defined(SDL) && defined(SDL_DEFAULT)
+          direct_output_type = direct_output::sdl;
+          goto retry_output;
+  #elif defined(DIRECTX) && defined(DIRECTX_DEFAULT)
+          direct_output_type == direct_output::directx;
+          goto retry_output;
+  #else
+          cerr << argv[0] << ": no output specified, use -output to write a raw PCM or aLaw/uLaw file" << endl;
+          return 1;
+  #endif
+        }
+
+        output.open(output_filename.c_str(), ios::binary);
+
+        if (!output.is_open())
+        {
+          cerr << argv[0] << ": unable to open output file: " << output_filename << endl;
+          return 1;
+        }
+        status = 0; // squelch warning if no direct output modes are enabled
+        break;
+  #ifdef DIRECTX
+      case direct_output::directx:
+        status = init_directx(ticks_per_second, output_channels, bits);
+
+        if (status)
+          return status;
+        break;
+  #endif
+  #ifdef SDL
+      case direct_output::sdl:
+        status = init_sdl(ticks_per_second, output_channels, bits);
+
+        if (status)
+          return status;
+        break;
+  #endif
+    }
+
+    for (int i=0; i < int(modules.size()); i++)
+      modules[i]->initialize();
+
+    if (max_time >= 0.0)
+      max_ticks = long(max_time * ticks_per_second);
+
+    for (int i=0; i < int(modules.size()); i++)
+    {
+      module_struct *module = modules[i];
+
+      cerr << "Rendering " << module->filename << ":" << endl
+        << "  \"" << trim(module->name) << "\"" << endl
+        << "  " << module->num_channels << " channels" << endl;
     }
 
     switch (direct_output_type)
     {
       case direct_output::none:
-        sample.reset();
-        for (int i=0; i<sample.num_samples; i++)
-          switch (bits)
-          {
-            case 8:
-              {
-                signed char sample_char = (signed char)(127 * sample.next_sample());
-
-                if (unsigned_samples)
-                {
-                  unsigned char sample_uchar = (unsigned char)(int(sample_char) + 128); // bias sample
-                  output.put(sample_uchar);
-                }
-                else
-                  output.put(sample_char);
-              }
-              break;
-            case 16:
-              {
-                short sample_short = (short)(32767 * sample.next_sample());
-
-                if (unsigned_samples)
-                {
-                  unsigned short sample_ushort = short(int(sample_short) + 32768); // bias sample
-                  if (msb_output)
-                  {
-                    output.put((sample_ushort >> 8) & 0xFF);
-                    output.put(sample_ushort & 0xFF);
-                  }
-                  else if (lsb_output)
-                  {
-                    output.put(sample_ushort & 0xFF);
-                    output.put((sample_ushort >> 8) & 0xFF);
-                  }
-                  else
-                    output.write((char *)&sample_ushort, 2);
-                }
-                else if (ulaw)
-                  output.put(ulaw_encode_sample(sample_short));
-                else if (alaw)
-                  output.put(alaw_encode_sample(sample_short));
-                else
-                {
-                  unsigned short *pu16 = (unsigned short *)&sample_short;
-
-                  if (msb_output)
-                  {
-                    output.put(((*pu16) >> 8) & 0xFF);
-                    output.put((*pu16) & 0xFF);
-                  }
-                  else if (lsb_output)
-                  {
-                    output.put((*pu16) & 0xFF);
-                    output.put(((*pu16) >> 8) & 0xFF);
-                  }
-                  else
-                    output.write((char *)&sample_short, 2);
-                }
-              }
-              break;
-            case 32:
-              {
-                float sample_float = (float)sample.next_sample();
-
-                output.write((char *)&sample_float, 4);
-              }
-              break;
-            case 64:
-              output.write((char *)&sample.next_sample(), 8);
-              break;
-          }
+        cerr << "Output to: " << output_filename << endl;
         break;
-#ifdef DIRECTX
+  #ifdef DIRECTX
       case direct_output::directx:
-        emit_sample_to_directx_buffer(sample);
+        cerr << "Direct output: DirectX" << endl;
         break;
-#endif
-#ifdef SDL
+  #endif
+  #ifdef SDL
       case direct_output::sdl:
-        emit_sample_to_sdl_buffer(sample);
+        cerr << "Direct output: SDL" << endl;
         break;
-#endif
+  #endif
     }
+
+    cerr << "  " << output_channels << " output channels" << endl
+      << "  " << ticks_per_second << " samples per second" << endl
+      << "  " << bits << " bits per sample";
+
+    if (bits > 16)
+      cerr << " (floating-point)";
+
+    if (unsigned_samples)
+      cerr << " (unsigned)";
+
+    cerr << endl;
+
+    if (ulaw)
+      cerr << "  mu-Law sample encoding" << endl;
+
+    if (looping)
+      cerr << "  looping" << endl;
 
     if (max_ticks > 0)
+      cerr << "  time limit " << max_ticks << " samples (" << (double(max_ticks) / ticks_per_second) << " seconds)" << endl;
+
+    while (true)
     {
-      max_ticks--;
-      if (max_ticks <= 0)
+      one_sample sample(output_channels);
+      int count = 0;
+
+      for (iter_t i = channels.begin(), l = channels.end();
+          i != l;
+          ++i)
+      {
+        if ((*i)->finished)
+          continue;
+
+        sample += (*i)->calculate_next_tick();
+        count++;
+      }
+
+      for (int i = ancillary_channels.size() - 1; i >= 0; i--)
+      {
+        channel &chan = *ancillary_channels[i];
+
+        if (chan.finished)
+        {
+          delete &chan;
+          ancillary_channels.erase(ancillary_channels.begin() + i);
+          continue;
+        }
+
+        sample += chan.calculate_next_tick();
+        count++;
+      }
+
+      if (count == 0)
+        break;
+
+      sample *= global_volume;
+
+      if (amplify)
+        sample *= amplify_by;
+
+      if (compress)
+      {
+        bool overdriven = false;
+        sample.reset();
+
+        while (sample.has_next())
+        {
+          double this_sample = sample.next_sample();
+
+          if ((this_sample < -1.0) || (this_sample > 1.0))
+          {
+            amplify = true;
+            amplify_by /= fabs(this_sample);
+            overdriven = true;
+          }
+        }
+
+        if (overdriven)
+          cerr << "Warning: overdriven output was detected. Output has been compressed." << endl;
+      }
+
+      switch (direct_output_type)
+      {
+        case direct_output::none:
+          sample.reset();
+          for (int i=0; i<sample.num_samples; i++)
+            switch (bits)
+            {
+              case 8:
+                {
+                  signed char sample_char = (signed char)(127 * sample.next_sample());
+
+                  if (unsigned_samples)
+                  {
+                    unsigned char sample_uchar = (unsigned char)(int(sample_char) + 128); // bias sample
+                    output.put(sample_uchar);
+                  }
+                  else
+                    output.put(sample_char);
+                }
+                break;
+              case 16:
+                {
+                  short sample_short = (short)(32767 * sample.next_sample());
+
+                  if (unsigned_samples)
+                  {
+                    unsigned short sample_ushort = short(int(sample_short) + 32768); // bias sample
+                    if (msb_output)
+                    {
+                      output.put((sample_ushort >> 8) & 0xFF);
+                      output.put(sample_ushort & 0xFF);
+                    }
+                    else if (lsb_output)
+                    {
+                      output.put(sample_ushort & 0xFF);
+                      output.put((sample_ushort >> 8) & 0xFF);
+                    }
+                    else
+                      output.write((char *)&sample_ushort, 2);
+                  }
+                  else if (ulaw)
+                    output.put(ulaw_encode_sample(sample_short));
+                  else if (alaw)
+                    output.put(alaw_encode_sample(sample_short));
+                  else
+                  {
+                    unsigned short *pu16 = (unsigned short *)&sample_short;
+
+                    if (msb_output)
+                    {
+                      output.put(((*pu16) >> 8) & 0xFF);
+                      output.put((*pu16) & 0xFF);
+                    }
+                    else if (lsb_output)
+                    {
+                      output.put((*pu16) & 0xFF);
+                      output.put(((*pu16) >> 8) & 0xFF);
+                    }
+                    else
+                      output.write((char *)&sample_short, 2);
+                  }
+                }
+                break;
+              case 32:
+                {
+                  float sample_float = (float)sample.next_sample();
+
+                  output.write((char *)&sample_float, 4);
+                }
+                break;
+              case 64:
+                output.write((char *)&sample.next_sample(), 8);
+                break;
+            }
+          break;
+  #ifdef DIRECTX
+        case direct_output::directx:
+          emit_sample_to_directx_buffer(sample);
+          break;
+  #endif
+  #ifdef SDL
+        case direct_output::sdl:
+          emit_sample_to_sdl_buffer(sample);
+          break;
+  #endif
+      }
+
+      if (max_ticks > 0)
+      {
+        max_ticks--;
+        if (max_ticks <= 0)
+          break;
+      }
+
+      if (shutting_down)
         break;
     }
 
-    if (shutting_down)
-      break;
+    shutting_down = true;
+
+    switch (direct_output_type)
+    {
+      case direct_output::none:
+        output.close();
+        break;
+  #ifdef DIRECTX
+      case direct_output::directx:
+        shutdown_directx();
+        break;
+  #endif
+  #ifdef SDL
+      case direct_output::sdl:
+        shutdown_sdl();
+        break;
+  #endif
+    }
+
+    cerr << endl;
   }
-
-  shutting_down = true;
-
-  switch (direct_output_type)
+  catch (const char *message)
   {
-    case direct_output::none:
-      output.close();
-      break;
-#ifdef DIRECTX
-    case direct_output::directx:
-      shutdown_directx();
-      break;
-#endif
-#ifdef SDL
-    case direct_output::sdl:
-      shutdown_sdl();
-      break;
-#endif
+    cerr << endl;
+    cerr << "CRASH: " << message << endl;
   }
-
-  cerr << endl;
 
   shutdown_complete = true;
 

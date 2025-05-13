@@ -2245,14 +2245,23 @@ int main(int argc, char *argv[])
   int status;
 
   ofstream output;
-  
+
+retry_output:
   switch (direct_output_type)
   {
     case direct_output::none:
       if (!output_file)
       {
+#if defined(SDL) && defined(SDL_DEFAULT)
+        direct_output_type = direct_output::sdl;
+        goto retry_output;
+#elif defined(DIRECTX) && defined(DIRECTX_DEFAULT)
+        direct_output_type == direct_output::directx;
+        goto retry_output;
+#else
         cerr << argv[0] << ": no output specified, use -output to write a raw PCM or aLaw/uLaw file" << endl;
         return 1;
+#endif
       }
 
       output.open(output_filename.c_str(), ios::binary);

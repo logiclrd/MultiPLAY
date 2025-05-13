@@ -2013,6 +2013,7 @@ int main(int argc, char *argv[])
   double max_time = -1.0;
   long max_ticks = -1;
   string output_filename("output.raw");
+  bool output_file = false;
   int bits = 16;
   bool unsigned_samples = false, ulaw = false, alaw = false;
   direct_output::type direct_output_type = direct_output::none;
@@ -2096,7 +2097,10 @@ int main(int argc, char *argv[])
       if (i >= argc)
         cerr << argv[0] << ": missing argument for parameter -output" << endl;
       else
+      {
+        output_file = true;
         output_filename = argv[i];
+      }
     }
     else if (arg == "-looping")
       looping = true;
@@ -2245,6 +2249,12 @@ int main(int argc, char *argv[])
   switch (direct_output_type)
   {
     case direct_output::none:
+      if (!output_file)
+      {
+        cerr << argv[0] << ": no output specified, use -output to write a raw PCM or aLaw/uLaw file" << endl;
+        return 1;
+      }
+
       output.open(output_filename.c_str(), ios::binary);
 
       if (!output.is_open())

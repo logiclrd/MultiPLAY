@@ -1,0 +1,15 @@
+      ancillary = new channel_DYNAMIC(*p, (*context)->created_with, *context, fade_per_tick);
+                                       ^       ^                         ^         ^
+                                       |       |                         |         `- calculate this based on
+                                       |       |                         |            output ticks, so that the
+                                       |       |                         |            sample is completely faded
+                                       |       |                         |            out within the desired
+                                       |       |                         |            amount of time
+                                       |       |                         `- current_sample_context
+                                       |       `- current_sample
+                                       `- this
+ancillary->volume_envelope, panning_envelope, pitch_envelope
+
+ancillary->fading, fade_value <-- these are what fade_per_tick adjusts
+
+This needs to be done both when a new note is created and when a note cut event fires. Note cut events can be triggered explicitly with the corresponding row event, or they can occur within instruments. However, instruments already fade out cut notes.

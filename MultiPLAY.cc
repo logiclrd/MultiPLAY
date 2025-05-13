@@ -1,9 +1,11 @@
 #include <functional>
 #include <algorithm>
 #include <iostream>
+#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <locale>
 #include <vector>
 #include <string>
 #include <map>
@@ -17,7 +19,10 @@ using namespace std;
 
 using namespace RAII;
 
-#include "one_sample.h"
+namespace MultiPLAY
+{
+  #include "one_sample.h"
+}
 
 #ifdef DIRECTX
 #include "Output-DirectX.h"
@@ -27,1976 +32,1981 @@ using namespace RAII;
 #include "Output-SDL.h"
 #endif
 
-volatile bool shutting_down = false, shutdown_complete = false;
-
-void start_shutdown()
+namespace MultiPLAY
 {
-  shutting_down = true;
-}
+  volatile bool shutting_down = false, shutdown_complete = false;
 
-#ifdef WIN32
-#include "win32_break_handler.h"
-#else
-#include "unix_break_handler.h"
-#endif
-
-const double mod_finetune[16] = {
-  7895.0, 7941.0, 7985.0, 8046.0, 8107.0, 8169.0, 8232.0, 8280.0,
-  8363.0, 8413.0, 8463.0, 8529.0, 8581.0, 8651.0, 8723.0, 8757.0 };
-/* The above were provided by some tutorial, but I don't think they're right. */
-
-// These were calculated according to one finetune step being 1/8 of a
-// semitone. Thus, the first entry is one semitone lower than the 8th
-// entry.
-/*
-const double mod_finetune[16] = {
-  7893.646721,
-  7950.844085,
-  8008.455902,
-  8066.485173,
-  8124.934925,
-  8183.808203,
-  8243.108077,
-  8302.837638,
-  8363.000000,
-  8423.598298,
-  8484.635691,
-  8546.115361,
-  8608.040513,
-  8670.414375,
-  8733.240198,
-  8796.521256 };/**/
-
-namespace Waveform
-{
-  enum Type
+  void start_shutdown()
   {
-    Sine,     // ._.·'¯'·._.·'¯'·._.
+    shutting_down = true;
+  }
 
-    Square,   // _|¯|_|¯|_|¯|_|¯|_|¯
+  #ifdef WIN32
+  #include "win32_break_handler.h"
+  #else
+  #include "unix_break_handler.h"
+  #endif
 
-    Sawtooth, // /|/|/|/|/|/|/|/|/|/
-    
-    RampDown, // \|\|\|\|\|\|\|\|\|\
+  const double mod_finetune[16] = {
+    7895.0, 7941.0, 7985.0, 8046.0, 8107.0, 8169.0, 8232.0, 8280.0,
+    8363.0, 8413.0, 8463.0, 8529.0, 8581.0, 8651.0, 8723.0, 8757.0 };
+  /* The above were provided by some tutorial, but I don't think they're right. */
 
-    Triangle, // /\/\/\/\/\/\/\/\/\/
+  // These were calculated according to one finetune step being 1/8 of a
+  // semitone. Thus, the first entry is one semitone lower than the 8th
+  // entry.
+  /*
+  const double mod_finetune[16] = {
+    7893.646721,
+    7950.844085,
+    8008.455902,
+    8066.485173,
+    8124.934925,
+    8183.808203,
+    8243.108077,
+    8302.837638,
+    8363.000000,
+    8423.598298,
+    8484.635691,
+    8546.115361,
+    8608.040513,
+    8670.414375,
+    8733.240198,
+    8796.521256 };/**/
 
-    Sample,
+  namespace Waveform
+  {
+    enum Type
+    {
+      Sine,     // ._.ï¿½'ï¿½'ï¿½._.ï¿½'ï¿½'ï¿½._.
 
-    Random,   // crazy all over the place (changes at arbitrary intervals)
-  };
-}
+      Square,   // _|ï¿½|_|ï¿½|_|ï¿½|_|ï¿½|_|ï¿½
 
-const Waveform::Type default_waveform = Waveform::Triangle;
+      Sawtooth, // /|/|/|/|/|/|/|/|/|/
+      
+      RampDown, // \|\|\|\|\|\|\|\|\|\
 
-const double dropoff_min_length = 30.0 / 44100.0;
-const double dropoff_max_length = 70.0 / 44100.0;
-const double dropoff_proportion = 1.0 / (dropoff_min_length + dropoff_max_length);
+      Triangle, // /\/\/\/\/\/\/\/\/\/
 
-//                           G# A#     C# D#    F# G#
-//                             A   B  C  D  E  F  G
-const int note_by_name[7] = {  9, 11, 0, 2, 4, 5, 7  };
+      Sample,
 
-#define LOG2 0.6931471805599453
+      Random,   // crazy all over the place (changes at arbitrary intervals)
+    };
+  }
 
-double lg(double x)
-{
-  return log(x) * (1.0 / LOG2);
-}
+  const Waveform::Type default_waveform = Waveform::Triangle;
 
-double p2(double x)
-{
-  return exp(LOG2 * x);
-}
+  const double dropoff_min_length = 30.0 / 44100.0;
+  const double dropoff_max_length = 70.0 / 44100.0;
+  const double dropoff_proportion = 1.0 / (dropoff_min_length + dropoff_max_length);
 
-int output_channels;
+  //                           G# A#     C# D#    F# G#
+  //                             A   B  C  D  E  F  G
+  const int note_by_name[7] = {  9, 11, 0, 2, 4, 5, 7  };
 
-int expect_int(istream *in)
-{
-  int built_up = 0;
+  #define LOG2 0.6931471805599453
 
-  while (true)
+  double lg(double x)
+  {
+    return log(x) * (1.0 / LOG2);
+  }
+
+  double p2(double x)
+  {
+    return exp(LOG2 * x);
+  }
+
+  int output_channels;
+
+  int expect_int(istream *in)
+  {
+    int built_up = 0;
+
+    while (true)
+    {
+      int ch = in->get();
+
+      if (ch < 0)
+        return built_up;
+
+      if ((ch >= '0') && (ch <= '9'))
+        built_up = (built_up * 10) + (ch - '0');
+      else
+      {
+        in->putback(ch);
+        return built_up;
+      }
+    }
+  }
+
+  int accidental(istream *in)
   {
     int ch = in->get();
 
-    if (ch < 0)
-      return built_up;
+    if (ch == '-')
+      return -1;
+    if ((ch == '+') || (ch == '#'))
+      return +1;
 
-    if ((ch >= '0') && (ch <= '9'))
-      built_up = (built_up * 10) + (ch - '0');
-    else
+    in->putback(ch);
+    return 0;
+  }
+
+  double expect_duration(istream *in, int &note_length_denominator)
+  {
+    double duration = 1.0;
+    double duration_add = 0.5;
+
+    int ch = in->get();
+
+    if (isdigit(ch) && (&note_length_denominator != NULL))
     {
       in->putback(ch);
-      return built_up;
+      note_length_denominator = expect_int(in);
     }
-  }
-}
 
-int accidental(istream *in)
-{
-  int ch = in->get();
+    while (ch == '.')
+    {
+      duration += duration_add;
+      duration_add /= 2.0;
 
-  if (ch == '-')
-    return -1;
-  if ((ch == '+') || (ch == '#'))
-    return +1;
+      ch = in->get();
+    }
 
-  in->putback(ch);
-  return 0;
-}
+    if (ch >= 0)
+      in->putback(ch);
 
-double expect_duration(istream *in, int &note_length_denominator)
-{
-  double duration = 1.0;
-  double duration_add = 0.5;
-
-  int ch = in->get();
-
-  if (isdigit(ch) && (&note_length_denominator != NULL))
-  {
-    in->putback(ch);
-    note_length_denominator = expect_int(in);
+    return duration;
   }
 
-  while (ch == '.')
-  {
-    duration += duration_add;
-    duration_add /= 2.0;
+  int ticks_per_second;
+  double inter_note = p2(1.0 / 12.0);
 
-    ch = in->get();
+  int from_lsb2(unsigned char in[2])
+  {
+    return in[0] | (static_cast<signed char>(in[1]) << 8);
   }
 
-  if (ch >= 0)
-    in->putback(ch);
-
-  return duration;
-}
-
-int ticks_per_second;
-double inter_note = p2(1.0 / 12.0);
-
-int from_lsb2(unsigned char in[2])
-{
-  return in[0] | (static_cast<signed char>(in[1]) << 8);
-}
-
-unsigned int from_lsb2_u(unsigned char in[2])
-{
-  return in[0] | (in[1] << 8);
-}
-
-int from_lsb4(unsigned char in[4])
-{
-  return in[0] | (in[1] << 8) | (in[2] << 16) | (in[3] << 24);
-}
-
-long from_lsb4_l(unsigned char in[4])
-{
-  return in[0] | (in[1] << 8) | (in[2] << 16) | (in[3] << 24);
-}
-
-unsigned long from_lsb4_lu(unsigned char in[4])
-{
-  return in[0] | (in[1] << 8) | (in[2] << 16) | (in[3] << 24);
-}
-
-int from_msb2(unsigned char in[2])
-{
-  return in[1] | (static_cast<signed char>(in[0]) << 8);
-}
-
-unsigned int from_msb2_u(unsigned char in[2])
-{
-  return in[1] | (in[0] << 8);
-}
-
-int from_msb4(unsigned char in[4])
-{
-  return in[3] | (in[2] << 8) | (in[1] << 16) | (in[0] << 24);
-}
-
-struct row;
-struct channel;
-struct sample;
-
-struct sample_context
-{
-  sample *created_with;
-  double samples_per_second;
-  double default_volume;
-  int num_samples;
-
-  sample_context(sample *cw) : created_with(cw) { }
-};
-
-struct sample
-{
-  int index;
-
-  int fade_out;
-
-  int num_samples;
-  double samples_per_second;
-
-  bool use_vibrato;
-  double vibrato_depth, vibrato_cycle_frequency; // frequency relative to samples with samples_per_second per second
-
-  virtual one_sample get_sample(int sample, double offset, sample_context *c = NULL) = 0;
-  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0.0, bool top_level = true, int *znote = NULL) = 0;
-  virtual void occlude_note(channel *p = NULL, sample_context **c = NULL, sample *new_sample = NULL, row *r = NULL) = 0;
-  virtual void exit_sustain_loop(sample_context *c = NULL) = 0; //..if it has one :-)
-  virtual void kill_note(sample_context *c = NULL) = 0;
-  virtual bool past_end(int sample, double offset, sample_context *c = NULL) = 0;
-
-  sample(int idx)
-    : use_vibrato(false), index(idx + 1)
+  unsigned int from_lsb2_u(unsigned char in[2])
   {
+    return in[0] | (in[1] << 8);
   }
-};
 
-inline double bilinear(double left, double right, double offset)
-{
-  return left * (1.0 - offset) + right * offset; // bilinear interpolation
-}
-
-namespace SustainLoopState
-{
-  enum Type
+  int from_lsb4(unsigned char in[4])
   {
-    Off, Running, Finishing, Finished,
+    return in[0] | (in[1] << 8) | (in[2] << 16) | (in[3] << 24);
+  }
+
+  long from_lsb4_l(unsigned char in[4])
+  {
+    return in[0] | (in[1] << 8) | (in[2] << 16) | (in[3] << 24);
+  }
+
+  unsigned long from_lsb4_lu(unsigned char in[4])
+  {
+    return in[0] | (in[1] << 8) | (in[2] << 16) | (in[3] << 24);
+  }
+
+  int from_msb2(unsigned char in[2])
+  {
+    return in[1] | (static_cast<signed char>(in[0]) << 8);
+  }
+
+  unsigned int from_msb2_u(unsigned char in[2])
+  {
+    return in[1] | (in[0] << 8);
+  }
+
+  int from_msb4(unsigned char in[4])
+  {
+    return in[3] | (in[2] << 8) | (in[1] << 16) | (in[0] << 24);
+  }
+
+  struct row;
+  struct channel;
+  struct sample;
+
+  struct sample_context
+  {
+    sample *created_with;
+    double samples_per_second;
+    double default_volume;
+    int num_samples;
+
+    sample_context(sample *cw) : created_with(cw) { }
   };
-}
 
-struct sample_builtintype_context : sample_context
-{
-  int last_looped_sample;
-
-  long sustain_loop_exit_difference;
-
-  SustainLoopState::Type sustain_loop_state;
-
-  sample_builtintype_context(sample *cw) : sample_context(cw) { }
-};
-
-template <class T>
-struct sample_builtintype : public sample
-{
-  T *sample_data[MAX_CHANNELS];
-  int sample_channels;
-
-  double sample_scale;
-  double default_volume;
-
-  long loop_begin, loop_end;
-  long sustain_loop_begin, sustain_loop_end;
-
-  bool use_sustain_loop;
-
-  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0, bool top_level = true, int *znote = NULL)
+  struct sample
   {
-    if (c == NULL)
-      throw "need sample context";
+    int index;
 
-    if (*c)
+    int fade_out;
+
+    int num_samples;
+    double samples_per_second;
+
+    bool use_vibrato;
+    double vibrato_depth, vibrato_cycle_frequency; // frequency relative to samples with samples_per_second per second
+
+    virtual one_sample get_sample(int sample, double offset, sample_context *c = NULL) = 0;
+    virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0.0, bool top_level = true, int *znote = NULL) = 0;
+    virtual void occlude_note(channel *p = NULL, sample_context **c = NULL, sample *new_sample = NULL, row *r = NULL) = 0;
+    virtual void exit_sustain_loop(sample_context *c = NULL) = 0; //..if it has one :-)
+    virtual void kill_note(sample_context *c = NULL) = 0;
+    virtual bool past_end(int sample, double offset, sample_context *c = NULL) = 0;
+
+    sample(int idx)
+      : use_vibrato(false), index(idx + 1)
     {
-      (*c)->created_with->occlude_note(p, c, this, r);
+    }
+  };
 
-      if (*c)
-        delete *c;
+  inline double bilinear(double left, double right, double offset)
+  {
+    return left * (1.0 - offset) + right * offset; // bilinear interpolation
+  }
+
+  namespace SustainLoopState
+  {
+    enum Type
+    {
+      Off, Running, Finishing, Finished,
+    };
+  }
+
+  struct instrument_envelope_node
+  {
+    int tick;
+    double value;
+
+    instrument_envelope_node(int t, double v)
+      : tick(t), value(v)
+    {
+    }
+  };
+
+  struct sustain_loop_position
+  {
+    bool still_running;
+    double exit_diff;
+  };
+
+  struct instrument_envelope
+  {
+    bool enabled, looping, sustain_loop;
+
+    int loop_begin_tick, loop_end_tick, sustain_loop_begin_tick, sustain_loop_end_tick;
+    double loop_length, sustain_loop_length; // to reduce conversions
+
+    vector<instrument_envelope_node> node;
+
+    instrument_envelope()
+    {
+      enabled = false;
     }
 
-    *c = new sample_builtintype_context(this);
-
-    sample_builtintype_context &context = *(sample_builtintype_context *)*c;
-
-    if (use_sustain_loop) // reset sustain loop
-      context.sustain_loop_state = SustainLoopState::Running;
-    else
-      context.sustain_loop_state = SustainLoopState::Off;
-
-    context.last_looped_sample = 0;
-    context.sustain_loop_exit_difference = 0;
-    context.samples_per_second = samples_per_second;
-    context.default_volume = default_volume;
-    context.num_samples = num_samples;
-
-    if (p)
+    void begin_sustain_loop(sustain_loop_position &susloop)
     {
-      if (top_level)
+      loop_length = loop_end_tick - loop_begin_tick; // have to calc this somewhere
+      sustain_loop_length = sustain_loop_end_tick - sustain_loop_begin_tick;
+
+      susloop.still_running = (sustain_loop == true); // for clarity
+      susloop.exit_diff = 0.0;
+    }
+
+    void exit_sustain_loop(double tick, sustain_loop_position &susloop)
+    {
+      if (susloop.still_running)
       {
-        p->volume_envelope = NULL;
-        p->panning_envelope = NULL;
-        p->pitch_envelope = NULL;
-      }
-      p->samples_this_note = 0;
-    }
-  }
-
-  virtual void occlude_note(channel *p = NULL, sample_context **c = NULL, sample *new_sample = NULL, row *r = NULL)
-  { // do nothing
-  }
-
-  virtual void exit_sustain_loop(sample_context *c)
-  {
-    sample_builtintype_context &context = *(sample_builtintype_context *)c;
-    if (context.sustain_loop_state == SustainLoopState::Running)
-      context.sustain_loop_state = SustainLoopState::Finishing;
-  }
-
-  virtual void kill_note(sample_context *c = NULL)
-  {
-    // no implementation required
-  }
-
-  virtual bool past_end(int sample, double offset, sample_context *c = NULL)
-  {
-    if (c == NULL)
-      throw "need context for instrument";
-
-    if (loop_end != 0xFFFFFFFF)
-      return false;
-
-    sample_builtintype_context &context = *(sample_builtintype_context *)c;
-    switch (context.sustain_loop_state)
-    {
-      case SustainLoopState::Running:
-      case SustainLoopState::Finishing: return false;
-    }
-
-    if (context.sustain_loop_state == SustainLoopState::Finished)
-      sample -= context.sustain_loop_exit_difference;
-
-    return (sample >= num_samples);
-  }
-
-  virtual one_sample get_sample(int sample, double offset, sample_context *c = NULL)
-  {
-    if (c == NULL)
-      throw "need a sample context";
-
-    sample_builtintype_context &context = *(sample_builtintype_context *)c;
-
-    bool using_sustain_loop = false;
-
-    if ((sample < 0)
-     || ((sample >= num_samples)
-      && (loop_end == 0xFFFFFFFF)
-      && (!use_sustain_loop)))
-      return one_sample(output_channels);
-
-    switch (context.sustain_loop_state)
-    {
-      case SustainLoopState::Running:
-      case SustainLoopState::Finishing:
-        int new_sample;
-
-        if (sample > sustain_loop_end)
-          new_sample = ((sample - sustain_loop_begin) % (sustain_loop_end - sustain_loop_begin + 1)) + sustain_loop_begin;
-        else
-          new_sample = sample;
-
-        using_sustain_loop = true;
-
-        if (context.sustain_loop_state == SustainLoopState::Finishing)
+        if (tick > sustain_loop_end_tick)
         {
-          if (new_sample < context.last_looped_sample)
+          double new_tick;
+
+          if (sustain_loop_length)
           {
-            new_sample += (sustain_loop_end - sustain_loop_begin + 1);
-            context.sustain_loop_state = SustainLoopState::Finished;
-            context.sustain_loop_exit_difference = sample - new_sample;
+            double repetitions = floor((tick - sustain_loop_begin_tick) / sustain_loop_length);
+            new_tick = tick - repetitions * sustain_loop_length;
           }
-          context.last_looped_sample = new_sample;
+          else
+            new_tick = sustain_loop_begin_tick;
+
+          susloop.exit_diff = tick - new_tick;
         }
+        else
+          susloop.exit_diff = 0.0;
 
-        sample = new_sample;            
-
-        if (context.sustain_loop_state != SustainLoopState::Finished)
-          break;
-
-        using_sustain_loop = false;
-        sample += context.sustain_loop_exit_difference; // compensate for fall through 'finished'
-      case SustainLoopState::Finished:
-        sample -= context.sustain_loop_exit_difference; // intentionally fall through
-      case SustainLoopState::Off:
-        if ((sample > loop_end) && (loop_end != 0xFFFFFFFF))
-          sample = ((sample - loop_begin) % (loop_end - loop_begin + 1)) + loop_begin;
-        break;
+        susloop.still_running = false;
+      }
     }
 
-    double before, after;
-
-    one_sample ret(sample_channels);
-
-    ret.reset();
-
-    if (using_sustain_loop)
-      for (int i=0; i<sample_channels; i++)
-      {
-        before = sample_data[i][sample];
-        if ((sample + 1 < num_samples) && (sample < sustain_loop_end))
-          after = sample_data[i][sample + 1];
-        else if (sample == loop_end)
-          after = sample_data[i][sustain_loop_begin];
-        else
-          after = 0.0;
-
-        ret.next_sample() = bilinear(before, after, offset);
-      }
-    else if (loop_end == 0xFFFFFFFF)
-      for (int i=0; i<sample_channels; i++)
-      {
-        before = sample_data[i][sample];
-        if (sample + 1 < num_samples)
-          after = sample_data[i][sample + 1];
-        else
-          after = 0.0;
-
-        ret.next_sample() = bilinear(before, after, offset);
-      }
-    else
-      for (int i=0; i<sample_channels; i++)
-      {
-        before = sample_data[i][sample];
-        if ((sample + 1 < num_samples) && (sample < loop_end))
-          after = sample_data[i][sample + 1];
-        else if (sample == loop_end)
-          after = sample_data[i][loop_begin];
-        else
-          after = 0.0;
-
-        ret.next_sample() = bilinear(before, after, offset);
-      }
-
-    return ret.scale(sample_scale).set_channels(output_channels);
-  }
-
-  sample_builtintype(int index, int sample_channels,
-                     T **data = NULL, int num_samples = 0,
-                     long loop_begin = 0, long loop_end = 0xFFFFFFFF,
-                     long susloop_begin = 0, long susloop_end = 0xFFFFFFFF)
-    : sample(index)
-  {
-    switch (sizeof(T))
+    double get_value_at(double tick, sustain_loop_position &susloop)
     {
-      case 1: sample_scale = 1.0 / 127.5;        break;
-      case 2: sample_scale = 1.0 / 32767.5;      break;
-      case 4: sample_scale = 1.0 / 2147483647.5; break;
-      default: throw "could not deduce sample scale";
-    }
-
-    this->sample_channels = sample_channels;
-
-    if (data)
-      for (int i=0; i<sample_channels; i++)
-        this->sample_data[i] = data[i];
-    else
-      for (int i=0; i<sample_channels; i++)
-        this->sample_data[i] = NULL;
-
-    this->num_samples = num_samples;
-
-    this->loop_begin = loop_begin;
-    this->loop_end = loop_end;
-
-    this->sustain_loop_begin = susloop_begin;
-    this->sustain_loop_end = susloop_end;
-
-    use_sustain_loop = (susloop_end != 0xFFFFFFFF);
-  }
-};
-
-#include "Load_Sample.h"
-
-struct instrument_envelope_node
-{
-  int tick;
-  double value;
-
-  instrument_envelope_node(int t, double v)
-    : tick(t), value(v)
-  {
-  }
-};
-
-struct sustain_loop_position
-{
-  bool still_running;
-  double exit_diff;
-};
-
-struct instrument_envelope
-{
-  bool enabled, looping, sustain_loop;
-
-  int loop_begin_tick, loop_end_tick, sustain_loop_begin_tick, sustain_loop_end_tick;
-  double loop_length, sustain_loop_length; // to reduce conversions
-
-  vector<instrument_envelope_node> node;
-
-  instrument_envelope()
-  {
-    enabled = false;
-  }
-
-  void begin_sustain_loop(sustain_loop_position &susloop)
-  {
-    loop_length = loop_end_tick - loop_begin_tick; // have to calc this somewhere
-    sustain_loop_length = sustain_loop_end_tick - sustain_loop_begin_tick;
-
-    susloop.still_running = (sustain_loop == true); // for clarity
-    susloop.exit_diff = 0.0;
-  }
-
-  void exit_sustain_loop(double tick, sustain_loop_position &susloop)
-  {
-    if (susloop.still_running)
-    {
-      if (tick > sustain_loop_end_tick)
+      if (susloop.still_running)
       {
-        double new_tick;
-
-        if (sustain_loop_length)
+        if (tick > sustain_loop_end_tick)
         {
-          double repetitions = floor((tick - sustain_loop_begin_tick) / sustain_loop_length);
-          new_tick = tick - repetitions * sustain_loop_length;
+          if (sustain_loop_length)
+          {
+            double repetitions = floor((tick - sustain_loop_begin_tick) / sustain_loop_length);
+            tick -= repetitions * sustain_loop_length;
+          }
+          else
+            tick = sustain_loop_begin_tick;
         }
-        else
-          new_tick = sustain_loop_begin_tick;
-
-        susloop.exit_diff = tick - new_tick;
       }
       else
-        susloop.exit_diff = 0.0;
-
-      susloop.still_running = false;
-    }
-  }
-
-  double get_value_at(double tick, sustain_loop_position &susloop)
-  {
-    if (susloop.still_running)
-    {
-      if (tick > sustain_loop_end_tick)
       {
-        if (sustain_loop_length)
-        {
-          double repetitions = floor((tick - sustain_loop_begin_tick) / sustain_loop_length);
-          tick -= repetitions * sustain_loop_length;
-        }
-        else
-          tick = sustain_loop_begin_tick;
-      }
-    }
-    else
-    {
-      tick -= susloop.exit_diff;
+        tick -= susloop.exit_diff;
 
-      if (looping && (tick > loop_end_tick))
+        if (looping && (tick > loop_end_tick))
+        {
+          if (loop_length)
+          {
+            double repetitions = floor((tick - loop_begin_tick) / loop_length);
+            tick -= repetitions * loop_length;
+          }
+          else
+            tick = loop_begin_tick;
+        }
+      }
+
+      int idx = 1;
+      int l = node.size() - 1;
+
+      while (tick > node[idx].tick)
       {
-        if (loop_length)
-        {
-          double repetitions = floor((tick - loop_begin_tick) / loop_length);
-          tick -= repetitions * loop_length;
-        }
-        else
-          tick = loop_begin_tick;
+        idx++;
+
+        if (idx >= l)
+          return node[l].value;
       }
+
+      tick -= node[idx].tick;
+
+      double t = tick / (node[idx].tick - node[idx - 1].tick);
+
+      return bilinear(node[idx - 1].value, node[idx].value, t);
+    }
+    
+    bool past_end(double tick, sustain_loop_position &susloop)
+    {
+      if (susloop.still_running)
+        return false;
+      if (looping)
+        return false;
+
+      if (sustain_loop)
+        tick -= susloop.exit_diff;
+
+      return (tick > node.back().tick);
+    }
+  };
+
+  struct playback_envelope
+  {
+    instrument_envelope &env;
+    double sample_ticks_per_envelope_tick, envelope_ticks_per_sample_tick;
+    sustain_loop_position susloop;
+    playback_envelope *wrap;
+    bool scale, looping;
+
+    playback_envelope(const playback_envelope &other)
+      : wrap(other.wrap ? new playback_envelope(*other.wrap) : NULL),
+        sample_ticks_per_envelope_tick(other.sample_ticks_per_envelope_tick),
+        envelope_ticks_per_sample_tick(other.envelope_ticks_per_sample_tick),
+        susloop(other.susloop), scale(other.scale), env(other.env),
+        looping(other.looping)
+    {
     }
 
-    int idx = 1;
-    int l = node.size() - 1;
-
-    while (tick > node[idx].tick)
+    playback_envelope(instrument_envelope &e, double ticks)
+      : wrap(NULL), env(e), sample_ticks_per_envelope_tick(ticks),
+        envelope_ticks_per_sample_tick(1.0 / ticks),
+        looping(e.looping)
     {
-      idx++;
-
-      if (idx >= l)
-        return node[l].value;
     }
 
-    tick -= node[idx].tick;
-
-    double t = tick / (node[idx].tick - node[idx - 1].tick);
-
-    return bilinear(node[idx - 1].value, node[idx].value, t);
-  }
-  
-  bool past_end(double tick, sustain_loop_position &susloop)
-  {
-    if (susloop.still_running)
-      return false;
-    if (looping)
-      return false;
-
-    if (sustain_loop)
-      tick -= susloop.exit_diff;
-
-    return (tick > node.back().tick);
-  }
-};
-
-struct playback_envelope
-{
-  instrument_envelope &env;
-  double sample_ticks_per_envelope_tick, envelope_ticks_per_sample_tick;
-  sustain_loop_position susloop;
-  playback_envelope *wrap;
-  bool scale, looping;
-
-  playback_envelope(const playback_envelope &other)
-    : wrap(other.wrap ? new playback_envelope(*other.wrap) : NULL),
-      sample_ticks_per_envelope_tick(other.sample_ticks_per_envelope_tick),
-      envelope_ticks_per_sample_tick(other.envelope_ticks_per_sample_tick),
-      susloop(other.susloop), scale(other.scale), env(other.env),
-      looping(other.looping)
-  {
-  }
-
-  playback_envelope(instrument_envelope &e, double ticks)
-    : wrap(NULL), env(e), sample_ticks_per_envelope_tick(ticks),
-      envelope_ticks_per_sample_tick(1.0 / ticks),
-      looping(e.looping)
-  {
-  }
-
-  playback_envelope(playback_envelope *w, instrument_envelope &e, double ticks, bool scale_envelope)
-    : wrap(w), env(e), sample_ticks_per_envelope_tick(ticks),
-      envelope_ticks_per_sample_tick(1.0 / ticks), scale(scale_envelope),
-      looping(e.looping || w->looping)
-  {
-  }
-
-  ~playback_envelope()
-  {
-    if (wrap)
-      delete wrap;
-  }
-
-  void begin_note(bool recurse = true)
-  {
-    env.begin_sustain_loop(susloop);
-    if (wrap && recurse)
-      wrap->begin_note();
-  }
-
-  void note_off(double sample_offset)
-  {
-    double tick = sample_offset * envelope_ticks_per_sample_tick;
-    env.exit_sustain_loop(tick, susloop);
-    if (wrap)
-      wrap->note_off(sample_offset);
-  }
-
-  void note_off(long sample, double offset)
-  {
-    note_off(sample + offset);
-  }
-
-  double get_value_at(double sample_offset)
-  {
-    double tick = sample_offset * envelope_ticks_per_sample_tick;
-
-    if (!wrap)
-      return env.get_value_at(tick, susloop);
-
-    if (scale)
-      return env.get_value_at(tick, susloop) * wrap->get_value_at(sample_offset);
-    else
-      return env.get_value_at(tick, susloop) + wrap->get_value_at(sample_offset);
-  }
-
-  double get_value_at(long sample, double offset)
-  {
-    return get_value_at(sample + offset);
-  }
-
-  bool past_end(double sample_offset)
-  {
-    double tick = sample_offset * envelope_ticks_per_sample_tick;
-
-    if (env.past_end(tick, susloop))
-      return true;
-
-    if (wrap)
-      return wrap->past_end(sample_offset);
-
-    return false;
-  }
-
-  bool past_end(long sample, double offset)
-  {
-    return past_end(sample + offset);
-  }
-};
-
-double global_volume = 1.0;
-vector<sample *> samples;
-
-struct channel
-{
-  bool finished, looping;
-  double offset, delta_offset_per_tick;
-  double note_frequency;
-  long offset_major;
-  int ticks_left, dropoff_start, rest_ticks, cutoff_ticks;
-  int current_znote;
-  bool play_full_sample;
-  double intensity, channel_volume;
-  Waveform::Type current_waveform;
-  sample *current_sample;
-  sample_context *current_sample_context;
-  pan_value panning;
-  one_sample return_sample;
-  long samples_this_note;
-  playback_envelope *volume_envelope, *panning_envelope, *pitch_envelope;
-
-  vector<channel *> my_ancillary_channels;
-
-  bool fading, have_fade_per_tick;
-  double fade_per_tick, fade_value;
-
-  int tempo;
-  int octave;
-  int note_length_denominator, this_note_length_denominator;
-  double rest_ticks_proportion;
-
-  void recalc(int znote, double duration_scale, bool calculate_length = true, bool reset_sample_offset = true, bool zero_means_no_note = true)
-  {
-    double seconds;
-
-    if (calculate_length)
+    playback_envelope(playback_envelope *w, instrument_envelope &e, double ticks, bool scale_envelope)
+      : wrap(w), env(e), sample_ticks_per_envelope_tick(ticks),
+        envelope_ticks_per_sample_tick(1.0 / ticks), scale(scale_envelope),
+        looping(e.looping || w->looping)
     {
-      if (this_note_length_denominator != 0)
-        seconds = (4.0 / this_note_length_denominator) * 60.0 / tempo;
     }
 
-    current_znote = znote;
-
-    if ((znote != 0) || (!zero_means_no_note))
+    ~playback_envelope()
     {
-      if ((current_waveform == Waveform::Sample) && (current_sample != NULL))
-        note_frequency = current_sample_context->samples_per_second * 2;
+      if (wrap)
+        delete wrap;
+    }
+
+    void begin_note(bool recurse = true)
+    {
+      env.begin_sustain_loop(susloop);
+      if (wrap && recurse)
+        wrap->begin_note();
+    }
+
+    void note_off(double sample_offset)
+    {
+      double tick = sample_offset * envelope_ticks_per_sample_tick;
+      env.exit_sustain_loop(tick, susloop);
+      if (wrap)
+        wrap->note_off(sample_offset);
+    }
+
+    void note_off(long sample, double offset)
+    {
+      note_off(sample + offset);
+    }
+
+    double get_value_at(double sample_offset)
+    {
+      double tick = sample_offset * envelope_ticks_per_sample_tick;
+
+      if (!wrap)
+        return env.get_value_at(tick, susloop);
+
+      if (scale)
+        return env.get_value_at(tick, susloop) * wrap->get_value_at(sample_offset);
       else
-        note_frequency = 987.766603;
-      
-      note_frequency *= pow(inter_note, znote - 49);
-
-      if (reset_sample_offset)
-      {
-        offset = 0;
-        offset_major = 0;
-      }
-
-      delta_offset_per_tick = note_frequency / ticks_per_second;
+        return env.get_value_at(tick, susloop) + wrap->get_value_at(sample_offset);
     }
 
-    if (calculate_length)
+    double get_value_at(long sample, double offset)
     {
-      if (this_note_length_denominator == 0)
-        seconds = current_sample->num_samples / current_sample->samples_per_second;
+      return get_value_at(sample + offset);
+    }
 
-      ticks_left = (int)(seconds * ticks_per_second * duration_scale);
-      if (play_full_sample)
+    bool past_end(double sample_offset)
+    {
+      double tick = sample_offset * envelope_ticks_per_sample_tick;
+
+      if (env.past_end(tick, susloop))
+        return true;
+
+      if (wrap)
+        return wrap->past_end(sample_offset);
+
+      return false;
+    }
+
+    bool past_end(long sample, double offset)
+    {
+      return past_end(sample + offset);
+    }
+  };
+
+  struct channel
+  {
+    bool finished, looping;
+    double offset, delta_offset_per_tick;
+    double note_frequency;
+    long offset_major;
+    int ticks_left, dropoff_start, rest_ticks, cutoff_ticks;
+    int current_znote;
+    bool play_full_sample;
+    double intensity, channel_volume;
+    Waveform::Type current_waveform;
+    sample *current_sample;
+    sample_context *current_sample_context;
+    pan_value panning;
+    one_sample return_sample;
+    long samples_this_note;
+    playback_envelope *volume_envelope, *panning_envelope, *pitch_envelope;
+
+    vector<channel *> my_ancillary_channels;
+
+    bool fading, have_fade_per_tick;
+    double fade_per_tick, fade_value;
+
+    int tempo;
+    int octave;
+    int note_length_denominator, this_note_length_denominator;
+    double rest_ticks_proportion;
+
+    void recalc(int znote, double duration_scale, bool calculate_length = true, bool reset_sample_offset = true, bool zero_means_no_note = true)
+    {
+      double seconds;
+
+      if (calculate_length)
       {
-        double note_seconds = seconds;
         if (this_note_length_denominator != 0)
           seconds = (4.0 / this_note_length_denominator) * 60.0 / tempo;
-
-        cutoff_ticks = (int)((seconds - note_seconds) * ticks_per_second * duration_scale);
-        rest_ticks = cutoff_ticks + (int)((ticks_left - cutoff_ticks) * rest_ticks_proportion);
       }
-      else if ((znote != 0) || (!zero_means_no_note))
-        rest_ticks = (int)(ticks_left * rest_ticks_proportion);
-      else
-        rest_ticks = ticks_left;
 
-      double dropoff_time = seconds * dropoff_proportion;
-      if (dropoff_time < dropoff_min_length)
-        dropoff_time = dropoff_min_length;
-      else if (dropoff_time > dropoff_max_length)
-        dropoff_time = dropoff_max_length;
+      current_znote = znote;
 
-      int dropoff_ticks = (int)(dropoff_time * ticks_per_second * duration_scale);
-
-      dropoff_start = rest_ticks + dropoff_ticks;
-    }
-  }
-
-  virtual bool advance_pattern(one_sample &sample)
-  {
-    throw "no implementation for advance_pattern";
-  }
-
-  virtual void note_off(bool calc_fade_per_tick = true, bool all_notes_off = true)
-  {
-    if (current_sample != NULL)
-      current_sample->exit_sustain_loop(current_sample_context);
-
-    if (all_notes_off)
-    {
-      if (volume_envelope != NULL)
-        volume_envelope->note_off(offset_major, offset);
-      if (panning_envelope != NULL)
-        panning_envelope->note_off(offset_major, offset);
-      if (pitch_envelope != NULL)
-        pitch_envelope->note_off(offset_major, offset);
-    }
-
-    if ((volume_envelope == NULL) || volume_envelope->looping)
-    {
-      fading = true;
-      fade_value = 1.0;
-    }
-    if (calc_fade_per_tick)
-    {
-      double fade_ticks = dropoff_proportion * ticks_left;
-      if (fade_ticks < dropoff_min_length)
-        fade_ticks = dropoff_min_length;
-      if (fade_ticks > dropoff_max_length)
-        fade_ticks = dropoff_max_length;
-      fade_per_tick = 1.0 / fade_ticks;
-    }
-  }
-
-  one_sample &calculate_next_tick()
-  {
-    return_sample.clear(output_channels);
-
-    if (finished)
-      return return_sample;
-
-    if (advance_pattern(return_sample))
-    {
-      return_sample = panning * (channel_volume * return_sample);
-      return return_sample;
-    }
-
-    if (ticks_left)
-    {
-      ticks_left--;
-      if (ticks_left < rest_ticks)
+      if ((znote != 0) || (!zero_means_no_note))
       {
-        return_sample.clear();
+        if ((current_waveform == Waveform::Sample) && (current_sample != NULL))
+          note_frequency = current_sample_context->samples_per_second * 2;
+        else
+          note_frequency = 987.766603;
+        
+        note_frequency *= pow(inter_note, znote - 49);
+
+        if (reset_sample_offset)
+        {
+          offset = 0;
+          offset_major = 0;
+        }
+
+        delta_offset_per_tick = note_frequency / ticks_per_second;
+      }
+
+      if (calculate_length)
+      {
+        if (this_note_length_denominator == 0)
+          seconds = current_sample->num_samples / current_sample->samples_per_second;
+
+        ticks_left = (int)(seconds * ticks_per_second * duration_scale);
+        if (play_full_sample)
+        {
+          double note_seconds = seconds;
+          if (this_note_length_denominator != 0)
+            seconds = (4.0 / this_note_length_denominator) * 60.0 / tempo;
+
+          cutoff_ticks = (int)((seconds - note_seconds) * ticks_per_second * duration_scale);
+          rest_ticks = cutoff_ticks + (int)((ticks_left - cutoff_ticks) * rest_ticks_proportion);
+        }
+        else if ((znote != 0) || (!zero_means_no_note))
+          rest_ticks = (int)(ticks_left * rest_ticks_proportion);
+        else
+          rest_ticks = ticks_left;
+
+        double dropoff_time = seconds * dropoff_proportion;
+        if (dropoff_time < dropoff_min_length)
+          dropoff_time = dropoff_min_length;
+        else if (dropoff_time > dropoff_max_length)
+          dropoff_time = dropoff_max_length;
+
+        int dropoff_ticks = (int)(dropoff_time * ticks_per_second * duration_scale);
+
+        dropoff_start = rest_ticks + dropoff_ticks;
+      }
+    }
+
+    virtual bool advance_pattern(one_sample &sample)
+    {
+      throw "no implementation for advance_pattern";
+    }
+
+    virtual void note_off(bool calc_fade_per_tick = true, bool all_notes_off = true)
+    {
+      if (current_sample != NULL)
+        current_sample->exit_sustain_loop(current_sample_context);
+
+      if (all_notes_off)
+      {
+        if (volume_envelope != NULL)
+          volume_envelope->note_off(offset_major, offset);
+        if (panning_envelope != NULL)
+          panning_envelope->note_off(offset_major, offset);
+        if (pitch_envelope != NULL)
+          pitch_envelope->note_off(offset_major, offset);
+      }
+
+      if ((volume_envelope == NULL) || volume_envelope->looping)
+      {
+        fading = true;
+        fade_value = 1.0;
+      }
+      if (calc_fade_per_tick)
+      {
+        double fade_ticks = dropoff_proportion * ticks_left;
+        if (fade_ticks < dropoff_min_length)
+          fade_ticks = dropoff_min_length;
+        if (fade_ticks > dropoff_max_length)
+          fade_ticks = dropoff_max_length;
+        fade_per_tick = 1.0 / fade_ticks;
+      }
+    }
+
+    one_sample &calculate_next_tick()
+    {
+      return_sample.clear(output_channels);
+
+      if (finished)
+        return return_sample;
+
+      if (advance_pattern(return_sample))
+      {
+        return_sample = panning * (channel_volume * return_sample);
         return return_sample;
       }
 
-      switch (current_waveform)
+      if (ticks_left)
       {
-        case Waveform::Sine:
-          return_sample = panning * (channel_volume * sin(6.283185 * offset));
-          break;
-        case Waveform::Square:
-          return_sample = panning * (channel_volume * ((offset > 0.5) * 2 - 1));
-          break;
-        case Waveform::Sawtooth:
-          if (offset < 0.5)
-            return_sample = panning * (channel_volume * (2.0 * offset));
-          else
-            return_sample = panning * (channel_volume * (2.0 * (offset - 1.5)));
-          break;
-        case Waveform::RampDown:
-          if (offset < 0.5)
-            return_sample = panning * (channel_volume * (-2.0 * offset));
-          else
-            return_sample = panning * (channel_volume * ((1.0 - offset) * 2.0));
-          break;
-        case Waveform::Triangle:
-          if (offset < 0.25)
-            return_sample = panning * (channel_volume * (4.0 * offset));
-          else if (offset < 0.75)
-            return_sample = panning * (channel_volume * (4.0 * (0.5 - offset)));
-          else                                            
-            return_sample = panning * (channel_volume * (4.0 * (offset - 1.0)));
-          break;
-        case Waveform::Sample:
-          if (current_sample)
-            return_sample = panning * (channel_volume * current_sample->get_sample(offset_major, offset, current_sample_context));
-          else
-            return_sample.clear(output_channels);
-      }
-
-      double sample_offset;
-      if (volume_envelope || panning_envelope || pitch_envelope)
-        sample_offset = samples_this_note;
-
-      if (fading)
-      {
-        if (fade_value > 0.0)
-          return_sample *= fade_value;
-        else
-          return_sample.clear();
-        fade_value -= fade_per_tick;
-      }
-      else if (volume_envelope != NULL)
-      {
-        if (volume_envelope->past_end(sample_offset))
+        ticks_left--;
+        if (ticks_left < rest_ticks)
         {
-          fading = true;
-          fade_value = 1.0;
-
-          if (!have_fade_per_tick)
-          {
-            note_off(true, false);
-            have_fade_per_tick = true;
-          }
+          return_sample.clear();
+          return return_sample;
         }
-        return_sample *= volume_envelope->get_value_at(sample_offset);
-      }
 
-      if (panning_envelope != NULL)
-        return_sample *= pan_value(panning_envelope->get_value_at(sample_offset));
+        switch (current_waveform)
+        {
+          case Waveform::Sine:
+            return_sample = panning * (channel_volume * sin(6.283185 * offset));
+            break;
+          case Waveform::Square:
+            return_sample = panning * (channel_volume * ((offset > 0.5) * 2 - 1));
+            break;
+          case Waveform::Sawtooth:
+            if (offset < 0.5)
+              return_sample = panning * (channel_volume * (2.0 * offset));
+            else
+              return_sample = panning * (channel_volume * (2.0 * (offset - 1.5)));
+            break;
+          case Waveform::RampDown:
+            if (offset < 0.5)
+              return_sample = panning * (channel_volume * (-2.0 * offset));
+            else
+              return_sample = panning * (channel_volume * ((1.0 - offset) * 2.0));
+            break;
+          case Waveform::Triangle:
+            if (offset < 0.25)
+              return_sample = panning * (channel_volume * (4.0 * offset));
+            else if (offset < 0.75)
+              return_sample = panning * (channel_volume * (4.0 * (0.5 - offset)));
+            else                                            
+              return_sample = panning * (channel_volume * (4.0 * (offset - 1.0)));
+            break;
+          case Waveform::Sample:
+            if (current_sample)
+              return_sample = panning * (channel_volume * current_sample->get_sample(offset_major, offset, current_sample_context));
+            else
+              return_sample.clear(output_channels);
+        }
 
-      if (pitch_envelope != NULL)
-      {
-        double frequency = delta_offset_per_tick * ticks_per_second;
-        double exponent = lg(frequency);
+        double sample_offset;
+        if (volume_envelope || panning_envelope || pitch_envelope)
+          sample_offset = samples_this_note;
 
-        exponent += pitch_envelope->get_value_at(sample_offset) * (16.0 / 12.0);
-        if ((current_waveform == Waveform::Sample) && (current_sample->use_vibrato))
-          exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
+        if (fading)
+        {
+          if (fade_value > 0.0)
+            return_sample *= fade_value;
+          else
+            return_sample.clear();
+          fade_value -= fade_per_tick;
+        }
+        else if (volume_envelope != NULL)
+        {
+          if (volume_envelope->past_end(sample_offset))
+          {
+            fading = true;
+            fade_value = 1.0;
 
-        frequency = p2(exponent);
-        offset += (frequency / ticks_per_second);
-      }
-      else
-      {
-        if ((current_waveform == Waveform::Sample) && (current_sample && current_sample->use_vibrato))
+            if (!have_fade_per_tick)
+            {
+              note_off(true, false);
+              have_fade_per_tick = true;
+            }
+          }
+          return_sample *= volume_envelope->get_value_at(sample_offset);
+        }
+
+        if (panning_envelope != NULL)
+          return_sample *= pan_value(panning_envelope->get_value_at(sample_offset));
+
+        if (pitch_envelope != NULL)
         {
           double frequency = delta_offset_per_tick * ticks_per_second;
           double exponent = lg(frequency);
-          
-          exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
+
+          exponent += pitch_envelope->get_value_at(sample_offset) * (16.0 / 12.0);
+          if ((current_waveform == Waveform::Sample) && (current_sample->use_vibrato))
+            exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
 
           frequency = p2(exponent);
           offset += (frequency / ticks_per_second);
         }
         else
-          offset += delta_offset_per_tick;
-      }
-
-      samples_this_note++;
-
-      if ((offset > 1.0) || (offset < 0.0))
-      {
-        if (offset > 2.0)
         {
-          double offset_floor = floor(offset);
+          if ((current_waveform == Waveform::Sample) && (current_sample && current_sample->use_vibrato))
+          {
+            double frequency = delta_offset_per_tick * ticks_per_second;
+            double exponent = lg(frequency);
+            
+            exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
 
-          offset_major += long(offset_floor);
-          offset -= offset_floor;
+            frequency = p2(exponent);
+            offset += (frequency / ticks_per_second);
+          }
+          else
+            offset += delta_offset_per_tick;
         }
-        else
+
+        samples_this_note++;
+
+        if ((offset > 1.0) || (offset < 0.0))
         {
-          offset_major++;
-          offset -= 1.0;
+          if (offset > 2.0)
+          {
+            double offset_floor = floor(offset);
+
+            offset_major += long(offset_floor);
+            offset -= offset_floor;
+          }
+          else
+          {
+            offset_major++;
+            offset -= 1.0;
+          }
         }
+
+        if (ticks_left < dropoff_start)
+        {
+          double volume = double(ticks_left - rest_ticks) / (dropoff_start - rest_ticks);
+          return_sample *= volume;
+        }
+
+        if (ticks_left == cutoff_ticks)
+          ticks_left = 0;
+
+        return_sample *= intensity;
       }
 
-      if (ticks_left < dropoff_start)
-      {
-        double volume = double(ticks_left - rest_ticks) / (dropoff_start - rest_ticks);
-        return_sample *= volume;
-      }
-
-      if (ticks_left == cutoff_ticks)
-        ticks_left = 0;
-
-      return_sample *= intensity;
+      return return_sample;
     }
 
-    return return_sample;
-  }
+    channel(bool looping)
+      : return_sample(output_channels),
+        panning(output_channels),
+        looping(looping)
+    {
+      finished = false;
+      ticks_left = 0;
+      octave = 4;
+      tempo = 120;
+      note_length_denominator = 4;
+      rest_ticks_proportion = 1.0 / 8.0;
+      play_full_sample = false;
+      intensity = 5000.0 / 32767.0;
+      channel_volume = 1.0;
+      current_waveform = default_waveform;
+      current_sample = NULL;
+      current_sample_context = NULL;
+      volume_envelope = NULL;
+      panning_envelope = NULL;
+      pitch_envelope = NULL;
+      fading = false;
+      have_fade_per_tick = false;
+    }
 
-  channel(bool looping)
-    : return_sample(output_channels),
-      panning(output_channels),
-      looping(looping)
-  {
-    finished = false;
-    ticks_left = 0;
-    octave = 4;
-    tempo = 120;
-    note_length_denominator = 4;
-    rest_ticks_proportion = 1.0 / 8.0;
-    play_full_sample = false;
-    intensity = 5000.0 / 32767.0;
-    channel_volume = 1.0;
-    current_waveform = default_waveform;
-    current_sample = NULL;
-    current_sample_context = NULL;
-    volume_envelope = NULL;
-    panning_envelope = NULL;
-    pitch_envelope = NULL;
-    fading = false;
-    have_fade_per_tick = false;
-  }
+    channel(pan_value &default_panning, bool looping)
+      : return_sample(output_channels),
+        panning(default_panning),
+        looping(looping)
+    {
+      finished = false;
+      ticks_left = 0;
+      octave = 4;
+      tempo = 120;
+      note_length_denominator = 4;
+      rest_ticks_proportion = 1.0 / 8.0;
+      play_full_sample = false;
+      intensity = 5000.0 / 32767.0;
+      channel_volume = 1.0;
+      current_waveform = default_waveform;
+      current_sample = NULL;
+      current_sample_context = NULL;
+      volume_envelope = NULL;
+      panning_envelope = NULL;
+      pitch_envelope = NULL;
+      fading = false;
+      have_fade_per_tick = false;
+    }
 
-  channel(pan_value &default_panning, bool looping)
-    : return_sample(output_channels),
-      panning(default_panning),
-      looping(looping)
-  {
-    finished = false;
-    ticks_left = 0;
-    octave = 4;
-    tempo = 120;
-    note_length_denominator = 4;
-    rest_ticks_proportion = 1.0 / 8.0;
-    play_full_sample = false;
-    intensity = 5000.0 / 32767.0;
-    channel_volume = 1.0;
-    current_waveform = default_waveform;
-    current_sample = NULL;
-    current_sample_context = NULL;
-    volume_envelope = NULL;
-    panning_envelope = NULL;
-    pitch_envelope = NULL;
-    fading = false;
-    have_fade_per_tick = false;
-  }
-
-  virtual ~channel()
-  {
-    if (volume_envelope)
-      delete volume_envelope;
-    if (panning_envelope)
-      delete panning_envelope;
-    if (pitch_envelope)
-      delete pitch_envelope;
-    if (current_sample_context)
-      delete current_sample_context;
-  }
-};
-
-#include "Channel_PLAY.h"
-
-enum effect_type
-{
-  effect_type_mod,
-  effect_type_s3m,
-  effect_type_it,
-};
-
-struct effect_info_type
-{
-  struct // anonymous structs like this are not valid ISO C++, but both VC++ and g++ support them
-  {
-    unsigned int low_nybble  : 4;
-    unsigned int high_nybble : 4;
+    virtual ~channel()
+    {
+      if (volume_envelope)
+        delete volume_envelope;
+      if (panning_envelope)
+        delete panning_envelope;
+      if (pitch_envelope)
+        delete pitch_envelope;
+      if (current_sample_context)
+        delete current_sample_context;
+    }
   };
-  unsigned char data;
 
-  operator unsigned char()
+  struct sample_builtintype_context : sample_context
   {
-    return data;
-  }
+    int last_looped_sample;
 
-  effect_info_type &operator =(unsigned char data)
+    long sustain_loop_exit_difference;
+
+    SustainLoopState::Type sustain_loop_state;
+
+    sample_builtintype_context(sample *cw) : sample_context(cw) { }
+  };
+
+  template <class T>
+  struct sample_builtintype : public sample
   {
-    this->data = data;
-    low_nybble = data & 0xF;
-    high_nybble = (data >> 4) & 0xF;
-    return *this;
-  }
+    T *sample_data[MAX_CHANNELS];
+    int sample_channels;
 
-  effect_info_type()
-  {
-    data = 0;
-    low_nybble = 0;
-    high_nybble = 0;
-  }
-};
+    double sample_scale;
+    double default_volume;
 
-struct effect_struct
-{
-  bool present;
-  char command;
-  effect_info_type info;
-  effect_type type;
+    long loop_begin, loop_end;
+    long sustain_loop_begin, sustain_loop_end;
 
-  effect_struct &operator =(int value)
-  {
-    if (value < 0)
-      present = false;
-    else
+    bool use_sustain_loop;
+
+    virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0, bool top_level = true, int *znote = NULL)
     {
-      present = true;
-      command = (value >> 16) & 0xFF;
-      info = (value & 0xFF);
-      type = effect_type_s3m;
-    }
-    return *this;
-  }
+      if (c == NULL)
+        throw "need sample context";
 
-  effect_struct(effect_type type, char command, unsigned char info)
-  {
-    init(type, command, info);
-  }
-
-  void init(effect_type type, char command, unsigned char info, row *r = NULL);
-
-  effect_struct()
-    : present(false)
-  {
-  }
-
-  bool keepNote()
-  {
-    if (!present)
-      return false;
-
-    switch (type)
-    {
-      case effect_type_s3m:
-      case effect_type_it:
-        switch (command)
-        {
-          case 'G':
-          case 'L':
-            return true;
-          default:
-            return false;
-        }
-      default:
-        throw "internal error";
-    }
-  }
-  
-  bool keepVolume()
-  {
-    if (!present)
-      return false;
-
-    switch (type)
-    {
-      case effect_type_s3m:
-      case effect_type_it:
-        switch (command)
-        {
-          case 'D':
-          case 'K':
-          case 'L':
-            return true;
-          default:
-            return false;
-        }
-      default:
-        throw "internal error";
-    }
-  }
-
-  bool isnt(char effect, signed char high_nybble = -1, signed char low_nybble = -1)
-  {
-    if (command != effect)
-      return true;
-    if ((high_nybble != -1) && (info.high_nybble != (char)high_nybble))
-      return true;
-    if ((low_nybble != -1) && (info.low_nybble != (char)high_nybble))
-      return true;
-    return false;
-  }
-
-  bool is(char effect, signed char high_nybble = -1, signed char low_nybble = -1)
-  {
-    return !isnt(effect, high_nybble, low_nybble);
-  }
-};
-
-struct row
-{
-  int znote, snote;
-  int volume;
-  sample *instrument;
-  effect_struct effect, secondary_effect;
-
-  row()
-  {
-    snote = -1;
-    volume = -1;
-    instrument = NULL;
-  }
-};
-
-void effect_struct::init(effect_type type, char command, unsigned char info, row *r)
-{
-  switch (type)
-  {
-    case effect_type_mod:
-      // This is largely possible due to the correspondence between MOD and
-      // S3M effect parameters. Only the 'invert loop' option required
-      // special coding.
-      switch (command)
+      if (*c)
       {
-        case 0x0: // arpeggio
-          if (info)
-            command = 'J';
-          else
-          {
-            present = false;
-            return; // no further processing required
-          }
-          break;
-        case 0x1: // portamento up
-          command = 'F';
-          if (info >= 0xE0)                          
-            info = 0xDF;
-          break;
-        case 0x2: // portamento down
-          command = 'E';
-          if (info >= 0xE0)
-            info = 0xDF;
-          break;
-        case 0x3: // tone portamento
-          command = 'G';
-          break;
-        case 0x4: // vibrato
-          command = 'H';
-          break;
-        case 0x5: // 300 & Axy
-          command = 'L';
-          break;
-        case 0x6: // 400 & Axy
-          command = 'K';
-          break;
-        case 0x7: // tremolo
-          command = 'R';
-          break;
-        case 0x8: // fine panning (0-255; converted here to 0-128 for Xxx)
-          command = 'X';
-          info = info * 128 / 255;
-          break;
-        case 0x9: // set sample offset
-          command = 'O';
-          break;
-        case 0xA: // volume slide
-          command = 'D';
-          break;
-        case 0xB: // pattern/row jump
-          command = 'B';
-          break;
-        case 0xC: // set volume
-          if (r)
-            r->volume = info;
-          else
-            cerr << "Warning: had to discard a MOD set volume effect" << endl;
+        (*c)->created_with->occlude_note(p, c, this, r);
 
-          present = false; // no further processing required
-          return;
-        case 0xD: // pattern break
-          command = 'C';
-          break;
-        case 0xE:
-          switch (info >> 4)
-          {
-            case 0x0: // set filter
-              present = false; // no further processing required
-              return;
-            case 0x1: // fine slide up
-              if (info & 0xF)
-              {
-                command = 'F';
-                info |= 0xF0;
-                if ((info & 0xF) == 0xF)
-                  info = 0xFE;
-              }
-              else
-              {
-                present = false; // no further processing required
-                return;
-              }
-              break;
-            case 0x2: // fine slide down
-              if (info & 0xF)
-              {
-                command = 'E';
-                info |= 0xF;
-                if ((info & 0xF) == 0xF)
-                  info = 0xFE;
-              }
-              else
-              {
-                present = false; // no further processing required
-                return;
-              }
-              break;
-            case 0x3: // glissando control
-              command = 'S';
-              info = (info & 0xF) | 0x10;
-              break;
-            case 0x4: // set vibrato waveform
-              command = 'S';
-              info = (info & 0xF) | 0x30;
-              break;
-            case 0x5: // set finetune
-              command = 'S';
-              info = ((info & 0xF) ^ 8) | 0x20;
-              break;
-            case 0x6: // loop pattern
-              command = 'S';
-              info = (info & 0xF) | 0xB0;
-              break;
-            case 0x7: // set tremolo waveform
-              command = 'S';
-              info = (info & 0xF) | 0x40;
-              break;
-            case 0x8: // rough panning
-              command = 'S';
-              break;
-            case 0x9: // retrigger sample
-              if (info & 0xF)
-              {
-                command = 'Q';
-                info = info & 0xF;
-              }
-              else
-              {
-                present = false; // no further processing required
-                return;
-              }
-              break;
-            case 0xA: // fine volume slide up
-              command = 'D';
-              if ((info & 0xF) == 0xF)
-                info = 0xE;
-              info = ((info & 0xF) << 4) | 0xF;
-              break;
-            case 0xB: // fine volume slide down
-              command = 'D';
-              if ((info & 0xF) == 0xF)
-                info = 0xE;
-              info = (info & 0xF) | 0xF0;
-              break;
-            case 0xC: // note cut
-              command = 'S';
-              break;
-            case 0xD: // note delay
-              command = 'S';
-              break;
-            case 0xE: // pattern delay
-              command = 'S';
-              break;
-            case 0xF: // invert loop
-              break; // do not change
-          }
-          break;
-        case 0xF: // speed change
-          if (info >= 0x20)
-            command = 'T';
+        if (*c)
+          delete *c;
+      }
+
+      *c = new sample_builtintype_context(this);
+
+      sample_builtintype_context &context = *(sample_builtintype_context *)*c;
+
+      if (use_sustain_loop) // reset sustain loop
+        context.sustain_loop_state = SustainLoopState::Running;
+      else
+        context.sustain_loop_state = SustainLoopState::Off;
+
+      context.last_looped_sample = 0;
+      context.sustain_loop_exit_difference = 0;
+      context.samples_per_second = samples_per_second;
+      context.default_volume = default_volume;
+      context.num_samples = num_samples;
+
+      if (p)
+      {
+        if (top_level)
+        {
+          p->volume_envelope = NULL;
+          p->panning_envelope = NULL;
+          p->pitch_envelope = NULL;
+        }
+        p->samples_this_note = 0;
+      }
+    }
+
+    virtual void occlude_note(channel *p = NULL, sample_context **c = NULL, sample *new_sample = NULL, row *r = NULL)
+    { // do nothing
+    }
+
+    virtual void exit_sustain_loop(sample_context *c)
+    {
+      sample_builtintype_context &context = *(sample_builtintype_context *)c;
+      if (context.sustain_loop_state == SustainLoopState::Running)
+        context.sustain_loop_state = SustainLoopState::Finishing;
+    }
+
+    virtual void kill_note(sample_context *c = NULL)
+    {
+      // no implementation required
+    }
+
+    virtual bool past_end(int sample, double offset, sample_context *c = NULL)
+    {
+      if (c == NULL)
+        throw "need context for instrument";
+
+      if (loop_end != 0xFFFFFFFF)
+        return false;
+
+      sample_builtintype_context &context = *(sample_builtintype_context *)c;
+      switch (context.sustain_loop_state)
+      {
+        case SustainLoopState::Running:
+        case SustainLoopState::Finishing: return false;
+      }
+
+      if (context.sustain_loop_state == SustainLoopState::Finished)
+        sample -= context.sustain_loop_exit_difference;
+
+      return (sample >= num_samples);
+    }
+
+    virtual one_sample get_sample(int sample, double offset, sample_context *c = NULL)
+    {
+      if (c == NULL)
+        throw "need a sample context";
+
+      sample_builtintype_context &context = *(sample_builtintype_context *)c;
+
+      bool using_sustain_loop = false;
+
+      if ((sample < 0)
+      || ((sample >= num_samples)
+        && (loop_end == 0xFFFFFFFF)
+        && (!use_sustain_loop)))
+        return one_sample(output_channels);
+
+      switch (context.sustain_loop_state)
+      {
+        case SustainLoopState::Running:
+        case SustainLoopState::Finishing:
+          int new_sample;
+
+          if (sample > sustain_loop_end)
+            new_sample = ((sample - sustain_loop_begin) % (sustain_loop_end - sustain_loop_begin + 1)) + sustain_loop_begin;
           else
-            command = 'A';
+            new_sample = sample;
+
+          using_sustain_loop = true;
+
+          if (context.sustain_loop_state == SustainLoopState::Finishing)
+          {
+            if (new_sample < context.last_looped_sample)
+            {
+              new_sample += (sustain_loop_end - sustain_loop_begin + 1);
+              context.sustain_loop_state = SustainLoopState::Finished;
+              context.sustain_loop_exit_difference = sample - new_sample;
+            }
+            context.last_looped_sample = new_sample;
+          }
+
+          sample = new_sample;            
+
+          if (context.sustain_loop_state != SustainLoopState::Finished)
+            break;
+
+          using_sustain_loop = false;
+          sample += context.sustain_loop_exit_difference; // compensate for fall through 'finished'
+        case SustainLoopState::Finished:
+          sample -= context.sustain_loop_exit_difference; // intentionally fall through
+        case SustainLoopState::Off:
+          if ((sample > loop_end) && (loop_end != 0xFFFFFFFF))
+            sample = ((sample - loop_begin) % (loop_end - loop_begin + 1)) + loop_begin;
           break;
       }
-      type = effect_type_s3m; // translated :-)
-      this->command = command;
-      this->info = info;
-      break;
-    case effect_type_s3m:
-    case effect_type_it:
-      if ((command < 1) || (command > 26))
+
+      double before, after;
+
+      one_sample ret(sample_channels);
+
+      ret.reset();
+
+      if (using_sustain_loop)
+        for (int i=0; i<sample_channels; i++)
+        {
+          before = sample_data[i][sample];
+          if ((sample + 1 < num_samples) && (sample < sustain_loop_end))
+            after = sample_data[i][sample + 1];
+          else if (sample == loop_end)
+            after = sample_data[i][sustain_loop_begin];
+          else
+            after = 0.0;
+
+          ret.next_sample() = bilinear(before, after, offset);
+        }
+      else if (loop_end == 0xFFFFFFFF)
+        for (int i=0; i<sample_channels; i++)
+        {
+          before = sample_data[i][sample];
+          if (sample + 1 < num_samples)
+            after = sample_data[i][sample + 1];
+          else
+            after = 0.0;
+
+          ret.next_sample() = bilinear(before, after, offset);
+        }
+      else
+        for (int i=0; i<sample_channels; i++)
+        {
+          before = sample_data[i][sample];
+          if ((sample + 1 < num_samples) && (sample < loop_end))
+            after = sample_data[i][sample + 1];
+          else if (sample == loop_end)
+            after = sample_data[i][loop_begin];
+          else
+            after = 0.0;
+
+          ret.next_sample() = bilinear(before, after, offset);
+        }
+
+      return ret.scale(sample_scale).set_channels(output_channels);
+    }
+
+    sample_builtintype(int index, int sample_channels,
+                      T **data = NULL, int num_samples = 0,
+                      long loop_begin = 0, long loop_end = 0xFFFFFFFF,
+                      long susloop_begin = 0, long susloop_end = 0xFFFFFFFF)
+      : sample(index)
+    {
+      switch (sizeof(T))
       {
-        present = false; // no further processing required
-        return;
+        case 1: sample_scale = 1.0 / 127.5;        break;
+        case 2: sample_scale = 1.0 / 32767.5;      break;
+        case 4: sample_scale = 1.0 / 2147483647.5; break;
+        default: throw "could not deduce sample scale";
       }
-      this->command = command + 64;
-      this->info = info;
-      break;
-    default:
-      throw "unimplemented effect type";
-  }
-  this->type = type;
-  present = true;
-}
 
-struct pattern
-{
-  vector<vector<row> > row_list;
-};
+      this->sample_channels = sample_channels;
 
-struct pattern_loop_type
-{
-  int row, repetitions;
-  bool need_repetitions;
+      if (data)
+        for (int i=0; i<sample_channels; i++)
+          this->sample_data[i] = data[i];
+      else
+        for (int i=0; i<sample_channels; i++)
+          this->sample_data[i] = NULL;
 
-  pattern_loop_type()
-  {
-    row = 0;
-    repetitions = 0;
-    need_repetitions = true;
-  }
-};
+      this->num_samples = num_samples;
 
-#define MAX_MODULE_CHANNELS 64
+      this->loop_begin = loop_begin;
+      this->loop_end = loop_end;
 
-struct module_sample_info
-{
-  char vibrato_depth, vibrato_speed;
-};
+      this->sustain_loop_begin = susloop_begin;
+      this->sustain_loop_end = susloop_end;
 
-struct module_struct
-{
-  string filename, name;
-  vector<pattern> patterns;
-  vector<pattern *> pattern_list;
+      use_sustain_loop = (susloop_end != 0xFFFFFFFF);
+    }
+  };
+
+  #include "Load_Sample.h"
+
+  double global_volume = 1.0;
   vector<sample *> samples;
-  vector<module_sample_info> sample_info;
-  bool channel_enabled[MAX_MODULE_CHANNELS];
-  int channel_map[MAX_MODULE_CHANNELS];
-  pattern_loop_type pattern_loop[MAX_MODULE_CHANNELS];
-  pan_value initial_panning[MAX_MODULE_CHANNELS];
-  int base_pan[MAX_MODULE_CHANNELS];
-  int ticks_per_module_row, previous_ticks_per_module_row;
-  double ticks_per_frame;
-  int speed, tempo;
-  int current_pattern, current_row;
-  int num_channels;
-  int auto_loop_target;
-  bool stereo, use_instruments;
-  bool it_module, it_module_new_effects, it_module_portamento_link, it_module_linear_slides;
-  bool finished;
 
-  void speed_change()
+  #include "Channel_PLAY.h"
+
+  enum effect_type
   {
-    previous_ticks_per_module_row = ticks_per_module_row;
-    ticks_per_module_row = speed * 60 * ticks_per_second / (24 * tempo);
-    ticks_per_frame = double(ticks_per_module_row) / speed;
-/*
-    ticks_per_module_row = speed * ticks_per_quarter_note / 24
-    ticks_per_quarter_note = seconds_per_quarter_note * ticks_per_second
-    seconds_per_quarter_note = seconds_per_minute / quarter_notes_per_minute /* */
-  }
-
-  void initialize()
-  {
-    speed_change();
-    current_pattern = 0;
-    current_row = -1;
-    finished = false;
-  }
-
-  module_struct()
-  {
-    use_instruments = false;
-    it_module = false;
-    it_module_new_effects = false;
-    it_module_portamento_link = false;
-    it_module_linear_slides = false;
-    auto_loop_target = -1;
-  }
-};
-
-int znote_from_snote(int snote)
-{
-  // middle C is z=39
-  // snote middle C is high nybble = 4, low nybble = 0 -> 64
-  return (12 * (snote >> 4)) + (snote & 15) - 11;
-}
-
-bool smooth_portamento_effect = true, trace_mod = false;
-bool anticlick = false;
-
-int snote_from_period(int period)
-{
-  double frequency = 3579264.0 / period;
-  int qnote = int(floor(12 * lg(frequency)));
-
-  return (qnote % 12) | (((qnote / 12) - 9) << 4);
-}
-
-int req_digits(int max)
-{
-  if (max < 10)
-    return 1;
-  if (max < 100)
-    return 2;
-  return 3;
-}
-
-vector<channel *> channels, ancillary_channels;
-typedef vector<channel *>::iterator iter_t;
-
-namespace NewNoteAction
-{
-  enum Type
-  {
-    Cut          = 0,
-    ContinueNote = 1,
-    NoteOff      = 2,
-    NoteFade     = 3,
+    effect_type_mod,
+    effect_type_s3m,
+    effect_type_it,
   };
-}
 
-namespace DuplicateCheck
-{
-  enum Type
+  struct effect_info_type
   {
-    Off        = 0,
-    Note       = 1,
-    Sample     = 2,
-    Instrument = 3,
+    struct // anonymous structs like this are not valid ISO C++, but both VC++ and g++ support them
+    {
+      unsigned int low_nybble  : 4;
+      unsigned int high_nybble : 4;
+    };
+    unsigned char data;
+
+    operator unsigned char()
+    {
+      return data;
+    }
+
+    effect_info_type &operator =(unsigned char data)
+    {
+      this->data = data;
+      low_nybble = data & 0xF;
+      high_nybble = (data >> 4) & 0xF;
+      return *this;
+    }
+
+    effect_info_type()
+    {
+      data = 0;
+      low_nybble = 0;
+      high_nybble = 0;
+    }
   };
-}
 
-namespace DuplicateCheckAction
-{
-  enum Type
+  struct effect_struct
   {
-    Cut      = 0,
-    NoteOff  = 1,
-    NoteFade = 2,
-  };
-}
+    bool present;
+    char command;
+    effect_info_type info;
+    effect_type type;
 
-#include "Channel_DYNAMIC.h"
-
-#include "Channel_MODULE.h"
-
-struct sample_instrument_context : sample_context
-{
-  sample *cur_sample;
-  sample_context *cur_sample_context;
-  double cur_volume;
-  SustainLoopState::Type sustain_loop_state;
-  channel *owner_channel;
-  double effect_tick_length;
-  int inote;
-
-  sample_instrument_context(sample *cw) : sample_context(cw) {}
-};
-
-#include "DSP.h"
-
-struct sample_instrument : sample
-{
-  double global_volume;
-
-  pan_value default_pan;
-  bool use_default_pan;
-
-  DSP dsp;
-  bool use_dsp;
-
-  int pitch_pan_separation, pitch_pan_center;
-
-  double volume_variation_pctg, panning_variation;
-
-  DuplicateCheck::Type duplicate_note_check;
-  DuplicateCheckAction::Type duplicate_check_action;
-  NewNoteAction::Type new_note_action;
-
-  sample *note_sample[120];
-  int tone_offset[120];
-
-  instrument_envelope volume_envelope, panning_envelope, pitch_envelope;
-
-  sample_instrument(int idx)
-    : sample(idx)
-  {
-    use_dsp = false;
-  }
-  
-  virtual void occlude_note(channel *p = NULL, sample_context **context = NULL, sample *new_sample = NULL, row *r = NULL)
-  {
-    NewNoteAction::Type effective_nna = new_note_action;
-
-    if (r->effect.present && (r->effect.is('S', 7)))
+    effect_struct &operator =(int value)
     {
-      switch (r->effect.info.low_nybble)
-      {
-        case 3: effective_nna = NewNoteAction::Cut;          break;
-        case 4: effective_nna = NewNoteAction::ContinueNote; break;
-        case 5: effective_nna = NewNoteAction::NoteOff;      break;
-        case 6: effective_nna = NewNoteAction::NoteFade;     break;
-      }
-    }
-
-    sample_instrument_context &c = *(sample_instrument_context *)*context;
-
-    if ((*context != NULL) && (p != NULL))
-    {
-      bool is_duplicate = false;
-      int new_inote = (r->snote >> 4) * 12 + (r->snote & 15);
-
-      if (this == new_sample)
-      {
-        switch (duplicate_note_check)
-        {
-          case DuplicateCheck::Note:
-            is_duplicate = (c.inote == new_inote);
-            break;
-          case DuplicateCheck::Sample:
-            is_duplicate = (c.cur_sample == note_sample[new_inote]);
-            break;
-          case DuplicateCheck::Instrument:
-            is_duplicate = true;
-            break;
-        }
-      }
-
-      if (is_duplicate)
-      {
-        switch (duplicate_check_action)
-        {
-          case DuplicateCheckAction::Cut:
-            return; // let the note get cut off
-          case DuplicateCheckAction::NoteFade:
-            effective_nna = NewNoteAction::NoteFade;
-            break;
-          case DuplicateCheckAction::NoteOff:
-            effective_nna = NewNoteAction::NoteOff;
-            break;
-        }
-      }
-
-      double fade_per_tick;
-
-      fade_per_tick = (c.created_with->fade_out / 1024.0) / c.effect_tick_length;
-
-      channel_DYNAMIC *ancillary;
-      
-      ancillary = new channel_DYNAMIC(*p, (*context)->created_with, *context, fade_per_tick);
-
-      if ((p->volume_envelope) && (effective_nna != NewNoteAction::Cut))
-        ancillary->volume_envelope = new playback_envelope(*p->volume_envelope);
-      if (p->panning_envelope)
-        ancillary->panning_envelope = new playback_envelope(*p->panning_envelope);
-      if (p->pitch_envelope)
-        ancillary->pitch_envelope = new playback_envelope(*p->pitch_envelope);
-
-      switch (effective_nna)
-      {
-        case NewNoteAction::ContinueNote:
-          break;
-        case NewNoteAction::NoteFade:
-          ancillary->fading = true;
-          ancillary->fade_value = 1.0;
-          break;
-        case NewNoteAction::Cut: // Cut has extra handling above (no volume envelope is copied)
-        case NewNoteAction::NoteOff:
-          ancillary->note_off();
-          break;
-      }
-
-      ancillary_channels.push_back(ancillary);
-      p->my_ancillary_channels.push_back(ancillary);
-
-      *context = NULL; // protect the context from deletion
-    }
-  }
-
-  virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **context = NULL, double effect_tick_length = 0, bool top_level = true, int *znote = NULL)
-  {
-    if (context == NULL)
-      throw "need context for instrument";
-
-    if (*context)
-    {
-      (*context)->created_with->occlude_note(p, context, this, r);
-      if (*context)
-        delete *context;
-      *context = NULL;
-    }
-
-    if (r->snote >= 0)
-    {
-      sample_instrument_context *c = new sample_instrument_context(this);
-
-      *context = c;
-      int inote = (r->snote >> 4) * 12 + (r->snote & 15);
-      c->inote = inote;
-      c->cur_sample = note_sample[inote];
-      c->cur_sample_context = NULL;
-      c->effect_tick_length = effect_tick_length;
-      (*znote) += tone_offset[inote];
-
-      bool volume_envelope_override_on = false;
-      bool volume_envelope_override_off = false;
-
-      if (r->effect.is('S', 7))
-      {
-        volume_envelope_override_off = (r->effect.info.low_nybble == 7);
-        volume_envelope_override_on = (r->effect.info.low_nybble == 8);
-      }
-
-      if (c->cur_sample != NULL)
-      {
-        if (p != NULL)
-        {
-          if (top_level)
-          {
-            if (p->volume_envelope != NULL)
-            {
-              delete p->volume_envelope;
-              p->volume_envelope = NULL;
-            }
-            if (volume_envelope_override_on || (volume_envelope.enabled && (!volume_envelope_override_off)))
-            {
-              p->volume_envelope = new playback_envelope(volume_envelope, effect_tick_length);
-              p->volume_envelope->begin_note();
-            }
-
-            if (p->panning_envelope != NULL)
-            {
-              delete p->panning_envelope;
-              p->panning_envelope = NULL;
-            }
-            if (panning_envelope.enabled)
-            {
-              p->panning_envelope = new playback_envelope(panning_envelope, effect_tick_length);
-              p->panning_envelope->begin_note();
-            }
-
-            if (p->pitch_envelope != NULL)
-            {
-              delete p->pitch_envelope;
-              p->pitch_envelope = NULL;
-            }
-            if (pitch_envelope.enabled)
-            {
-              p->pitch_envelope = new playback_envelope(pitch_envelope, effect_tick_length);
-              p->pitch_envelope->begin_note();
-            }
-          }
-          else
-          {
-            if (volume_envelope.enabled)
-            {
-              p->volume_envelope = new playback_envelope(p->volume_envelope, volume_envelope, effect_tick_length, true);
-              p->volume_envelope->begin_note(false);
-            }
-
-            if (panning_envelope.enabled)
-            {
-              p->panning_envelope = new playback_envelope(p->panning_envelope, panning_envelope, effect_tick_length, false);
-              p->panning_envelope->begin_note(false);
-            }
-
-            if (pitch_envelope.enabled)
-            {
-              p->pitch_envelope = new playback_envelope(p->pitch_envelope, pitch_envelope, effect_tick_length, false);
-              p->pitch_envelope->begin_note(false);
-            }
-          }
-        }
-
-        c->cur_sample->begin_new_note(r, p, &c->cur_sample_context, effect_tick_length, false, znote);
-        c->samples_per_second = c->cur_sample_context->samples_per_second;
-        c->default_volume = c->cur_sample_context->default_volume;
-        c->num_samples = c->cur_sample_context->num_samples;
-      }
-    }
-
-    if (p != NULL)
-      p->samples_this_note = 0;
-  }
-
-  virtual void kill_note(sample_context *c = NULL)
-  {
-    if (c == NULL)
-      throw "need context for instrument";
-
-    sample_instrument_context &context = *(sample_instrument_context *)c;
-
-    if (context.cur_sample != NULL)
-    {
-      context.cur_sample->kill_note(context.cur_sample_context);
-      context.cur_sample = NULL; // doesn't get much more killed than this
-    }
-  }
-
-  virtual void exit_sustain_loop(sample_context *c = NULL)
-  {
-    if (c == NULL)
-      throw "need context for instrument";
-
-    sample_instrument_context &context = *(sample_instrument_context *)c;
-
-    if (context.cur_sample != NULL)
-    {
-      context.cur_sample->exit_sustain_loop(context.cur_sample_context);
-
-      context.sustain_loop_state = SustainLoopState::Finishing;
-    }
-  }
-
-  virtual bool past_end(int sample, double offset, sample_context *c = NULL)
-  {
-    if (c == NULL)
-      throw "need context for instrument";
-
-    sample_instrument_context &context = *(sample_instrument_context *)c;
-
-    if (context.cur_sample != NULL)
-      return context.cur_sample->past_end(sample, offset, c);
-    else
-      return true;
-  }
-
-  virtual one_sample get_sample(int sample, double offset, sample_context *c = NULL)
-  {
-    if (c == NULL)
-      throw "need context for instrument";
-
-    sample_instrument_context &context = *(sample_instrument_context *)c;
-
-    one_sample ret(output_channels);
-    
-    if (context.cur_sample != NULL)
-      ret = global_volume * context.cur_sample->get_sample(sample, offset, context.cur_sample_context);
-
-    if (use_dsp)
-      ret = dsp.compute_next(ret);
-
-    return ret;
-  }
-};
-
-#include "Load_MOD.h"
-#include "Load_MTM.h"
-#include "Load_S3M.h"
-#include "Load_IT.h"
-
-string &tolower(string &s)
-{
-  transform(s.begin(), s.end(), s.begin(), ptr_fun<int, int>(std::tolower));
-  return s;
-}
-
-module_struct *load_module(const string &filename)
-{
-  ifstream input(filename.c_str(), ios::binary);
-  module_struct *module;
-
-  size_t offset = filename.find_last_of('.');
-  string extension(filename.substr(offset + 1));
-
-  tolower(extension);
-
-  try
-  {
-    if (extension == "mod")
-      module = load_mod(&input);
-    else if (extension == "mud")
-      module = load_mod(&input, true);
-    else if (extension == "mtm")
-      module = load_mtm(&input);
-    else if (extension == "s3m")
-      module = load_s3m(&input);
-    else if (extension == "it")
-      module = load_it(&input);
-    else if (extension == "shit")
-      module = load_it(&input, true);
-    else
-      throw "unrecognized file extension";
-  }
-  catch (const char *e)
-  {
-    input.close();
-    throw e;
-  }
-
-  module->filename = filename;
-
-  input.close();
-
-  return module;
-}
-
-namespace direct_output
-{
-  enum type
-  {
-    none,
-#ifdef DIRECTX
-    directx,
-#endif
-#ifdef SDL
-    sdl,
-#endif
-  };
-};
-
-void show_usage(char *cmd_name)
-{
-  string indentws(strlen(cmd_name), char(32));
-  //       12345678901234567890123456789012345678901234567890123456789012345678901234567890
-  cerr << "usage: " << cmd_name << " [-play <PLAY files>] [-samples <sample files>]" << endl
-       << "       " << indentws << " [-module <S3M filenames>] [-frame-based_portamento]" << endl
-       << "       " << indentws << " [-anticlick] [-max_time <seconds>] [-max_ticks <ticks>]" << endl
-       << "       " << indentws << " [-output <output_file>] [-amplify <factor>] [-compress]" << endl
-       << "       " << indentws << " {-stereo | -mono} {-lsb | -msb | -system_byte_order}" << endl
-       << "       " << indentws << " { {-8 | -16} [-unsigned] | {-32 | -64} | [-ulaw] | [-alaw] }" << endl
-       << "       " << indentws << " [-sample_rate <samples_per_sec>] [-looping]" << endl
-       << "       " << indentws
-#ifdef DIRECTX
-                                << " [-directx]"
-#endif
-#ifdef SDL
-                                            << " [-sdl]"
-#endif
-                                                    << endl
-       << endl
-       << "8- and 16-bit sample sizes are integers, -32 and -64 are floating-point (IEEE" << endl
-       << "standard). The default output filename is 'output.raw'. The default byte order" << endl
-       << "is system; -lsb and -msb force Intel and Motorola endianness, respectively." << endl
-       << "The byte order setting applies only to integer output (8- and 16-bit samples)." << endl;
-}
-
-void expect_filenames(int &index, int count, char *argv[], vector<string> &collection)
-{
-  while (argv[index])
-  {
-    if (argv[index][0] == '-')
-      break;
-
-    if (argv[index][0] == '"')
-    {
-      stringstream filename;
-
-      string arg(&argv[index][1]);
-
-      size_t offset = arg.find('"');
-
-      if (offset != string::npos)
-        filename << arg.substr(0, arg.size() - 1);
+      if (value < 0)
+        present = false;
       else
       {
-        filename << arg;
+        present = true;
+        command = (value >> 16) & 0xFF;
+        info = (value & 0xFF);
+        type = effect_type_s3m;
+      }
+      return *this;
+    }
 
-        while (true)
-        {
-          index++;
+    effect_struct(effect_type type, char command, unsigned char info)
+    {
+      init(type, command, info);
+    }
 
-          filename << ' ';
+    void init(effect_type type, char command, unsigned char info, row *r = NULL);
 
-          arg = argv[index];
+    effect_struct()
+      : present(false)
+    {
+    }
 
-          offset = arg.find('"');
+    bool keepNote()
+    {
+      if (!present)
+        return false;
 
-          if (offset == string::npos)
-            filename << arg;
-          else
+      switch (type)
+      {
+        case effect_type_s3m:
+        case effect_type_it:
+          switch (command)
           {
-            filename << arg.substr(0, offset);
-            break;
+            case 'G':
+            case 'L':
+              return true;
+            default:
+              return false;
           }
+        default:
+          throw "internal error";
+      }
+    }
+    
+    bool keepVolume()
+    {
+      if (!present)
+        return false;
+
+      switch (type)
+      {
+        case effect_type_s3m:
+        case effect_type_it:
+          switch (command)
+          {
+            case 'D':
+            case 'K':
+            case 'L':
+              return true;
+            default:
+              return false;
+          }
+        default:
+          throw "internal error";
+      }
+    }
+
+    bool isnt(char effect, signed char high_nybble = -1, signed char low_nybble = -1)
+    {
+      if (command != effect)
+        return true;
+      if ((high_nybble != -1) && (info.high_nybble != (char)high_nybble))
+        return true;
+      if ((low_nybble != -1) && (info.low_nybble != (char)high_nybble))
+        return true;
+      return false;
+    }
+
+    bool is(char effect, signed char high_nybble = -1, signed char low_nybble = -1)
+    {
+      return !isnt(effect, high_nybble, low_nybble);
+    }
+  };
+
+  struct row
+  {
+    int znote, snote;
+    int volume;
+    sample *instrument;
+    effect_struct effect, secondary_effect;
+
+    row()
+    {
+      snote = -1;
+      volume = -1;
+      instrument = NULL;
+    }
+  };
+
+  void effect_struct::init(effect_type type, char command, unsigned char info, row *r)
+  {
+    switch (type)
+    {
+      case effect_type_mod:
+        // This is largely possible due to the correspondence between MOD and
+        // S3M effect parameters. Only the 'invert loop' option required
+        // special coding.
+        switch (command)
+        {
+          case 0x0: // arpeggio
+            if (info)
+              command = 'J';
+            else
+            {
+              present = false;
+              return; // no further processing required
+            }
+            break;
+          case 0x1: // portamento up
+            command = 'F';
+            if (info >= 0xE0)                          
+              info = 0xDF;
+            break;
+          case 0x2: // portamento down
+            command = 'E';
+            if (info >= 0xE0)
+              info = 0xDF;
+            break;
+          case 0x3: // tone portamento
+            command = 'G';
+            break;
+          case 0x4: // vibrato
+            command = 'H';
+            break;
+          case 0x5: // 300 & Axy
+            command = 'L';
+            break;
+          case 0x6: // 400 & Axy
+            command = 'K';
+            break;
+          case 0x7: // tremolo
+            command = 'R';
+            break;
+          case 0x8: // fine panning (0-255; converted here to 0-128 for Xxx)
+            command = 'X';
+            info = info * 128 / 255;
+            break;
+          case 0x9: // set sample offset
+            command = 'O';
+            break;
+          case 0xA: // volume slide
+            command = 'D';
+            break;
+          case 0xB: // pattern/row jump
+            command = 'B';
+            break;
+          case 0xC: // set volume
+            if (r)
+              r->volume = info;
+            else
+              cerr << "Warning: had to discard a MOD set volume effect" << endl;
+
+            present = false; // no further processing required
+            return;
+          case 0xD: // pattern break
+            command = 'C';
+            break;
+          case 0xE:
+            switch (info >> 4)
+            {
+              case 0x0: // set filter
+                present = false; // no further processing required
+                return;
+              case 0x1: // fine slide up
+                if (info & 0xF)
+                {
+                  command = 'F';
+                  info |= 0xF0;
+                  if ((info & 0xF) == 0xF)
+                    info = 0xFE;
+                }
+                else
+                {
+                  present = false; // no further processing required
+                  return;
+                }
+                break;
+              case 0x2: // fine slide down
+                if (info & 0xF)
+                {
+                  command = 'E';
+                  info |= 0xF;
+                  if ((info & 0xF) == 0xF)
+                    info = 0xFE;
+                }
+                else
+                {
+                  present = false; // no further processing required
+                  return;
+                }
+                break;
+              case 0x3: // glissando control
+                command = 'S';
+                info = (info & 0xF) | 0x10;
+                break;
+              case 0x4: // set vibrato waveform
+                command = 'S';
+                info = (info & 0xF) | 0x30;
+                break;
+              case 0x5: // set finetune
+                command = 'S';
+                info = ((info & 0xF) ^ 8) | 0x20;
+                break;
+              case 0x6: // loop pattern
+                command = 'S';
+                info = (info & 0xF) | 0xB0;
+                break;
+              case 0x7: // set tremolo waveform
+                command = 'S';
+                info = (info & 0xF) | 0x40;
+                break;
+              case 0x8: // rough panning
+                command = 'S';
+                break;
+              case 0x9: // retrigger sample
+                if (info & 0xF)
+                {
+                  command = 'Q';
+                  info = info & 0xF;
+                }
+                else
+                {
+                  present = false; // no further processing required
+                  return;
+                }
+                break;
+              case 0xA: // fine volume slide up
+                command = 'D';
+                if ((info & 0xF) == 0xF)
+                  info = 0xE;
+                info = ((info & 0xF) << 4) | 0xF;
+                break;
+              case 0xB: // fine volume slide down
+                command = 'D';
+                if ((info & 0xF) == 0xF)
+                  info = 0xE;
+                info = (info & 0xF) | 0xF0;
+                break;
+              case 0xC: // note cut
+                command = 'S';
+                break;
+              case 0xD: // note delay
+                command = 'S';
+                break;
+              case 0xE: // pattern delay
+                command = 'S';
+                break;
+              case 0xF: // invert loop
+                break; // do not change
+            }
+            break;
+          case 0xF: // speed change
+            if (info >= 0x20)
+              command = 'T';
+            else
+              command = 'A';
+            break;
+        }
+        type = effect_type_s3m; // translated :-)
+        this->command = command;
+        this->info = info;
+        break;
+      case effect_type_s3m:
+      case effect_type_it:
+        if ((command < 1) || (command > 26))
+        {
+          present = false; // no further processing required
+          return;
+        }
+        this->command = command + 64;
+        this->info = info;
+        break;
+      default:
+        throw "unimplemented effect type";
+    }
+    this->type = type;
+    present = true;
+  }
+
+  struct pattern
+  {
+    vector<vector<row> > row_list;
+  };
+
+  struct pattern_loop_type
+  {
+    int row, repetitions;
+    bool need_repetitions;
+
+    pattern_loop_type()
+    {
+      row = 0;
+      repetitions = 0;
+      need_repetitions = true;
+    }
+  };
+
+  #define MAX_MODULE_CHANNELS 64
+
+  struct module_sample_info
+  {
+    char vibrato_depth, vibrato_speed;
+  };
+
+  struct module_struct
+  {
+    string filename, name;
+    vector<pattern> patterns;
+    vector<pattern *> pattern_list;
+    vector<sample *> samples;
+    vector<module_sample_info> sample_info;
+    bool channel_enabled[MAX_MODULE_CHANNELS];
+    int channel_map[MAX_MODULE_CHANNELS];
+    pattern_loop_type pattern_loop[MAX_MODULE_CHANNELS];
+    pan_value initial_panning[MAX_MODULE_CHANNELS];
+    int base_pan[MAX_MODULE_CHANNELS];
+    int ticks_per_module_row, previous_ticks_per_module_row;
+    double ticks_per_frame;
+    int speed, tempo;
+    int current_pattern, current_row;
+    int num_channels;
+    int auto_loop_target;
+    bool stereo, use_instruments;
+    bool it_module, it_module_new_effects, it_module_portamento_link, it_module_linear_slides;
+    bool finished;
+
+    void speed_change()
+    {
+      previous_ticks_per_module_row = ticks_per_module_row;
+      ticks_per_module_row = speed * 60 * ticks_per_second / (24 * tempo);
+      ticks_per_frame = double(ticks_per_module_row) / speed;
+  /*
+      ticks_per_module_row = speed * ticks_per_quarter_note / 24
+      ticks_per_quarter_note = seconds_per_quarter_note * ticks_per_second
+      seconds_per_quarter_note = seconds_per_minute / quarter_notes_per_minute /* */
+    }
+
+    void initialize()
+    {
+      speed_change();
+      current_pattern = 0;
+      current_row = -1;
+      finished = false;
+    }
+
+    module_struct()
+    {
+      use_instruments = false;
+      it_module = false;
+      it_module_new_effects = false;
+      it_module_portamento_link = false;
+      it_module_linear_slides = false;
+      auto_loop_target = -1;
+    }
+  };
+
+  int znote_from_snote(int snote)
+  {
+    // middle C is z=39
+    // snote middle C is high nybble = 4, low nybble = 0 -> 64
+    return (12 * (snote >> 4)) + (snote & 15) - 11;
+  }
+
+  bool smooth_portamento_effect = true, trace_mod = false;
+  bool anticlick = false;
+
+  int snote_from_period(int period)
+  {
+    double frequency = 3579264.0 / period;
+    int qnote = int(floor(12 * lg(frequency)));
+
+    return (qnote % 12) | (((qnote / 12) - 9) << 4);
+  }
+
+  int req_digits(int max)
+  {
+    if (max < 10)
+      return 1;
+    if (max < 100)
+      return 2;
+    return 3;
+  }
+
+  vector<channel *> channels, ancillary_channels;
+  typedef vector<channel *>::iterator iter_t;
+
+  namespace NewNoteAction
+  {
+    enum Type
+    {
+      Cut          = 0,
+      ContinueNote = 1,
+      NoteOff      = 2,
+      NoteFade     = 3,
+    };
+  }
+
+  namespace DuplicateCheck
+  {
+    enum Type
+    {
+      Off        = 0,
+      Note       = 1,
+      Sample     = 2,
+      Instrument = 3,
+    };
+  }
+
+  namespace DuplicateCheckAction
+  {
+    enum Type
+    {
+      Cut      = 0,
+      NoteOff  = 1,
+      NoteFade = 2,
+    };
+  }
+
+  #include "Channel_DYNAMIC.h"
+
+  #include "Channel_MODULE.h"
+
+  struct sample_instrument_context : sample_context
+  {
+    sample *cur_sample;
+    sample_context *cur_sample_context;
+    double cur_volume;
+    SustainLoopState::Type sustain_loop_state;
+    channel *owner_channel;
+    double effect_tick_length;
+    int inote;
+
+    sample_instrument_context(sample *cw) : sample_context(cw) {}
+  };
+
+  #include "DSP.h"
+
+  struct sample_instrument : sample
+  {
+    double global_volume;
+
+    pan_value default_pan;
+    bool use_default_pan;
+
+    DSP dsp;
+    bool use_dsp;
+
+    int pitch_pan_separation, pitch_pan_center;
+
+    double volume_variation_pctg, panning_variation;
+
+    DuplicateCheck::Type duplicate_note_check;
+    DuplicateCheckAction::Type duplicate_check_action;
+    NewNoteAction::Type new_note_action;
+
+    sample *note_sample[120];
+    int tone_offset[120];
+
+    instrument_envelope volume_envelope, panning_envelope, pitch_envelope;
+
+    sample_instrument(int idx)
+      : sample(idx)
+    {
+      use_dsp = false;
+    }
+    
+    virtual void occlude_note(channel *p = NULL, sample_context **context = NULL, sample *new_sample = NULL, row *r = NULL)
+    {
+      NewNoteAction::Type effective_nna = new_note_action;
+
+      if (r->effect.present && (r->effect.is('S', 7)))
+      {
+        switch (r->effect.info.low_nybble)
+        {
+          case 3: effective_nna = NewNoteAction::Cut;          break;
+          case 4: effective_nna = NewNoteAction::ContinueNote; break;
+          case 5: effective_nna = NewNoteAction::NoteOff;      break;
+          case 6: effective_nna = NewNoteAction::NoteFade;     break;
         }
       }
-      collection.push_back(filename.str());
+
+      sample_instrument_context &c = *(sample_instrument_context *)*context;
+
+      if ((*context != NULL) && (p != NULL))
+      {
+        bool is_duplicate = false;
+        int new_inote = (r->snote >> 4) * 12 + (r->snote & 15);
+
+        if (this == new_sample)
+        {
+          switch (duplicate_note_check)
+          {
+            case DuplicateCheck::Note:
+              is_duplicate = (c.inote == new_inote);
+              break;
+            case DuplicateCheck::Sample:
+              is_duplicate = (c.cur_sample == note_sample[new_inote]);
+              break;
+            case DuplicateCheck::Instrument:
+              is_duplicate = true;
+              break;
+          }
+        }
+
+        if (is_duplicate)
+        {
+          switch (duplicate_check_action)
+          {
+            case DuplicateCheckAction::Cut:
+              return; // let the note get cut off
+            case DuplicateCheckAction::NoteFade:
+              effective_nna = NewNoteAction::NoteFade;
+              break;
+            case DuplicateCheckAction::NoteOff:
+              effective_nna = NewNoteAction::NoteOff;
+              break;
+          }
+        }
+
+        double fade_per_tick;
+
+        fade_per_tick = (c.created_with->fade_out / 1024.0) / c.effect_tick_length;
+
+        channel_DYNAMIC *ancillary;
+        
+        ancillary = new channel_DYNAMIC(*p, (*context)->created_with, *context, fade_per_tick);
+
+        if ((p->volume_envelope) && (effective_nna != NewNoteAction::Cut))
+          ancillary->volume_envelope = new playback_envelope(*p->volume_envelope);
+        if (p->panning_envelope)
+          ancillary->panning_envelope = new playback_envelope(*p->panning_envelope);
+        if (p->pitch_envelope)
+          ancillary->pitch_envelope = new playback_envelope(*p->pitch_envelope);
+
+        switch (effective_nna)
+        {
+          case NewNoteAction::ContinueNote:
+            break;
+          case NewNoteAction::NoteFade:
+            ancillary->fading = true;
+            ancillary->fade_value = 1.0;
+            break;
+          case NewNoteAction::Cut: // Cut has extra handling above (no volume envelope is copied)
+          case NewNoteAction::NoteOff:
+            ancillary->note_off();
+            break;
+        }
+
+        ancillary_channels.push_back(ancillary);
+        p->my_ancillary_channels.push_back(ancillary);
+
+        *context = NULL; // protect the context from deletion
+      }
     }
-    else
-      collection.push_back(string(argv[index++]));
+
+    virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **context = NULL, double effect_tick_length = 0, bool top_level = true, int *znote = NULL)
+    {
+      if (context == NULL)
+        throw "need context for instrument";
+
+      if (*context)
+      {
+        (*context)->created_with->occlude_note(p, context, this, r);
+        if (*context)
+          delete *context;
+        *context = NULL;
+      }
+
+      if (r->snote >= 0)
+      {
+        sample_instrument_context *c = new sample_instrument_context(this);
+
+        *context = c;
+        int inote = (r->snote >> 4) * 12 + (r->snote & 15);
+        c->inote = inote;
+        c->cur_sample = note_sample[inote];
+        c->cur_sample_context = NULL;
+        c->effect_tick_length = effect_tick_length;
+        (*znote) += tone_offset[inote];
+
+        bool volume_envelope_override_on = false;
+        bool volume_envelope_override_off = false;
+
+        if (r->effect.is('S', 7))
+        {
+          volume_envelope_override_off = (r->effect.info.low_nybble == 7);
+          volume_envelope_override_on = (r->effect.info.low_nybble == 8);
+        }
+
+        if (c->cur_sample != NULL)
+        {
+          if (p != NULL)
+          {
+            if (top_level)
+            {
+              if (p->volume_envelope != NULL)
+              {
+                delete p->volume_envelope;
+                p->volume_envelope = NULL;
+              }
+              if (volume_envelope_override_on || (volume_envelope.enabled && (!volume_envelope_override_off)))
+              {
+                p->volume_envelope = new playback_envelope(volume_envelope, effect_tick_length);
+                p->volume_envelope->begin_note();
+              }
+
+              if (p->panning_envelope != NULL)
+              {
+                delete p->panning_envelope;
+                p->panning_envelope = NULL;
+              }
+              if (panning_envelope.enabled)
+              {
+                p->panning_envelope = new playback_envelope(panning_envelope, effect_tick_length);
+                p->panning_envelope->begin_note();
+              }
+
+              if (p->pitch_envelope != NULL)
+              {
+                delete p->pitch_envelope;
+                p->pitch_envelope = NULL;
+              }
+              if (pitch_envelope.enabled)
+              {
+                p->pitch_envelope = new playback_envelope(pitch_envelope, effect_tick_length);
+                p->pitch_envelope->begin_note();
+              }
+            }
+            else
+            {
+              if (volume_envelope.enabled)
+              {
+                p->volume_envelope = new playback_envelope(p->volume_envelope, volume_envelope, effect_tick_length, true);
+                p->volume_envelope->begin_note(false);
+              }
+
+              if (panning_envelope.enabled)
+              {
+                p->panning_envelope = new playback_envelope(p->panning_envelope, panning_envelope, effect_tick_length, false);
+                p->panning_envelope->begin_note(false);
+              }
+
+              if (pitch_envelope.enabled)
+              {
+                p->pitch_envelope = new playback_envelope(p->pitch_envelope, pitch_envelope, effect_tick_length, false);
+                p->pitch_envelope->begin_note(false);
+              }
+            }
+          }
+
+          c->cur_sample->begin_new_note(r, p, &c->cur_sample_context, effect_tick_length, false, znote);
+          c->samples_per_second = c->cur_sample_context->samples_per_second;
+          c->default_volume = c->cur_sample_context->default_volume;
+          c->num_samples = c->cur_sample_context->num_samples;
+        }
+      }
+
+      if (p != NULL)
+        p->samples_this_note = 0;
+    }
+
+    virtual void kill_note(sample_context *c = NULL)
+    {
+      if (c == NULL)
+        throw "need context for instrument";
+
+      sample_instrument_context &context = *(sample_instrument_context *)c;
+
+      if (context.cur_sample != NULL)
+      {
+        context.cur_sample->kill_note(context.cur_sample_context);
+        context.cur_sample = NULL; // doesn't get much more killed than this
+      }
+    }
+
+    virtual void exit_sustain_loop(sample_context *c = NULL)
+    {
+      if (c == NULL)
+        throw "need context for instrument";
+
+      sample_instrument_context &context = *(sample_instrument_context *)c;
+
+      if (context.cur_sample != NULL)
+      {
+        context.cur_sample->exit_sustain_loop(context.cur_sample_context);
+
+        context.sustain_loop_state = SustainLoopState::Finishing;
+      }
+    }
+
+    virtual bool past_end(int sample, double offset, sample_context *c = NULL)
+    {
+      if (c == NULL)
+        throw "need context for instrument";
+
+      sample_instrument_context &context = *(sample_instrument_context *)c;
+
+      if (context.cur_sample != NULL)
+        return context.cur_sample->past_end(sample, offset, c);
+      else
+        return true;
+    }
+
+    virtual one_sample get_sample(int sample, double offset, sample_context *c = NULL)
+    {
+      if (c == NULL)
+        throw "need context for instrument";
+
+      sample_instrument_context &context = *(sample_instrument_context *)c;
+
+      one_sample ret(output_channels);
+      
+      if (context.cur_sample != NULL)
+        ret = global_volume * context.cur_sample->get_sample(sample, offset, context.cur_sample_context);
+
+      if (use_dsp)
+        ret = dsp.compute_next(ret);
+
+      return ret;
+    }
+  };
+
+  #include "Load_MOD.h"
+  #include "Load_MTM.h"
+  #include "Load_S3M.h"
+  #include "Load_IT.h"
+
+  string &tolower(string &s)
+  {
+    transform(s.begin(), s.end(), s.begin(), std::function<int(int)>(::tolower));
+    return s;
   }
-  index--;
+
+  module_struct *load_module(const string &filename)
+  {
+    ifstream input(filename.c_str(), ios::binary);
+    module_struct *module;
+
+    size_t offset = filename.find_last_of('.');
+    string extension(filename.substr(offset + 1));
+
+    tolower(extension);
+
+    try
+    {
+      if (extension == "mod")
+        module = load_mod(&input);
+      else if (extension == "mud")
+        module = load_mod(&input, true);
+      else if (extension == "mtm")
+        module = load_mtm(&input);
+      else if (extension == "s3m")
+        module = load_s3m(&input);
+      else if (extension == "it")
+        module = load_it(&input);
+      else if (extension == "shit")
+        module = load_it(&input, true);
+      else
+        throw "unrecognized file extension";
+    }
+    catch (const char *e)
+    {
+      input.close();
+      throw e;
+    }
+
+    module->filename = filename;
+
+    input.close();
+
+    return module;
+  }
+
+  namespace direct_output
+  {
+    enum type
+    {
+      none,
+  #ifdef DIRECTX
+      directx,
+  #endif
+  #ifdef SDL
+      sdl,
+  #endif
+    };
+  };
+
+  void show_usage(char *cmd_name)
+  {
+    string indentws(strlen(cmd_name), char(32));
+    //       12345678901234567890123456789012345678901234567890123456789012345678901234567890
+    cerr << "usage: " << cmd_name << " [-play <PLAY files>] [-samples <sample files>]" << endl
+        << "       " << indentws << " [-module <S3M filenames>] [-frame-based_portamento]" << endl
+        << "       " << indentws << " [-anticlick] [-max_time <seconds>] [-max_ticks <ticks>]" << endl
+        << "       " << indentws << " [-output <output_file>] [-amplify <factor>] [-compress]" << endl
+        << "       " << indentws << " {-stereo | -mono} {-lsb | -msb | -system_byte_order}" << endl
+        << "       " << indentws << " { {-8 | -16} [-unsigned] | {-32 | -64} | [-ulaw] | [-alaw] }" << endl
+        << "       " << indentws << " [-sample_rate <samples_per_sec>] [-looping]" << endl
+        << "       " << indentws
+  #ifdef DIRECTX
+                                  << " [-directx]"
+  #endif
+  #ifdef SDL
+                                              << " [-sdl]"
+  #endif
+                                                      << endl
+        << endl
+        << "8- and 16-bit sample sizes are integers, -32 and -64 are floating-point (IEEE" << endl
+        << "standard). The default output filename is 'output.raw'. The default byte order" << endl
+        << "is system; -lsb and -msb force Intel and Motorola endianness, respectively." << endl
+        << "The byte order setting applies only to integer output (8- and 16-bit samples)." << endl;
+  }
+
+  void expect_filenames(int &index, int count, char *argv[], vector<string> &collection)
+  {
+    while (argv[index])
+    {
+      if (argv[index][0] == '-')
+        break;
+
+      if (argv[index][0] == '"')
+      {
+        stringstream filename;
+
+        string arg(&argv[index][1]);
+
+        size_t offset = arg.find('"');
+
+        if (offset != string::npos)
+          filename << arg.substr(0, arg.size() - 1);
+        else
+        {
+          filename << arg;
+
+          while (true)
+          {
+            index++;
+
+            filename << ' ';
+
+            arg = argv[index];
+
+            offset = arg.find('"');
+
+            if (offset == string::npos)
+              filename << arg;
+            else
+            {
+              filename << arg.substr(0, offset);
+              break;
+            }
+          }
+        }
+        collection.push_back(filename.str());
+      }
+      else
+        collection.push_back(string(argv[index++]));
+    }
+    index--;
+  }
+
+  string trim(string in)
+  {
+    int start = in.find_first_not_of(" \t\n");
+    int end = in.find_last_not_of(" \t\n");
+    return in.substr(start, end - start + 1);
+  }
+
+  #include "uLaw-aLaw.h"
 }
 
-string trim(string in)
-{
-  int start = in.find_first_not_of(" \t\n");
-  int end = in.find_last_not_of(" \t\n");
-  return in.substr(start, end - start + 1);
-}
-
-#include "uLaw-aLaw.h"
+using namespace MultiPLAY;
 
 int main(int argc, char *argv[])
 {
@@ -2197,7 +2207,7 @@ int main(int argc, char *argv[])
       cerr << argv[0] << ": unable to open sample file: " << play_sample_filenames[i] << endl;
     else
     {
-      sample *this_sample;
+      MultiPLAY::sample *this_sample;
 
       try
       {
@@ -2321,8 +2331,8 @@ int main(int argc, char *argv[])
     int count = 0;
 
     for (iter_t i = channels.begin(), l = channels.end();
-         i != l;
-         ++i)
+        i != l;
+        ++i)
     {
       if ((*i)->finished)
         continue;

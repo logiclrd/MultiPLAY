@@ -262,6 +262,7 @@ namespace MultiPLAY
   struct sample
   {
     int index;
+    string name;
 
     int fade_out;
 
@@ -1654,6 +1655,8 @@ namespace MultiPLAY
   #include "Load_S3M.h"
   #include "Load_IT.h"
 
+  #include "Load_UMX.h"
+
   string &tolower(string &s)
   {
     transform(s.begin(), s.end(), s.begin(), std::function<int(int)>(::tolower));
@@ -1684,6 +1687,8 @@ namespace MultiPLAY
         module = load_it(&input);
       else if (extension == "shit")
         module = load_it(&input, true);
+      else if (extension == "umx")
+        module = load_umx(&input);
       else
         throw "unrecognized file extension";
     }
@@ -1693,7 +1698,8 @@ namespace MultiPLAY
       throw e;
     }
 
-    module->filename = filename;
+    if (module != NULL)
+      module->filename = filename;
 
     input.close();
 
@@ -1791,8 +1797,15 @@ namespace MultiPLAY
   string trim(string in)
   {
     int start = in.find_first_not_of(" \t\n");
-    int end = in.find_last_not_of(" \t\n");
-    return in.substr(start, end - start + 1);
+
+    if (start == string::npos)
+      return "";
+    else
+    {
+      int end = in.find_last_not_of(" \t\n");
+
+      return in.substr(start, end - start + 1);
+    }
   }
 
   #include "uLaw-aLaw.h"
@@ -1990,6 +2003,22 @@ int main(int argc, char *argv[])
 
       if (module)
       {
+        cout << module_filenames[i] << endl;
+        for (int i=0, l=module_filenames[i].length(); i < l; i++)
+          cout.put('=');
+        cout << endl;
+
+        int last_specified_sample_name = module->samples.size() - 1;
+
+        while ((last_specified_sample_name >= 0)
+            && (trim(module->samples[last_specified_sample_name]->name) == ""))
+          last_specified_sample_name--;
+
+        for (int i=0; i <= last_specified_sample_name; i++)
+          cout << module->samples[i]->name << endl;
+
+        cout << endl;
+
         for (int i=0; i<MAX_MODULE_CHANNELS; i++)
           if (module->channel_enabled[i])
             channels.push_back(new channel_MODULE(i, module, 64, looping));

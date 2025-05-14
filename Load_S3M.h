@@ -98,6 +98,8 @@ struct s3m_sample_flags
 
 module_struct *load_s3m(ifstream *file)
 {
+  int file_base_offset = (int)file->tellg();
+
   unsigned char lsb_bytes[4];
 
   char songname[29];
@@ -205,7 +207,7 @@ module_struct *load_s3m(ifstream *file)
 
   for (int i=0; i<num_samples; i++)
   {
-    file->seekg(sample_parapointer[i] * 16, ios::beg);
+    file->seekg(file_base_offset + sample_parapointer[i] * 16, ios::beg);
 
     int type = file->get();
 
@@ -264,7 +266,7 @@ module_struct *load_s3m(ifstream *file)
     if (string(magic, 4) != "SCRS")
       throw "invalid sample format";
 
-    file->seekg(parapointer * 16, ios::beg);
+    file->seekg(file_base_offset + parapointer * 16, ios::beg);
 
     /*if (flags.stereo())
       length >>= 1; /* */
@@ -317,6 +319,8 @@ module_struct *load_s3m(ifstream *file)
 
         sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(i, flags.stereo() ? 2 : 1);
 
+        smp->name = sample_name;
+
         smp->num_samples = length;
         smp->sample_data[0] = data_sgn;
         if (flags.stereo())
@@ -362,6 +366,8 @@ module_struct *load_s3m(ifstream *file)
         }
 
         sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(i, flags.stereo() ? 2 : 1);
+
+        smp->name = sample_name;
 
         smp->num_samples = length;
         smp->sample_data[0] = data;
@@ -413,6 +419,8 @@ module_struct *load_s3m(ifstream *file)
 
         sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(i, flags.stereo() ? 2 : 1);
 
+        smp->name = sample_name;
+
         smp->num_samples = length;
         smp->sample_data[0] = data_sgn;
         if (flags.stereo())
@@ -447,6 +455,8 @@ module_struct *load_s3m(ifstream *file)
 
         sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(i, flags.stereo() ? 2 : 1);
 
+        smp->name = sample_name;
+
         smp->num_samples = length;
         smp->sample_data[0] = data;
         if (flags.stereo())
@@ -468,7 +478,7 @@ module_struct *load_s3m(ifstream *file)
 
   for (int i=0; i<num_patterns; i++)
   {
-    file->seekg(pattern_parapointer[i] * 16, ios::beg);
+    file->seekg(file_base_offset + pattern_parapointer[i] * 16, ios::beg);
 
     file->read((char *)&lsb_bytes[0], 2);
     unsigned short pattern_data_length = from_lsb2_u(lsb_bytes);

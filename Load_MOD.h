@@ -9,6 +9,8 @@ struct mod_sample_description
 
 module_struct *load_mod(ifstream *file, bool mud = false)
 {
+  int file_base_offset = file->tellg();
+
   char songname[21];
   songname[20] = 0;
   
@@ -68,7 +70,7 @@ reinterpret:
   else if (num_samples == 31)
   {
     num_samples = 15;
-    file->seekg(470);
+    file->seekg(file_base_offset + 470);
     goto reinterpret;
   }
   else
@@ -83,7 +85,7 @@ reinterpret:
   {
     int tmp = file->tellg();
     file->seekg(0, ios::end);
-    file_length = file->tellg();
+    file_length = int(file->tellg()) - file_base_offset;
     file->seekg(tmp, ios::beg);
   }
 
@@ -265,6 +267,8 @@ reinterpret:
     sample_builtintype<signed char> *smp = (sample_builtintype<signed char> *)samps[i];
 
     smp->num_samples = sample_description[i].byte_length;
+
+    smp->name = sample_description[i].name;
 
     if (sample_description[i].repeat_length > 2)
     {

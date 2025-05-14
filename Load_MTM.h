@@ -182,6 +182,8 @@ module_struct *load_mtm(ifstream *file)
     {
       sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(i, 1);
 
+      smp->name = sample_description[i].sample_name;
+
       smp->num_samples = sample_description[i].byte_length >> 1;
 
       if (sample_description[i].loop_end - sample_description[i].loop_start > 2)

@@ -584,7 +584,7 @@ void load_it_sample_uncompressed(ifstream *file, int channels, long sample_lengt
     }
 }
 
-sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
+sample *load_it_sample(ifstream *file, int file_base_offset, int i, it_created_with_tracker &cwt)
 {
   bool new_format = cwt.compatible_exceeds(2.15);
 
@@ -680,7 +680,7 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
   if (flags.sustain_loop() == false)
     susloop_end = 0xFFFFFFFF; // special value to mean 'no loop'
 
-  file->seekg(sample_pointer);
+  file->seekg(file_base_offset + sample_pointer);
 
   if (flags.compressed())
   {
@@ -742,6 +742,8 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
   }
 
   ret->samples_per_second = c5spd / 2.0; // impulse tracker octaves go lower than we can display!
+
+  ret->name = sample_name;
 
   return ret;
 }
@@ -993,6 +995,8 @@ int dec_as_hex(char hexrep)
 
 module_struct *load_it(ifstream *file, bool modplug_style = false)
 {
+  int file_base_offset = (int)file->tellg();
+
   char magic[4];
   file->read(magic, 4);
 
@@ -1094,7 +1098,7 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
   }
 
   {
-    long expected_offset = 0xC0 + order_list_length + 4 * (num_instruments + num_samples + num_patterns);
+    long expected_offset = file_base_offset + 0xC0 + order_list_length + 4 * (num_instruments + num_samples + num_patterns);
     long actual_offset = file->tellg();
 
     if (expected_offset != actual_offset)
@@ -1105,7 +1109,7 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
 
   for (int i=0; i<num_instruments; i++)
   {
-    file->seekg(instrument_offset[i]);
+    file->seekg(file_base_offset + instrument_offset[i]);
 
     it_instrument_description desc;
     if (cwt.compatible_with_major_version < 2)
@@ -1119,8 +1123,8 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
 
   for (int i=0; i<num_samples; i++)
   {
-    file->seekg(sample_header_offset[i]);
-    sample *smp = load_it_sample(file, i, cwt);
+    file->seekg(file_base_offset + sample_header_offset[i]);
+    sample *smp = load_it_sample(file, file_base_offset, i, cwt);
     samps.push_back(smp);
   }
 
@@ -1178,7 +1182,7 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
   cerr << '.' << string(num_patterns, '-') << '.' << endl << ' ';
   for (int i=0; i<num_patterns; i++)
   {
-    file->seekg(pattern_offset[i]);
+    file->seekg(file_base_offset + pattern_offset[i]);
 
     pattern pat;
     load_it_pattern(file, pat, samps, has_note_events);

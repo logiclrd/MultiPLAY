@@ -394,27 +394,46 @@ struct it_sample_conversion_flags
   bool stereo_prompt()     { return (0 != (value & 32)); }
 };
 
-/*
- * NOTICE: The following code is based on 'cheesetracker's sample loader, which is in turn based
- *         on XMP (http://xmp.helllabs.org), which is itself based on openCP's code.
- */
 template <class T>
-T *load_it_sample_compressed(ifstream *file, long sample_length, bool double_delta)
+T *load_it_sample_compressed(ifstream *file, long sample_length, bool double_delta, bool signed_samples)
 {
-  int max_bit_width = sizeof(T) * 8 + 1, bits_to_store_bit_width = int(lg(max_bit_width - 1));
-  unsigned char lsb_bytes[2];
+  int bits_per_sample = sizeof(T) * 8;
 
-  T delta2, delta3;
-  int bit_width;
+  int max_block_sample_count;
+  int initial_bit_width;
+  int bits_to_encode_bit_width;
+  int type_b_field_size;
+  int sample_bias;
+
+  switch (bits_per_sample)
+  {
+    case 8:
+      max_block_sample_count = 0x8000;
+      initial_bit_width = 9;
+      bits_to_encode_bit_width = 3;
+      type_b_field_size = 0xFFFF;
+      sample_bias = signed_samples ? 0 : -128;
+      break;
+    case 16:
+      max_block_sample_count = 0x4000;
+      initial_bit_width = 17;
+      bits_to_encode_bit_width = 4;
+      type_b_field_size = 0x1FFFF;
+      sample_bias = signed_samples ? 0 : -32768;
+      break;
+    default:
+      throw "bits_per_sample is not 8 or 16";
+  }
 
   T *ret = new T[sample_length];
   int offset = 0;
 
-  int block_last_sample = 0;
-  
+  unsigned char lsb_bytes[2];
+
   while (offset < sample_length)
   {
     file->read((char *)&lsb_bytes[0], 2);
+
     int block_size = from_lsb2_u(lsb_bytes);
 
     ArrayAllocator<char> block_allocator(block_size);
@@ -424,94 +443,104 @@ T *load_it_sample_compressed(ifstream *file, long sample_length, bool double_del
 
     bit_memory_stream block_bits(block, block_size * 8);
 
-    delta2 = delta3 = 0;
-    bit_width = max_bit_width;
+    int block_sample_count = sample_length - offset;
 
-    block_last_sample += 0x8000;
-    if (block_last_sample > sample_length)
-      block_last_sample = sample_length;
+    if (block_sample_count > max_block_sample_count)
+      block_sample_count = max_block_sample_count;
 
-    while ((!block_bits.eof()) && (offset < block_last_sample))
+    int block_samples_left = block_sample_count;
+
+    int bit_width = initial_bit_width;
+
+    /* set up integrator buffers */
+    int integrator = sample_bias;
+    int integrator2 = sample_bias;
+
+    if (double_delta)
+      integrator = 0;
+
+    while (block_samples_left > 0)
     {
-      int aux = block_bits.read_int(bit_width);
+      /* read bits */
+      int encoded_value = block_bits.read_int(bit_width);
 
       // check for changes in the bit width
-      if (bit_width < 7) // method 1: 1 <= bit_width <= 6
+      if (bit_width <= 6) // Type A: 1 <= bit_width <= 6
       {
-        if (aux == bit_value[bit_width - 1])
+        if (encoded_value == bit_value[bit_width - 1])
         {
-          aux = block_bits.read_int(bits_to_store_bit_width) + 1;
-          if (aux >= bit_width)
-            aux++;
-          bit_width = aux;
+          /* yes -> read new width; */
+          encoded_value = block_bits.read_int(bits_to_encode_bit_width) + 1;
+
+          /* and expand it */
+          if (encoded_value >= bit_width)
+            encoded_value++;
+
+          bit_width = encoded_value;
           continue;
         }
       }
-      else if (bit_width < max_bit_width) // method 2: 7 <= bit_width < max_bit_width
+      else if (bit_width <= bits_per_sample) // Type B: 7 <= bit_width <= bits_per_sample
       {
-        int border;
+        int field = type_b_field_size >> (17 - bit_width);
 
-        switch (bit_width)
+        int border_start = field - (bits_per_sample >> 1);
+
+				Uint8 border = (0xFF >> (9 - bit_width)) - 4;
+
+        // check for range indicating new width
+        if ((encoded_value > border_start) && (encoded_value <= border_start + bits_per_sample))
         {
-          case  7: border = 0x003F; break;
-          case  8: border = 0x007F; break;
-          case  9: border = 0x00FF; break;
-          case 10: border = 0x01FF; break;
-          case 11: border = 0x03FF; break;
-          case 12: border = 0x07FF; break;
-          case 13: border = 0x0FFF; break;
-          case 14: border = 0x1FFF; break;
-          case 15: border = 0x3FFF; break;
-          case 16: border = 0x7FFF; break;
-        }
+          // yes -> calculate new width;
+          encoded_value -= border_start;
 
-        border -= (max_bit_width >> 1);
+          // and expand it
+          if (encoded_value >= bit_width)
+            encoded_value++;
 
-        int temp_aux = aux - border;
-
-        if (temp_aux >= bit_width)
-          temp_aux++;
-
-        if ((temp_aux > 0) && (temp_aux <= max_bit_width))
-        {
-          bit_width = temp_aux;
+          bit_width = encoded_value;
           continue;
         }
       }
-      else if (bit_width == max_bit_width) // method 3: bit_width == max_bit_width
+      else if (bit_width == bits_per_sample + 1) // Type C: bit_width == bits_per_sample + 1
       {
-        if (aux & bit_value[max_bit_width - 1])
+        int border = bit_value[bit_width - 1];
+
+        if (encoded_value & border)
         {
-          bit_width = (aux + 1) & 255;
-          continue;
+          int new_bit_width = (encoded_value + 1) & 0xFF;
+
+          if (new_bit_width <= bits_per_sample)
+          {
+            bit_width = new_bit_width;
+            continue;
+          }
         }
       }
       else
         throw "invalid bit width";
 
-      int delta;
-
-      int sign_bit = bit_value[bit_width - 1];
-
-      if (0 == (aux & sign_bit)) // positive
+      /* now expand value to signed byte */
+      if (bit_width < 32)
       {
-        delta = aux;
-      }
-      else // negative (sign bit set)
-      {
-        int positive = ((~aux) & (sign_bit - 1)) + 1;
-        delta = -positive;
+        // Fill the top of the 32-bit integer with the top bit of the bit_width value
+        int unused_bit_count = 32 - bit_width;
+
+        encoded_value = encoded_value << unused_bit_count >> unused_bit_count;
       }
 
-      delta2 += delta;
+			/* integrate upon the sample values */
+      integrator += encoded_value;
 
       if (double_delta)
       {
-        delta3 += delta2;
-        ret[offset++] = delta3;
+        integrator2 += integrator;
+        ret[offset++] = integrator2;
       }
       else
-        ret[offset++] = delta2;
+        ret[offset++] = integrator;
+
+      block_samples_left--;
     }
   }
 
@@ -667,7 +696,7 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
       signed short *data;
       try
       {
-        data = load_it_sample_compressed<signed short>(file, sample_length, new_format);
+        data = load_it_sample_compressed<signed short>(file, sample_length, new_format, conversion.signed_samples());
       }
       catch (const char *msg)
       {
@@ -677,23 +706,13 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
 
       ret = new sample_builtintype<signed short>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
       ((sample_builtintype<signed short> *)ret)->default_volume = default_volume / 64.0;
-
-      {
-        stringstream s;
-
-        s << "compressed_" << i << ".raw";
-
-        ofstream sample(s.str().c_str(), ios::binary);
-
-        sample.write((char *)data, sample_length * sizeof(data[0]));
-      }
     }
     else
     {
       signed char *data;
       try
       {
-        data = load_it_sample_compressed<signed char>(file, sample_length, new_format);
+        data = load_it_sample_compressed<signed char>(file, sample_length, new_format, conversion.signed_samples());
       }
       catch (const char *msg)
       {
@@ -703,16 +722,6 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
 
       ret = new sample_builtintype<signed char>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
       ((sample_builtintype<signed char> *)ret)->default_volume = default_volume / 64.0;
-
-      {
-        stringstream s;
-
-        s << "compressed_" << i << ".raw";
-
-        ofstream sample(s.str().c_str(), ios::binary);
-
-        sample.write((char *)data, sample_length * sizeof(data[0]));
-      }
     }
   }
   else
@@ -723,16 +732,6 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
       load_it_sample_uncompressed<signed short>(file, channels, sample_length, conversion, data);
       ret = new sample_builtintype<signed short>(i, channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
       ((sample_builtintype<signed short> *)ret)->default_volume = default_volume / 64.0;
-
-      {
-        stringstream s;
-
-        s << "uncompressed_" << i << ".raw";
-
-        ofstream sample(s.str().c_str(), ios::binary);
-
-        sample.write((char *)data[0], sample_length * sizeof(data[0]));
-      }
     }
     else
     {
@@ -740,16 +739,6 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
       load_it_sample_uncompressed<signed char>(file, channels, sample_length, conversion, data);
       ret = new sample_builtintype<signed char>(i, channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
       ((sample_builtintype<signed char> *)ret)->default_volume = default_volume / 64.0;
-
-      {
-        stringstream s;
-
-        s << "uncompressed_" << i << ".raw";
-
-        ofstream sample(s.str().c_str(), ios::binary);
-
-        sample.write((char *)data[0], sample_length * sizeof(data[0]));
-      }
     }
   }
 
@@ -1004,11 +993,7 @@ int dec_as_hex(char hexrep)
 }
 
 module_struct *load_it(ifstream *file, bool modplug_style = false)
-{       // 12345678901234567890123456789012345678901234567890123456789012345678901234567890
-  cerr << "Sorry the IT loader takes so long! It's something to do with pattern loading," << endl
-       << "but I'm not sure what exactly the bottleneck is. I made a progress indicator to" << endl
-       << "distract you from the wait :-)" << endl << endl;
-
+{
   char magic[4];
   file->read(magic, 4);
 

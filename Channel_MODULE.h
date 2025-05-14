@@ -478,6 +478,9 @@ struct channel_MODULE : public channel
 
     if (channel_number == 0)
     {
+      // Scan through all channels and apply global effects up-front. We only want to do this
+      // once, so the scan is done at the start of processing channel 0.
+
       bool recalc = false;
 
       for (unsigned int i=0; i<MAX_MODULE_CHANNELS; i++)
@@ -579,12 +582,12 @@ struct channel_MODULE : public channel
                 global_volume_slide_end = global_volume_slide_start - (module->speed - 1) * info.low_nybble / 32.0;
               else if (info.low_nybble == 0xF) // fine slide up
               {
-                global_volume = global_volume_slide_start - info.high_nybble / 64.0;
+                global_volume = global_volume_slide_start + info.high_nybble / 64.0;
                 fine = true;
               }
               else if (info.high_nybble == 0xF) // fine slide down
               {
-                global_volume = global_volume_slide_start + info.high_nybble / 64.0;
+                global_volume = global_volume_slide_start - info.high_nybble / 64.0;
                 fine = true;
               }
 
@@ -814,12 +817,16 @@ struct channel_MODULE : public channel
             // delta_offset_per_tick = -info.low_nybble;
           }
           break;
+
+        // Global effects, processed up-front; ignore when we get to them here during the per-channel processing.
         case 'A': // S3M set speed
         case 'B': // S3M order jump
         case 'C': // S3M pattern/row jump (jumps into next pattern, specified row
         case 'T': // tempo
         case 'V': // global volume
+        case 'W': // global volume slide
           break;
+
         case 'D': // S3M volume slide
         case_D:
           if (info.data == 0) // repeat

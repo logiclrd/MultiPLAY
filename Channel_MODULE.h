@@ -280,7 +280,7 @@ struct channel_MODULE : public channel
     }
     if (retrigger)
     {
-      if (retrigger_ticks && (((module->ticks_per_module_row - ticks_left) % retrigger_ticks) == 0))
+      if (current_sample && retrigger_ticks && (((module->ticks_per_module_row - ticks_left) % retrigger_ticks) == 0))
       {
         offset = 0.0;
         offset_major = 0;

@@ -22,7 +22,7 @@ struct channel_PLAY : public channel
   {
   }
   
-  virtual bool advance_pattern(one_sample &sample)
+  virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample)
   {
     intensity = overlap_notes ? 0 : actual_intensity;
 
@@ -41,7 +41,7 @@ struct channel_PLAY : public channel
         {
           finished = true;
           sample = 0.0;
-          return false;
+          return ChannelPlaybackState::Finished;
         }
       }
 
@@ -53,9 +53,17 @@ struct channel_PLAY : public channel
 
           if (ch < 0)
           {
-            finished = true;
-            sample = 0.0;
-            return true;
+            if (looping)
+            {
+              in->seekg(0, ios::beg);
+              ch = in->get();
+            }
+            else
+            {
+              finished = true;
+              sample = 0.0;
+              return ChannelPlaybackState::Finished;
+            }
           }
 
           if (ch == '\n')
@@ -75,7 +83,7 @@ struct channel_PLAY : public channel
           {
             finished = true;
             sample = 0.0;
-            return true;
+            return ChannelPlaybackState::Finished;
           }
         }
       }
@@ -180,7 +188,7 @@ struct channel_PLAY : public channel
           {
             finished = true;
             sample = 0.0;
-            return true;
+            return ChannelPlaybackState::Finished;
           }
 
           switch (ch)
@@ -245,7 +253,7 @@ struct channel_PLAY : public channel
           {
             finished = true;
             sample = 0.0;
-            return true;
+            return ChannelPlaybackState::Finished;
           }
 
           switch (ch)
@@ -299,6 +307,7 @@ struct channel_PLAY : public channel
           break;
       }
     }
-    return false;
+
+    return ChannelPlaybackState::Ongoing;
   }
 };

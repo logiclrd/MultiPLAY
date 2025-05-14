@@ -104,7 +104,7 @@ struct channel_NIHONGOBANGOO : channel
 
   bool input_thread_running;
 
-  virtual bool advance_pattern(one_sample &sample)
+  virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample)
   {
     if (!input_thread_running)
     {
@@ -115,18 +115,18 @@ struct channel_NIHONGOBANGOO : channel
 #else
       cerr << "UNIX input thread startup not implemented" << endl;
       finished = true;
-      return true;
+      return ChannelPlaybackState::Finished;
 #endif
       input_thread_running = true;
     }
 
     if (ticks_left)
-      return false;
+      return ChannelPlaybackState::Ongoig;
 
     if (remaining.size() == 0)
     {
       sample.clear();
-      return true;
+      return ChannelPlaybackState::Finished;
     }
 
     string filename;
@@ -156,7 +156,7 @@ struct channel_NIHONGOBANGOO : channel
     dropoff_start = ticks_left;
     cutoff_ticks = ticks_left;
 
-    return false;
+    return ChannelPlaybackState::Ongoig;
   }
 
   bool try_data_directory(string directory)

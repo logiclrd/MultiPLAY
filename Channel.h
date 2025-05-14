@@ -1,3 +1,12 @@
+namespace ChannelPlaybackState
+{
+	enum Type
+	{
+		Ongoing,
+		Finished,
+	};
+}
+
 struct channel
 {
 	bool finished, looping;
@@ -18,7 +27,7 @@ struct channel
 
 	vector<channel *> my_ancillary_channels;
 
-	bool fading, have_fade_per_tick;
+	bool fading, have_fade_per_tick, finish_with_fade;
 	double fade_per_tick, fade_value;
 
 	int tempo;
@@ -88,12 +97,17 @@ struct channel
 		}
 	}
 
-	virtual bool advance_pattern(one_sample &sample)
+	virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample)
 	{
 		throw "no implementation for advance_pattern";
 	}
 
 	virtual void note_off(bool calc_fade_per_tick = true, bool all_notes_off = true)
+	{
+		base_note_off(calc_fade_per_tick, all_notes_off);
+	}
+
+	void base_note_off(bool calc_fade_per_tick = true, bool all_notes_off = true)
 	{
 		if (current_sample != NULL)
 			current_sample->exit_sustain_loop(current_sample_context);
@@ -113,15 +127,31 @@ struct channel
 			fading = true;
 			fade_value = 1.0;
 		}
+
 		if (calc_fade_per_tick)
 		{
-			double fade_ticks = dropoff_proportion * ticks_left;
-			if (fade_ticks < dropoff_min_length)
-				fade_ticks = dropoff_min_length;
-			if (fade_ticks > dropoff_max_length)
-				fade_ticks = dropoff_max_length;
+			double fade_duration = dropoff_proportion * ticks_left;
+
+			if (fade_duration < dropoff_min_length)
+				fade_duration = dropoff_min_length;
+			if (fade_duration > dropoff_max_length)
+				fade_duration = dropoff_max_length;
+
+			double fade_ticks = fade_duration * ticks_per_second;
+
 			fade_per_tick = 1.0 / fade_ticks;
 		}
+	}
+
+	bool is_on_final_zero_volume_from_volume_envelope()
+	{
+		if (volume_envelope == NULL)
+			return false;
+
+		return
+			volume_envelope->past_end(samples_this_note) &&
+			(volume_envelope->env.node.size() > 0) &&
+			(volume_envelope->env.node.back().value < 0.0000001);
 	}
 
 	one_sample &calculate_next_tick()
@@ -131,7 +161,7 @@ struct channel
 		if (finished)
 			return return_sample;
 
-		if (advance_pattern(return_sample))
+		if (advance_pattern(return_sample) == ChannelPlaybackState::Finished)
 		{
 			return_sample = panning * (channel_volume * return_sample);
 			return return_sample;
@@ -188,26 +218,47 @@ struct channel
 
 			if (fading)
 			{
-				if (fade_value > 0.0)
-					return_sample *= fade_value;
-				else
-					return_sample.clear();
+				if (fade_value <= 0)
+				{
+					fade_value = 0;
+					fade_per_tick = 0;
+
+					current_sample = NULL;
+
+					if (current_sample_context != NULL)
+					{
+						delete current_sample_context;
+						current_sample_context = NULL;
+					}
+
+					if (finish_with_fade)
+						finished = true;
+				}
+
+				return_sample *= fade_value;
+
 				fade_value -= fade_per_tick;
 			}
-			else if (volume_envelope != NULL)
+
+			if (volume_envelope != NULL)
 			{
-				if (volume_envelope->past_end(sample_offset))
+				return_sample *= volume_envelope->get_value_at(sample_offset);
+
+				if (is_on_final_zero_volume_from_volume_envelope())
 				{
+					delete volume_envelope;
+
+					volume_envelope = NULL;
+
 					fading = true;
 					fade_value = 1.0;
 
 					if (!have_fade_per_tick)
 					{
-						note_off(true, false);
+						base_note_off(true, false);
 						have_fade_per_tick = true;
 					}
 				}
-				return_sample *= volume_envelope->get_value_at(sample_offset);
 			}
 
 			if (panning_envelope != NULL)
@@ -319,6 +370,7 @@ struct channel
 		panning_envelope = NULL;
 		pitch_envelope = NULL;
 		fading = false;
+		finish_with_fade = false;
 		have_fade_per_tick = false;
 	}
 

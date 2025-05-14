@@ -47,7 +47,7 @@ struct channel_MODULE : public channel
       fade_per_tick = (current_sample->fade_out / 1024.0) / module->ticks_per_frame;
   }
 
-  virtual bool advance_pattern(one_sample &sample)
+  virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample)
   {
     if (volume_slide)
     {
@@ -63,6 +63,7 @@ struct channel_MODULE : public channel
 
       intensity = new_intensity;
     }
+
     if (panning_slide)
     {
       double t = double(ticks_left) / module->ticks_per_module_row;
@@ -77,6 +78,7 @@ struct channel_MODULE : public channel
 
       panning.from_linear_pan(new_panning, -1.0, +1.0);
     }
+
     if (channel_volume_slide)
     {
       double t = double(ticks_left) / module->ticks_per_module_row;
@@ -88,6 +90,7 @@ struct channel_MODULE : public channel
 
       channel_volume = new_channel_volume;
     }
+
     if (global_volume_slide)
     {
       double t = double(ticks_left) / module->ticks_per_module_row;
@@ -99,6 +102,7 @@ struct channel_MODULE : public channel
 
       global_volume = new_global_volume;
     }
+
     if (portamento)
     {
       double t = double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
@@ -130,6 +134,7 @@ struct channel_MODULE : public channel
 
       delta_offset_per_tick = note_frequency / ticks_per_second;
     }
+
     if (vibrato)
     {
       double t = double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
@@ -175,6 +180,7 @@ struct channel_MODULE : public channel
         delta_offset_per_tick = note_frequency / ticks_per_second;
       }
     }
+
     if (panbrello)
     {
       double t = double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
@@ -204,6 +210,7 @@ struct channel_MODULE : public channel
 
       panning.from_linear_pan(value, -1.0, +1.0);
     }
+
     if (tremor)
     {
       double frame = module->speed * double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
@@ -211,9 +218,10 @@ struct channel_MODULE : public channel
       if (frame_mod >= tremor_ontime)
       {
         sample = 0.0;
-        return true;
+        return ChannelPlaybackState::Ongoing;
       }
     }
+
     if (arpeggio)
     {
       double fiftieths_of_second = 50.0 * double(module->ticks_per_module_row - ticks_left + arpeggio_tick_offset) / ticks_per_second;
@@ -224,6 +232,7 @@ struct channel_MODULE : public channel
         case 2: delta_offset_per_tick = arpeggio_third_delta_offset;  break;
       }
     }
+
     if (note_delay)
     {
       double frame = module->speed * double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
@@ -242,7 +251,12 @@ struct channel_MODULE : public channel
           if (delayed_note->snote == -2)
           {
             current_sample = NULL;
-            current_sample_context = NULL;
+
+            if (current_sample_context != NULL)
+            {
+              delete current_sample_context;
+              current_sample_context = NULL;
+            }
           }
           else if (delayed_note->snote == -3)
             note_off();
@@ -278,6 +292,7 @@ struct channel_MODULE : public channel
         }
       }
     }
+
     if (retrigger)
     {
       if (current_sample && retrigger_ticks && (((module->ticks_per_module_row - ticks_left) % retrigger_ticks) == 0))
@@ -294,6 +309,7 @@ struct channel_MODULE : public channel
         volume = int(intensity * 64.0 / original_intensity);
       }
     }
+
     if (tremolo)
     {
       double t = double(ticks_left) / module->ticks_per_module_row;
@@ -330,6 +346,7 @@ struct channel_MODULE : public channel
           intensity = original_intensity;
       }
     }
+
     if (note_cut)
     {
       double frame = module->speed * double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
@@ -339,6 +356,7 @@ struct channel_MODULE : public channel
         intensity = 0.0;
       }
     }
+
     if (tempo_slide)
     {
       int ticks_in = module->ticks_per_module_row - ticks_left;
@@ -347,7 +365,7 @@ struct channel_MODULE : public channel
     }
 
     if (ticks_left)
-      return false;
+      return ChannelPlaybackState::Ongoing;
 
     if (volume_slide)
     {
@@ -416,7 +434,8 @@ struct channel_MODULE : public channel
       dropoff_start = 0;
       rest_ticks = 0;
       cutoff_ticks = 0;
-      return false;
+
+      return ChannelPlaybackState::Ongoing;
     }
     
     if (channel_number == 0)
@@ -440,14 +459,19 @@ struct channel_MODULE : public channel
       }
 
       if (!trace_mod)
+      {
         cerr << "starting " << module->current_pattern << ":" <<
-          (module->current_row / 10) << (module->current_row % 10) << "   " << string(79, (char)8);
+          (module->current_row / 10) << (module->current_row % 10)
+          << " -- number of dynamic channels: " << ancillary_channels.size()
+          << "   " << string(79, (char)8);
+
+      }
     }
 
     if (module->finished)
     {
       finished = true;
-      return true;
+      return ChannelPlaybackState::Finished;
     }
 
     vector<row> &row_list = module->pattern_list[module->current_pattern]->row_list[module->current_row];
@@ -648,25 +672,25 @@ struct channel_MODULE : public channel
       {
         if (anticlick && current_sample)
         {
-          if (volume_envelope != NULL)
-          {
-            delete volume_envelope;
-            volume_envelope = NULL;
-          }
           note_off(true, false);
+
           channel_DYNAMIC *ancillary = new channel_DYNAMIC(*this, current_sample, current_sample_context, fade_per_tick);
-          
+
+          ancillary->volume_envelope = volume_envelope;
           ancillary->panning_envelope = panning_envelope;
           ancillary->pitch_envelope = pitch_envelope;
           ancillary->fading = true;
           ancillary->fade_value = 1.0;
 
+          volume_envelope = NULL;
           panning_envelope = NULL;
           pitch_envelope = NULL;
 
           ancillary_channels.push_back(ancillary);
         }
+
         current_sample = NULL;
+
         if (current_sample_context != NULL)
         {
           delete current_sample_context;
@@ -683,19 +707,17 @@ struct channel_MODULE : public channel
           {
             if (anticlick && current_sample)
             {
-              if (volume_envelope != NULL)
-              {
-                delete volume_envelope;
-                volume_envelope = NULL;
-              }
               note_off(true, false);
+
               channel_DYNAMIC *ancillary = new channel_DYNAMIC(*this, current_sample, current_sample_context, fade_per_tick);
-              
+
+              ancillary->volume_envelope = volume_envelope;
               ancillary->panning_envelope = panning_envelope;
               ancillary->pitch_envelope = pitch_envelope;
               ancillary->fading = true;
               ancillary->fade_value = 1.0;
 
+              volume_envelope = NULL;
               panning_envelope = NULL;
               pitch_envelope = NULL;
 
@@ -732,19 +754,17 @@ struct channel_MODULE : public channel
     {
       if (anticlick && current_sample)
       {
-        if (volume_envelope != NULL)
-        {
-          delete volume_envelope;
-          volume_envelope = NULL;
-        }
         note_off(true, false);
+
         channel_DYNAMIC *ancillary = new channel_DYNAMIC(*this, current_sample, current_sample_context, fade_per_tick);
-        
+
+        ancillary->volume_envelope = volume_envelope;
         ancillary->panning_envelope = panning_envelope;
         ancillary->pitch_envelope = pitch_envelope;
         ancillary->fading = true;
         ancillary->fade_value = 1.0;
 
+        volume_envelope = NULL;
         panning_envelope = NULL;
         pitch_envelope = NULL;
 
@@ -1515,7 +1535,12 @@ struct channel_MODULE : public channel
                 note_delay_frames = info.low_nybble;
                 delayed_note = &row;
                 current_sample = NULL;
-                current_sample_context = NULL;
+
+                if (current_sample_context != NULL)
+                {
+                  delete current_sample_context;
+                  current_sample_context = NULL;
+                }
               }
               break;
             case 0xE: // pattern delay
@@ -1612,7 +1637,7 @@ struct channel_MODULE : public channel
     rest_ticks = 0;
     cutoff_ticks = 0;
 
-    return false;
+    return ChannelPlaybackState::Ongoing;
   }
 
   channel_MODULE(int channel_number, module_struct *module, int channel_volume, bool looping)

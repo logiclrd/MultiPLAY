@@ -801,6 +801,7 @@ struct channel_MODULE : public channel
         case 'V': // global volume
           break;
         case 'D': // S3M volume slide
+        case_D:
           if (info.data == 0) // repeat
             info = last_param['D'];
           else
@@ -1104,30 +1105,7 @@ struct channel_MODULE : public channel
             vibrato_cycle_offset += (1.0 - vibrato_start_t);
           vibrato = true;
 
-          if (info.data == 0) // repeat
-            info = last_param['D'];
-          else
-            last_param['D'] = info;
-
-          if (info.low_nybble == 0) // slide up
-            target_volume = volume + (module->speed - 1) * info.high_nybble;
-          else if (info.high_nybble == 0) // slide down
-            target_volume = volume - (module->speed - 1) * info.low_nybble;
-          else
-          {
-            cerr << "Ambiguous/undefined S3M effect: K"
-              << setfill('0') << setw(2) << hex << uppercase << info.data << nouppercase << dec << endl;
-            break;
-          }
-
-          if (target_volume < 0)
-            target_volume = 0;
-          if (target_volume > 64)
-            target_volume = 64;
-          target_intensity = original_intensity * (target_volume / 64.0);
-          previous_intensity = intensity;
-          volume_slide = true;
-          break;
+          goto case_D;
         case 'L': // S3M G00 and Dxy
           if (row.snote >= 0)
             portamento_target_znote = row.znote;
@@ -1179,30 +1157,7 @@ struct channel_MODULE : public channel
 
           portamento = true;
 
-          if (info.data == 0) // repeat
-            info = last_param['D'];
-          else
-            last_param['D'] = info;
-
-          if (info.low_nybble == 0) // slide up
-            target_volume = volume + (module->speed - 1) * info.high_nybble;
-          else if (info.high_nybble == 0) // slide down
-            target_volume = volume - (module->speed - 1) * info.low_nybble;
-          else
-          {
-            cerr << "Ambiguous/undefined S3M effect: L"
-              << setfill('0') << setw(2) << hex << uppercase << info.data << nouppercase << dec << endl;
-            break;
-          }
-
-          if (target_volume < 0)
-            target_volume = 0;
-          if (target_volume > 64)
-            target_volume = 64;
-          target_intensity = original_intensity * (target_volume / 64.0);
-          previous_intensity = intensity;
-          volume_slide = true;
-          break;
+          goto case_D;
         case 'M': // set channel volume
           if (it_effects)
           {

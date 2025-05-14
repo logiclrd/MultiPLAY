@@ -1432,15 +1432,14 @@ namespace MultiPLAY
       if (context == NULL)
         throw "need context for instrument";
 
-      if (*context)
-      {
-        (*context)->created_with->occlude_note(p, context, this, r);
-        delete *context;
-        *context = NULL;
-      }
-
       if (r->snote >= 0)
       {
+        if (*context)
+        {
+          (*context)->created_with->occlude_note(p, context, this, r);
+          delete *context;
+        }
+
         sample_instrument_context *c = new sample_instrument_context(this);
 
         *context = c;

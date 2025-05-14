@@ -179,6 +179,7 @@ struct channel
 						return_sample = panning * (channel_volume * current_sample->get_sample(offset_major, offset, current_sample_context));
 					else
 						return_sample.clear(output_channels);
+					break;
 			}
 
 			double sample_offset;

@@ -229,14 +229,10 @@ void load_it_new_instrument_envelope(ifstream *file, it_envelope_description &de
   {
     int magnitude, tick;
 
+    magnitude = file->get();
+
     if (signed_magnitude)
-      magnitude = file->get();
-    else
-    {
-      unsigned char mag;
-      file->read((char *)&mag, 1);
-      magnitude = mag;
-    }
+      magnitude = (signed char)magnitude;
 
     file->read((char *)&lsb_bytes[0], 2);
     tick = from_lsb2(lsb_bytes);
@@ -249,6 +245,9 @@ void load_it_new_instrument_envelope(ifstream *file, it_envelope_description &de
     else
       nodes.push_back(it_envelope_node(tick, magnitude / 64.0));
   }
+
+  // Trailing byte for alignment.
+  file->get();
 
   desc.enabled = flags.enabled();
   desc.looping = flags.looping();
@@ -629,6 +628,8 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
   unsigned long sample_length, loop_begin, loop_end, c5spd;
   unsigned long susloop_begin, susloop_end, sample_pointer;
 
+  LoopStyle::Type loop_style, susloop_style;
+
   unsigned char lsb_bytes[4];
 
   file->read((char *)&lsb_bytes[0], 4);
@@ -651,6 +652,9 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
 
   file->read((char *)&lsb_bytes[0], 4);
   sample_pointer = from_lsb4_lu(lsb_bytes);
+
+  loop_style = flags.pingpong_loop() ? LoopStyle::PingPong : LoopStyle::Forward;
+  susloop_style = flags.pingpong_sustain_loop() ? LoopStyle::PingPong : LoopStyle::Forward;
 
   char auto_vibrato_speed = file->get();
   char auto_vibrato_depth = file->get();
@@ -699,7 +703,7 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
         return new sample_builtintype<signed char>(i, 1);
       }
 
-      ret = new sample_builtintype<signed short>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
+      ret = new sample_builtintype<signed short>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end, loop_style, susloop_style);
       ((sample_builtintype<signed short> *)ret)->default_volume = default_volume / 64.0;
     }
     else
@@ -715,7 +719,7 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
         return new sample_builtintype<signed char>(i, 1);
       }
 
-      ret = new sample_builtintype<signed char>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
+      ret = new sample_builtintype<signed char>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end, loop_style, susloop_style);
       ((sample_builtintype<signed char> *)ret)->default_volume = default_volume / 64.0;
     }
   }
@@ -725,14 +729,14 @@ sample *load_it_sample(ifstream *file, int i, it_created_with_tracker &cwt)
     {
       signed short *data[MAX_CHANNELS];
       load_it_sample_uncompressed<signed short>(file, channels, sample_length, conversion, data);
-      ret = new sample_builtintype<signed short>(i, channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
+      ret = new sample_builtintype<signed short>(i, channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end, loop_style, susloop_style);
       ((sample_builtintype<signed short> *)ret)->default_volume = default_volume / 64.0;
     }
     else
     {
       signed char *data[MAX_CHANNELS];
       load_it_sample_uncompressed<signed char>(file, channels, sample_length, conversion, data);
-      ret = new sample_builtintype<signed char>(i, channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end);
+      ret = new sample_builtintype<signed char>(i, channels, data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end, loop_style, susloop_style);
       ((sample_builtintype<signed char> *)ret)->default_volume = default_volume / 64.0;
     }
   }

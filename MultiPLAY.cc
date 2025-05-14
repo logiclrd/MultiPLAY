@@ -401,10 +401,10 @@ namespace MultiPLAY
         idx++;
 
         if (idx >= l)
-          return node[l].value;
+          break;
       }
 
-      tick -= node[idx].tick;
+      tick -= node[idx - 1].tick;
 
       double t = tick / (node[idx].tick - node[idx - 1].tick);
 
@@ -521,11 +521,21 @@ namespace MultiPLAY
 
   #include "Channel.h"
 
+  namespace LoopStyle
+  {
+    enum Type
+    {
+      Forward,
+      PingPong,
+    };
+  }
+
   struct sample_builtintype_context : sample_context
   {
     int last_looped_sample;
 
-    long sustain_loop_exit_difference;
+    int sustain_loop_exit_sample;
+    int sustain_loop_exit_difference;
 
     SustainLoopState::Type sustain_loop_state;
 
@@ -547,6 +557,7 @@ namespace MultiPLAY
 
       target->last_looped_sample = this->last_looped_sample;
       target->sustain_loop_exit_difference = this->sustain_loop_exit_difference;
+      target->sustain_loop_exit_sample = this->sustain_loop_exit_sample;
       target->sustain_loop_state = this->sustain_loop_state;
     }
   };
@@ -562,6 +573,8 @@ namespace MultiPLAY
 
     long loop_begin, loop_end;
     long sustain_loop_begin, sustain_loop_end;
+
+    LoopStyle::Type loop_style, sustain_loop_style;
 
     bool use_sustain_loop;
 
@@ -587,6 +600,7 @@ namespace MultiPLAY
 
       context.last_looped_sample = 0;
       context.sustain_loop_exit_difference = 0;
+      context.sustain_loop_exit_sample = 0x7FFFFFFF;
       context.samples_per_second = samples_per_second;
       context.default_volume = default_volume;
       context.num_samples = num_samples;
@@ -647,50 +661,112 @@ namespace MultiPLAY
 
       sample_builtintype_context &context = *(sample_builtintype_context *)c;
 
-      bool using_sustain_loop = false;
-
       if ((sample < 0)
-      || ((sample >= num_samples)
+       || ((sample >= num_samples)
         && (loop_end == 0xFFFFFFFF)
         && (!use_sustain_loop)))
         return one_sample(output_channels);
+
+      int subsequent_sample = sample + 1;
 
       switch (context.sustain_loop_state)
       {
         case SustainLoopState::Running:
         case SustainLoopState::Finishing:
           int new_sample;
+          int new_subsequent_sample;
+          int next_clean_exit_sample;
 
-          if (sample > sustain_loop_end)
-            new_sample = ((sample - sustain_loop_begin) % (sustain_loop_end - sustain_loop_begin + 1)) + sustain_loop_begin;
-          else
-            new_sample = sample;
-
-          using_sustain_loop = true;
-
-          if (context.sustain_loop_state == SustainLoopState::Finishing)
+          if ((context.sustain_loop_state == SustainLoopState::Finishing)
+           && (sample >= context.sustain_loop_exit_sample))
           {
-            if (new_sample < context.last_looped_sample)
+            new_sample = sample - context.sustain_loop_exit_difference;
+            new_subsequent_sample = new_sample + 1;
+            context.sustain_loop_state = SustainLoopState::Finished;
+          }
+          else if (sample > sustain_loop_end)
+          {
+            int sustain_loop_length = sustain_loop_end - sustain_loop_begin;
+            double overrun = (sample + offset) - sustain_loop_end;
+            int direction = -1;
+
+            next_clean_exit_sample = sustain_loop_end + sustain_loop_length;
+
+            while (overrun > sustain_loop_length)
             {
-              new_sample += (sustain_loop_end - sustain_loop_begin + 1);
-              context.sustain_loop_state = SustainLoopState::Finished;
-              context.sustain_loop_exit_difference = sample - new_sample;
+              next_clean_exit_sample += sustain_loop_length;
+              overrun -= sustain_loop_length;
+              direction = -direction;
             }
-            context.last_looped_sample = new_sample;
+
+            if (sustain_loop_style == LoopStyle::Forward)
+              direction = 1;
+
+            if (direction < 0)
+            {
+              next_clean_exit_sample += sustain_loop_length;
+              new_sample = sustain_loop_end - overrun;
+            }
+            else
+              new_sample = sustain_loop_begin + overrun;
+
+            new_subsequent_sample = new_sample + direction;
+
+            if (new_subsequent_sample < sustain_loop_begin)
+              new_subsequent_sample = sustain_loop_begin + 1;
+            if (new_subsequent_sample > sustain_loop_end)
+              new_subsequent_sample = sustain_loop_begin + (sustain_loop_length - direction) % sustain_loop_length;
+
+            if (context.sustain_loop_state < SustainLoopState::Finishing)
+            {
+              context.sustain_loop_exit_sample = next_clean_exit_sample;
+              context.sustain_loop_exit_difference = next_clean_exit_sample - sustain_loop_end;
+            }
+          }
+          else
+          {
+            new_sample = sample;
+            new_subsequent_sample = subsequent_sample;
           }
 
-          sample = new_sample;            
+          sample = new_sample;
+          subsequent_sample = new_subsequent_sample;
 
-          if (context.sustain_loop_state != SustainLoopState::Finished)
-            break;
-
-          using_sustain_loop = false;
-          sample += context.sustain_loop_exit_difference; // compensate for fall through 'finished'
+          break;
         case SustainLoopState::Finished:
           sample -= context.sustain_loop_exit_difference; // intentionally fall through
         case SustainLoopState::Off:
           if ((sample > loop_end) && (loop_end != 0xFFFFFFFF))
-            sample = ((sample - loop_begin) % (loop_end - loop_begin + 1)) + loop_begin;
+          {
+            int loop_length = loop_end - loop_begin;
+            double overrun = (sample + offset) - loop_end;
+            int direction = -1;
+
+            while (overrun > loop_length)
+            {
+              overrun -= loop_length;
+              direction = -direction;
+            }
+
+            if (loop_style == LoopStyle::Forward)
+              direction = 1;
+
+            if (direction < 0)
+              new_sample = loop_end - overrun;
+            else
+              new_sample = loop_begin + overrun;
+
+            new_subsequent_sample = new_sample + direction;
+
+            if (new_subsequent_sample < loop_begin)
+              new_subsequent_sample = loop_begin + 1;
+            if (new_subsequent_sample > loop_end)
+              new_subsequent_sample = loop_begin + (loop_length - direction) % loop_length;
+
+            sample = new_sample;
+            subsequent_sample = new_subsequent_sample;
+          }
+
           break;
       }
 
@@ -700,43 +776,16 @@ namespace MultiPLAY
 
       ret.reset();
 
-      if (using_sustain_loop)
-        for (int i=0; i<sample_channels; i++)
-        {
-          before = sample_data[i][sample];
-          if ((sample + 1 < num_samples) && (sample < sustain_loop_end))
-            after = sample_data[i][sample + 1];
-          else if (sample == loop_end)
-            after = sample_data[i][sustain_loop_begin];
-          else
-            after = 0.0;
+      for (int i=0; i<sample_channels; i++)
+      {
+        before = sample_data[i][sample];
+        if (subsequent_sample < num_samples)
+          after = sample_data[i][subsequent_sample];
+        else
+          after = 0.0;
 
-          ret.next_sample() = bilinear(before, after, offset);
-        }
-      else if (loop_end == 0xFFFFFFFF)
-        for (int i=0; i<sample_channels; i++)
-        {
-          before = sample_data[i][sample];
-          if (sample + 1 < num_samples)
-            after = sample_data[i][sample + 1];
-          else
-            after = 0.0;
-
-          ret.next_sample() = bilinear(before, after, offset);
-        }
-      else
-        for (int i=0; i<sample_channels; i++)
-        {
-          before = sample_data[i][sample];
-          if ((sample + 1 < num_samples) && (sample < loop_end))
-            after = sample_data[i][sample + 1];
-          else if (sample == loop_end)
-            after = sample_data[i][loop_begin];
-          else
-            after = 0.0;
-
-          ret.next_sample() = bilinear(before, after, offset);
-        }
+        ret.next_sample() = bilinear(before, after, offset);
+      }
 
       return ret.scale(sample_scale).set_channels(output_channels);
     }
@@ -744,7 +793,9 @@ namespace MultiPLAY
     sample_builtintype(int index, int sample_channels,
                       T **data = NULL, int num_samples = 0,
                       long loop_begin = 0, long loop_end = 0xFFFFFFFF,
-                      long susloop_begin = 0, long susloop_end = 0xFFFFFFFF)
+                      long susloop_begin = 0, long susloop_end = 0xFFFFFFFF,
+                      LoopStyle::Type loop_style = LoopStyle::Forward,
+                      LoopStyle::Type sustain_loop_style = LoopStyle::Forward)
       : sample(index)
     {
       switch (sizeof(T))
@@ -771,6 +822,9 @@ namespace MultiPLAY
 
       this->sustain_loop_begin = susloop_begin;
       this->sustain_loop_end = susloop_end;
+
+      this->loop_style = loop_style;
+      this->sustain_loop_style = sustain_loop_style;
 
       use_sustain_loop = (susloop_end != 0xFFFFFFFF);
     }
@@ -1396,6 +1450,9 @@ namespace MultiPLAY
         double fade_per_tick;
 
         fade_per_tick = (c.created_with->fade_out / 1024.0) / c.effect_tick_length;
+
+        if (fade_per_tick < 0.1)
+          fade_per_tick = 0.1;
 
         channel_DYNAMIC *ancillary;
         

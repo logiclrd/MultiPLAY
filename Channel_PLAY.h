@@ -1,3 +1,5 @@
+int next_play_channel_id = 0;
+
 struct channel_PLAY : public channel
 {
   istream *in;
@@ -8,6 +10,12 @@ struct channel_PLAY : public channel
     : channel(looping),
       in(input)
   {
+    stringstream ss;
+
+    ss << "play_" << (next_dynamic_channel_id++);
+
+    this->identity = ss.str();
+
     if (in->get() < 0)
       finished = true;
     

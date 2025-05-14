@@ -471,6 +471,10 @@ struct channel_MODULE : public channel
     if (module->finished)
     {
       finished = true;
+
+      for (size_t i=0; i < ancillary_channels.size(); i++)
+        ancillary_channels[i]->finished = true;
+
       return ChannelPlaybackState::Finished;
     }
 
@@ -582,22 +586,19 @@ struct channel_MODULE : public channel
                 global_volume_slide_end = global_volume_slide_start - (module->speed - 1) * info.low_nybble / 32.0;
               else if (info.low_nybble == 0xF) // fine slide up
               {
-                global_volume = global_volume_slide_start + info.high_nybble / 64.0;
+                global_volume_slide_end = global_volume_slide_start + info.high_nybble / 2000.0;
                 fine = true;
               }
               else if (info.high_nybble == 0xF) // fine slide down
               {
-                global_volume = global_volume_slide_start - info.high_nybble / 64.0;
+                global_volume_slide_end = global_volume_slide_start - info.high_nybble / 2000.0;
                 fine = true;
               }
 
-              if (!fine)
-              {
-                if (global_volume_slide_end == global_volume_slide_start)
-                  break;
+              if (global_volume_slide_end == global_volume_slide_start)
+                break;
 
-                global_volume_slide = true;
-              }
+              global_volume_slide = true;
             }
             else
               cerr << "Ignoring pre-IT command: W"
@@ -1653,6 +1654,12 @@ struct channel_MODULE : public channel
       channel_number(module->channel_map[channel_number]),
       module(module)
   {
+    stringstream ss;
+
+    ss << "module_" << module->filename << "_" << channel_number;
+
+    this->identity = ss.str();
+
     panning.set_channels(output_channels);
     offset = 0.0;
     delta_offset_per_tick = 0.0;

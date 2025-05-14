@@ -9,6 +9,8 @@ namespace ChannelPlaybackState
 
 struct channel
 {
+	string identity;
+
 	bool finished, looping;
 	double offset, delta_offset_per_tick;
 	double note_frequency;
@@ -330,6 +332,8 @@ struct channel
 			panning(output_channels),
 			looping(looping)
 	{
+		identity = "UNINITIALIZED";
+
 		finished = false;
 		ticks_left = 0;
 		octave = 4;
@@ -354,6 +358,8 @@ struct channel
 			panning(default_panning),
 			looping(looping)
 	{
+		identity = "UNINITIALIZED";
+
 		finished = false;
 		ticks_left = 0;
 		octave = 4;

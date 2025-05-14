@@ -1,3 +1,5 @@
+int next_dynamic_channel_id = 0;
+
 struct channel_DYNAMIC : channel
 {
   channel &parent_channel;
@@ -18,6 +20,12 @@ struct channel_DYNAMIC : channel
     : channel(spawner.panning, false),
       parent_channel(spawner)
   {
+    stringstream ss;
+
+    ss << "dynamic_" << (next_dynamic_channel_id++);
+
+    this->identity = ss.str();
+
     this->current_waveform = Waveform::Sample;
     this->current_sample = sample;
     this->current_sample_context = context->clone();

@@ -1,0 +1,124 @@
+# MultiPLAY
+
+A media player for several structured formats with an eye to audio quality.
+
+## What it plays
+
+MultiPLAY supports several formats, including the more common "module" or tracker files.
+
+### Impulse Tracker
+
+Probably the best-known tracker, Impulse Tracker, created by Jeffrey Lim, creates `*.it` files. Impulse Tracker is, intractably, a DOS program written in x86 assembler, but in recent years, a completely open-source cross-platform rewrite that aims to be a clone of the interface and features was created: <a href="https://schismtracker.org">Schism Tracker</a> by Storlek, Mrs. Brisby and Paper. MultiPLAY can play `*.it` files.
+
+### Scream Tracker
+
+The inspiration for Impulse Tracker in the first place was the first major break-away from the first generation Amiga trackers, Scream Tracker, which was created by Sammi Tammilehto (Psi) of the Future Crew. MultiPLAY can play `*.s3m` files, the format created by ScreamTracker 3.
+
+### MultiTracker
+
+The demoscene group Renaissance created a format and player that could handle realtime playback of up to 32 mixed channels on PCs. MultiPLAY can play `*.mtm` files.
+
+### Amiga Modules
+
+The original gangster of music modules, the `*.mod` file, was introduced with Ultimate Soundtracker for the Amiga by Karsten Obarski in 1987. MultiPLAY can play `*.mod` files.
+
+### PLAY Strings
+
+This is actually what inspired the creation of MultiPLAY in the first place: A tool for playing back BASICA/QBASIC `PLAY` statement strings.
+
+#### Multiple PLAY Strings
+
+The reason it's called MultiPLAY and not SinglePLAY is that it can play back and mix together multiple `PLAY` statements simultaneously. `PLAY` statements are monophonic, but at some point during my grade school years, I came across (or maybe transcribed myself? :-) the Super Mario Brothers theme song in 3-note polyphony, expressed as 3 separate QBASIC programs. If you had 3 computers side-by-side, you could load one of them on each, and then with the help of some friends, press F5 simultaneously on all 3 to play it back. MultiPLAY was written to do this in one go.
+
+#### Instruments
+
+After support was added to MultiPLAY for module files, which represent instruments using sample files, the `PLAY` statement support was updated to be able to use a sampled instrument instead of a simple synthesized waveform.
+
+## How it makes sound
+
+### Raw files
+
+The original implementation of MultiPLAY was made to produce raw audio files. These files no header and default to 16-bit little-endian samples in stereo. This support is still present in the latest code, and can be accessed with the `-output` command-line option.
+
+#### Formats
+
+Command-line options `-stereo` and `-mono` can be used to force 2- or 1-channel output
+Command-line options `-lsb` and `-msb` can be used to switch between byte orders for 16-bit output
+Command-line options `-64`, `-32`, `-16` and `-8` can be used to set the output sample size (but why would you ever want to use 8-bit samples? :-). The 64- and 32-bit sizes use IEEE floating-point encoding, while the 16- and 8-bit sizes are integers.
+Command-line options `-signed` and `-unsigned` can be used to set whether 16- or 8-bit output uses signed or unsigned representation.
+Command-line options `-ulaw` and `-alaw` can be used to enable compression with either μ-law or A-law. These are the companding algorithms used by the telephone network.
+
+#### Using
+
+What can you with a raw audio file? Well, at least two things:
+
+* Load them into an audio editor, such as Audacity.
+
+    In Audacity, there is a menu option Import->Raw Data. This can read and interpret the raw data produced by MultiPLAY.
+
+* Provide them as input to FFMPEG.
+
+    The open-source swiss army knife FFMPEG can take raw audio data as input, both to `ffmpeg` and `ffplay`. For instance:
+
+    ```
+    ffplay -f pcm_s16le output.raw
+    ```
+
+### DirectX
+
+When built with the optional DirectX support enabled on Windows, the `-directx` command-line option can be used to use DirectX to emit audio.
+
+### SDL
+
+When built with the optional SDL support enabled (any platform), the `-sdl` command-line option can be used to use SDL to emit audio.
+
+### Default
+
+If DirectX support is enabled, it becomes the default. If SDL support is enabled, it becomes the default. If both DirectX and SDL are enabled, SDL is preferred.
+
+## Supported operating systems
+
+MultiPLAY was originally written and tested on Windows, but was subsequently modified to be able to compile on Linux. It can output sound using DirectX (Windows) or SDL (Windows, Linux, OS X, perhaps others).
+
+### Windows
+
+Building MultiPLAY on Windows requires Microsoft's Visual C++ compiler (though not necessarily the IDE). It has been some time since I had access to this, so I cannot produce solid, verified instructions at the time of writing this document. Maybe they'll get added later :-)
+
+#### Visual C++
+
+The included `MultiPLAY.vcproj` includes profiles for building with DirectX, building with SDL and building without a direct output engine.
+
+#### Manual
+
+This section is untested, but in theory, all you need to do is:
+```
+cl MultiPLAY.cc /DDIRECTX /Ldsound.lib /Ldxguid.lib
+```
+..or
+```
+cl MultiPLAY.cc /DSDL /LSDL.lib /LSDLmain.lib
+```
+(you may need to specify additional library directories)
+
+If you compile without the optional DIRECTX support, then you can still run MultiPLAY but it will only be able to write raw audio files.
+
+### Linux / OS X / other UNIX-y systems
+
+The supplied `Makefile` assumes the build environment has a recent g++ version and has development libraries for SDL installed. If you meet these criteria, simply execute:
+```
+make
+```
+
+## Using MultiPLAY
+
+Run `MultiPLAY` with no command-line arguments to get a comprehensive usage summary.
+
+If you have one or more text files containing BASICA/QBASIC `PLAY` statement syntax, you can play them with a command such as:
+```
+./MultiPLAY -play first.txt -play second.txt
+```
+
+If you have a module file, you can play it with a command such as:
+```
+./MultiPLAY -module k_2deep.s3m
+```

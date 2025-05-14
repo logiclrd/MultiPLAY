@@ -687,7 +687,7 @@ namespace MultiPLAY
           }
           else if (sample > sustain_loop_end)
           {
-            int sustain_loop_length = sustain_loop_end - sustain_loop_begin;
+            int sustain_loop_length = sustain_loop_end - sustain_loop_begin + 1;
             double overrun = (sample + offset) - sustain_loop_end;
             int direction = -1;
 
@@ -739,7 +739,7 @@ namespace MultiPLAY
         case SustainLoopState::Off:
           if ((sample > loop_end) && (loop_end != 0xFFFFFFFF))
           {
-            int loop_length = loop_end - loop_begin;
+            int loop_length = loop_end - loop_begin + 1;
             double overrun = (sample + offset) - loop_end;
             int direction = -1;
 

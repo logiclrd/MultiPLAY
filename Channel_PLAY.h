@@ -1,8 +1,10 @@
 struct channel_PLAY : public channel
 {
   istream *in;
+  double actual_intensity;
+  bool overlap_notes;
 
-  channel_PLAY(istream *input, bool looping)
+  channel_PLAY(istream *input, bool looping, bool overlap = false)
     : channel(looping),
       in(input)
   {
@@ -10,6 +12,10 @@ struct channel_PLAY : public channel
       finished = true;
     
     in->seekg(0, ios::beg);
+
+    actual_intensity = intensity;
+    intensity = 0;
+    overlap_notes = overlap;
   }
 
   virtual ~channel_PLAY()
@@ -18,6 +24,8 @@ struct channel_PLAY : public channel
   
   virtual bool advance_pattern(one_sample &sample)
   {
+    intensity = overlap_notes ? 0 : actual_intensity;
+
     while (!ticks_left)
     {
       int ch = in->get();
@@ -112,9 +120,22 @@ struct channel_PLAY : public channel
             cerr << "Warning: invalid note length denominator " << this_note_length_denominator << endl;
             this_note_length_denominator = note_length_denominator;
           }
+
           if ((current_waveform == Waveform::Sample) && (current_sample != NULL))
+          {
             current_sample->begin_new_note(NULL, this, &current_sample_context, 0.02 * ticks_per_second, true, &znote);
-          recalc(znote, duration_scale);
+
+            recalc(znote, duration_scale);
+
+            if (overlap_notes)
+            {
+              channel_DYNAMIC *ancillary = new channel_DYNAMIC(*this, current_sample, current_sample_context, fade_per_tick);
+
+              ancillary->intensity = actual_intensity;
+
+              ancillary_channels.push_back(ancillary);
+            }
+          }
           break;
         case 'n':
         case 'N':

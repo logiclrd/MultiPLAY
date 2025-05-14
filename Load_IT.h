@@ -418,7 +418,7 @@ T *load_it_sample_compressed(ifstream *file, long sample_length, bool double_del
       max_block_sample_count = 0x4000;
       initial_bit_width = 17;
       bits_to_encode_bit_width = 4;
-      type_b_field_size = 0x1FFFF;
+      type_b_field_size = 0xFFFF;
       sample_bias = signed_samples ? 0 : -32768;
       break;
     default:
@@ -484,15 +484,13 @@ T *load_it_sample_compressed(ifstream *file, long sample_length, bool double_del
       {
         int field = type_b_field_size >> (17 - bit_width);
 
-        int border_start = field - (bits_per_sample >> 1);
-
-				Uint8 border = (0xFF >> (9 - bit_width)) - 4;
+        int border = field - (bits_per_sample >> 1);
 
         // check for range indicating new width
-        if ((encoded_value > border_start) && (encoded_value <= border_start + bits_per_sample))
+        if ((encoded_value > border) && (encoded_value <= border + bits_per_sample))
         {
           // yes -> calculate new width;
-          encoded_value -= border_start;
+          encoded_value -= border;
 
           // and expand it
           if (encoded_value >= bit_width)
@@ -504,17 +502,14 @@ T *load_it_sample_compressed(ifstream *file, long sample_length, bool double_del
       }
       else if (bit_width == bits_per_sample + 1) // Type C: bit_width == bits_per_sample + 1
       {
-        int border = bit_value[bit_width - 1];
+        int border = bit_value[bits_per_sample];
 
         if (encoded_value & border)
         {
           int new_bit_width = (encoded_value + 1) & 0xFF;
 
-          if (new_bit_width <= bits_per_sample)
-          {
-            bit_width = new_bit_width;
-            continue;
-          }
+          bit_width = new_bit_width;
+          continue;
         }
       }
       else
@@ -529,7 +524,7 @@ T *load_it_sample_compressed(ifstream *file, long sample_length, bool double_del
         encoded_value = encoded_value << unused_bit_count >> unused_bit_count;
       }
 
-			/* integrate upon the sample values */
+      /* integrate upon the sample values */
       integrator += encoded_value;
 
       if (double_delta)

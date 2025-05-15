@@ -346,16 +346,163 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm">
+			Filter="cpp;c;cxx;cc;def;odl;idl;hpj;bat;asm">
+			<File
+				RelativePath="bit_memory_stream.cc">
+			</File>
+			<File
+				RelativePath="bit_value.cc">
+			</File>
+			<File
+				RelativePath="conversion.cc">
+			</File>
+			<File
+				RelativePath="DSP.cc">
+			</File>
+			<File
+				RelativePath="effect.cc">
+			</File>
+			<File
+				RelativePath="envelope.cc">
+			</File>
+			<Filter
+				Name="Loaders"
+				Filter="">
+				<File
+					RelativePath="Load_IT.cc">
+				</File>
+				<File
+					RelativePath="Load_MOD.cc">
+				</File>
+				<File
+					RelativePath="Load_MTM.cc">
+				</File>
+				<File
+					RelativePath="Load_S3M.cc">
+				</File>
+				<File
+					RelativePath="Load_Sample.cc">
+				</File>
+				<File
+					RelativePath="Load_UMX.cc">
+				</File>
+				<File
+					RelativePath="Load_XM.cc">
+				</File>
+			</Filter>
+			<File
+				RelativePath="math.cc">
+			</File>
+			<File
+				RelativePath="mod_finetune.cc">
+			</File>
+			<File
+				RelativePath="module.cc">
+			</File>
 			<File
 				RelativePath="MultiPLAY.cc">
 			</File>
+			<File
+				RelativePath="notes.cc">
+			</File>
+			<File
+				RelativePath="one_sample.cc">
+			</File>
+			<File
+				RelativePath="pattern.cc">
+			</File>
+			<File
+				RelativePath="progress.cc">
+			</File>
+			<File
+				RelativePath="sample_builtintype.cc">
+			</File>
+			<File
+				RelativePath="sample.cc">
+			</File>
+			<File
+				RelativePath="sample_instrument.cc">
+			</File>
+			<File
+				RelativePath="uLaw-aLaw.cc">
+			</File>
+			<File
+				RelativePath="unix_break_handler.cc">
+			</File>
+			<File
+				RelativePath="wave_file.cc">
+			</File>
+			<File
+				RelativePath="win32_break_handler.cc">
+			</File>
+			<Filter
+				Name="Output"
+				Filter="">
+				<File
+					RelativePath="Output-DirectX.cc">
+				</File>
+				<File
+					RelativePath="Output-SDL.cc">
+				</File>
+			</Filter>
+			<Filter
+				Name="Channels"
+				Filter="">
+				<File
+					RelativePath="channel.cc">
+				</File>
+				<File
+					RelativePath="Channel_DYNAMIC.cc">
+				</File>
+				<File
+					RelativePath="Channel_MODULE.cc">
+				</File>
+				<File
+					RelativePath="Channel_PLAY.cc">
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc">
 			<File
+				RelativePath="bit_value.h">
+			</File>
+			<File
+				RelativePath="break_handler.h">
+			</File>
+			<File
+				RelativePath="conversion.h">
+			</File>
+			<File
 				RelativePath="DSP.h">
+			</File>
+			<File
+				RelativePath="effect.h">
+			</File>
+			<File
+				RelativePath="envelope.h">
+			</File>
+			<File
+				RelativePath="math.h">
+			</File>
+			<File
+				RelativePath="mod_finetune.h">
+			</File>
+			<File
+				RelativePath="module.h">
+			</File>
+			<File
+				RelativePath="MultiPLAY.h">
+			</File>
+			<File
+				RelativePath="notes.h">
+			</File>
+			<File
+				RelativePath="pattern.h">
+			</File>
+			<File
+				RelativePath="progress.h">
 			</File>
 			<File
 				RelativePath="RAII.h">
@@ -370,13 +517,19 @@
 				RelativePath="Profile.h">
 			</File>
 			<File
+				RelativePath="sample_builtintype.h">
+			</File>
+			<File
+				RelativePath="sample.h">
+			</File>
+			<File
+				RelativePath="sample_instrument.h">
+			</File>
+			<File
 				RelativePath="uLaw-aLaw.h">
 			</File>
 			<File
-				RelativePath="unix_break_handler.h">
-			</File>
-			<File
-				RelativePath="win32_break_handler.h">
+				RelativePath="wave_file.h">
 			</File>
 			<Filter
 				Name="Loaders"
@@ -417,7 +570,7 @@
 				Name="Channels"
 				Filter="">
 				<File
-					RelativePath="Channel.h">
+					RelativePath="channel.h">
 				<File>
 				<File
 					RelativePath="Channel_DYNAMIC.h">

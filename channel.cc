@@ -1,43 +1,34 @@
-namespace ChannelPlaybackState
+#include <cmath>
+
+using namespace std;
+
+#include "channel.h"
+
+#include "MultiPLAY.h"
+
+#include "Profile.h"
+
+#include "one_sample.h"
+#include "math.h"
+#include "progress.h"
+
+namespace MultiPLAY
 {
-	enum Type
-	{
-		Ongoing,
-		Finished,
-	};
-}
+	const Waveform::Type default_waveform = Waveform::Triangle;
 
-struct channel
-{
-	string identity;
+	const double dropoff_min_length = 30.0 / 44100.0;
+	const double dropoff_max_length = 70.0 / 44100.0;
+	const double dropoff_proportion = 1.0 / (dropoff_min_length + dropoff_max_length);
 
-	bool finished, looping;
-	double offset, delta_offset_per_tick;
-	double note_frequency;
-	long offset_major;
-	int ticks_total, ticks_left, dropoff_start, rest_ticks, cutoff_ticks;
-	int current_znote;
-	bool play_full_sample;
-	double intensity, channel_volume;
-	Waveform::Type current_waveform;
-	sample *current_sample;
-	sample_context *current_sample_context;
-	pan_value panning;
-	one_sample return_sample;
-	long samples_this_note;
-	playback_envelope *volume_envelope, *panning_envelope, *pitch_envelope;
+	double inter_note = p2(1.0 / 12.0);
 
-	vector<channel *> my_ancillary_channels;
-
-	bool fading, have_fade_per_tick, finish_with_fade;
-	double fade_per_tick, fade_value;
-
-	int tempo;
-	int octave;
-	int note_length_denominator, this_note_length_denominator;
-	double rest_ticks_proportion;
-
-	void recalc(int znote, double duration_scale, bool calculate_length = true, bool reset_sample_offset = true, bool zero_means_no_note = true)
+	// struct channel
+	void channel::recalc(
+		int znote,
+		double duration_scale,
+		bool calculate_length/* = true*/,
+		bool reset_sample_offset/* = true*/,
+		bool zero_means_no_note/* = true*/)
 	{
 		double seconds;
 
@@ -101,17 +92,12 @@ struct channel
 		}
 	}
 
-	virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile)
-	{
-		throw "no implementation for advance_pattern";
-	}
-
-	virtual void note_off(bool calc_fade_per_tick = true, bool all_notes_off = true)
+	/*virtual*/ void channel::note_off(bool calc_fade_per_tick/* = true*/, bool all_notes_off/* = true*/)
 	{
 		base_note_off(calc_fade_per_tick, all_notes_off);
 	}
 
-	void base_note_off(bool calc_fade_per_tick = true, bool all_notes_off = true)
+	void channel::base_note_off(bool calc_fade_per_tick/* = true*/, bool all_notes_off/* = true*/)
 	{
 		if (current_sample != NULL)
 			current_sample->exit_sustain_loop(current_sample_context);
@@ -147,7 +133,7 @@ struct channel
 		}
 	}
 
-	bool is_on_final_zero_volume_from_volume_envelope()
+	bool channel::is_on_final_zero_volume_from_volume_envelope()
 	{
 		if (volume_envelope == NULL)
 			return false;
@@ -158,7 +144,7 @@ struct channel
 			(volume_envelope->env.node.back().value < 0.0000001);
 	}
 
-	virtual void get_playback_position(PlaybackPosition &position)
+	/*virtual*/ void channel::get_playback_position(PlaybackPosition &position)
 	{
 		position.Order = 0;
 		position.OrderCount = 0;
@@ -171,7 +157,7 @@ struct channel
 		position.FormatString = "{Offset}/{OffsetCount}";
 	}
 
-	one_sample &calculate_next_tick()
+	one_sample &channel::calculate_next_tick()
 	{
 		Profile profile;
 
@@ -228,7 +214,7 @@ struct channel
 						return_sample = panning * (channel_volume * (4.0 * offset));
 					else if (offset < 0.75)
 						return_sample = panning * (channel_volume * (4.0 * (0.5 - offset)));
-					else                                            
+					else
 						return_sample = panning * (channel_volume * (4.0 * (offset - 1.0)));
 					break;
 				case Waveform::Sample:
@@ -379,7 +365,7 @@ struct channel
 		return return_sample;
 	}
 
-	channel(bool looping)
+	channel::channel(bool looping)
 		: return_sample(output_channels),
 			panning(output_channels),
 			looping(looping)
@@ -405,7 +391,7 @@ struct channel
 		have_fade_per_tick = false;
 	}
 
-	channel(pan_value &default_panning, bool looping)
+	channel::channel(pan_value &default_panning, bool looping)
 		: return_sample(output_channels),
 			panning(default_panning),
 			looping(looping)
@@ -432,7 +418,7 @@ struct channel
 		have_fade_per_tick = false;
 	}
 
-	virtual ~channel()
+	/*virtual*/ channel::~channel()
 	{
 		if (volume_envelope)
 			delete volume_envelope;
@@ -443,4 +429,4 @@ struct channel
 		if (current_sample_context)
 			delete current_sample_context;
 	}
-};
+}

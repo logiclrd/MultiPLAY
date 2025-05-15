@@ -1,3 +1,8 @@
+#ifndef PROFILE_H
+#define PROFILE_H
+
+#include <time.h>
+
 struct ProfileEntry
 {
 	const char *point;
@@ -67,3 +72,5 @@ struct Profile
 #endif
 	}
 };
+
+#endif // PROFILE_H

@@ -104,7 +104,7 @@ struct channel_NIHONGOBANGOO : channel
 
   bool input_thread_running;
 
-  virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample)
+  virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile)
   {
     if (!input_thread_running)
     {

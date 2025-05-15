@@ -30,7 +30,7 @@ struct channel_PLAY : public channel
   {
   }
   
-  virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample)
+  virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile)
   {
     intensity = overlap_notes ? 0 : actual_intensity;
 

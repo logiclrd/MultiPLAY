@@ -18,7 +18,9 @@ struct ProfileEntry
 
 struct Profile
 {
+#ifdef PROFILE
 	vector<ProfileEntry> entries;
+#endif
 
 	void push_back(const char *point)
 	{
@@ -36,6 +38,7 @@ struct Profile
 
 	void dump()
 	{
+#ifdef PROFILE
 		ofstream out("profiles.txt", ios::app);
 
 		out << "---------" << endl;
@@ -48,11 +51,12 @@ struct Profile
 
 			out << setw(4) << whole_milliseconds << setw(0) << "." << remainder << " : " << entries[i].point << endl;
 		}
+#endif
 	}
 
 	~Profile()
 	{
-#if PROFILE
+#ifdef PROFILE
 		if (entries.size() >= 2)
 		{
 			int duration_ns = entries.back().timestamp - entries.front().timestamp;

@@ -4,7 +4,7 @@ struct channel_DYNAMIC : channel
 {
   channel &parent_channel;
 
-  virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample)
+  virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile)
   {
     ticks_left = 1; // always have ticks left
     rest_ticks = 0;

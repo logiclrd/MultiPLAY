@@ -571,7 +571,7 @@
 				Filter="">
 				<File
 					RelativePath="channel.h">
-				<File>
+				</File>
 				<File
 					RelativePath="Channel_DYNAMIC.h">
 				</File>

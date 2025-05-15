@@ -557,8 +557,8 @@ struct channel_MODULE : public channel
           << ']';
 
         // Position in the module
-        cerr << " order " << module->current_pattern << " - pattern "
-          << module->pattern_list[module->current_pattern]->index << ":"
+        cerr << " order " << module->current_pattern << "/" << module->pattern_list.size()
+          << " - pattern " << module->pattern_list[module->current_pattern]->index << ":"
           << setw(2) << module->current_row << setw(0)
           << " -- dynamic channels: " << ancillary_channels.size()
           << "   " << string(79, (char)8);

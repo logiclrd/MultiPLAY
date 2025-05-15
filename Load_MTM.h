@@ -257,7 +257,7 @@ module_struct *load_mtm(ifstream *file)
 
   for (int i=0; i < last_pattern + 1; i++)
   {
-    pattern new_pattern;
+    pattern new_pattern(i);
 
     vector<mtm_track_data> *track[32];
 

@@ -1184,7 +1184,7 @@ module_struct *load_it(ifstream *file, bool modplug_style = false)
   {
     file->seekg(file_base_offset + pattern_offset[i]);
 
-    pattern pat;
+    pattern pat(i);
     load_it_pattern(file, pat, samps, has_note_events);
     pats.push_back(pat);
   }

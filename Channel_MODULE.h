@@ -532,11 +532,12 @@ struct channel_MODULE : public channel
         }
       }
 
-      if (!trace_mod)
+      if (!trace_mod && (module->current_pattern < module->pattern_list.size()))
       {
         profile.push_back("output trace");
 
-        cerr << "starting " << module->current_pattern << ":" <<
+        cerr << "starting sequence " << module->current_pattern << " - "
+          << module->pattern_list[module->current_pattern]->index << ":" <<
           (module->current_row / 10) << (module->current_row % 10)
           << " -- number of dynamic channels: " << ancillary_channels.size()
           << "   " << string(79, (char)8);

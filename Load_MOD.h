@@ -157,7 +157,7 @@ reinterpret:
   {
     file->read((char *)&pattern_data_buffer[0], pattern_bytes);
 
-    pattern new_pattern;
+    pattern new_pattern(i);
 
     if (!weird_channel_format)
     {

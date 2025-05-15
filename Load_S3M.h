@@ -485,7 +485,7 @@ module_struct *load_s3m(ifstream *file)
 
     int bytes_left = pattern_data_length;
 
-    pattern new_pattern;
+    pattern new_pattern(i);
 
     for (int row_number=0; row_number<64; row_number++)
     {

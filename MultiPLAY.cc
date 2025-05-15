@@ -1201,7 +1201,13 @@ namespace MultiPLAY
 
   struct pattern
   {
-    vector<vector<row> > row_list;
+    int index;
+    vector<vector<row>> row_list;
+
+    pattern(int index)
+    {
+      this->index = index;
+    }
   };
 
   struct pattern_loop_type

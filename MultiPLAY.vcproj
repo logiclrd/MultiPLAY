@@ -367,6 +367,9 @@
 				RelativePath="one_sample.h">
 			</File>
 			<File
+				RelativePath="Profile.h">
+			</File>
+			<File
 				RelativePath="uLaw-aLaw.h">
 			</File>
 			<File
@@ -396,6 +399,9 @@
 				<File
 					RelativePath="Load_XM.h">
 				</File>
+				<File
+					RelativePath="Load_UMX.h">
+				</File>
 			</Filter>
 			<Filter
 				Name="Output"
@@ -410,6 +416,9 @@
 			<Filter
 				Name="Channels"
 				Filter="">
+				<File
+					RelativePath="Channel.h">
+				<File>
 				<File
 					RelativePath="Channel_DYNAMIC.h">
 				</File>

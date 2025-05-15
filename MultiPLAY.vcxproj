@@ -111,7 +111,7 @@
       <WarningLevel>Level3</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>SDL.lib SDLmain.lib</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib SDL2main.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>x:\SDL2-2.32.6\lib\x64</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -157,7 +157,7 @@
       <WarningLevel>Level3</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>SDL.lib SDLmain.lib</AdditionalDependencies>
+      <AdditionalDependencies>SDL2.lib SDL2main.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>x:\SDL2-2.32.6\lib\x64</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -174,7 +174,7 @@
       <WarningLevel>Level3</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>dsound.lib dxguid.lib SDL.lib SDLmain.lib</AdditionalDependencies>
+      <AdditionalDependencies>dsound.lib dxguid.lib SDL2.lib SDL2main.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>x:\SDL2-2.32.6\lib\x64</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>

@@ -61,7 +61,7 @@ What can you with a raw audio file? Well, at least two things:
     The open-source swiss army knife FFMPEG can take raw audio data as input, both to `ffmpeg` and `ffplay`. For instance:
 
     ```
-    ffplay -f pcm_s16le output.raw
+    ffplay -f s16le output.raw
     ```
 
 ### DirectX

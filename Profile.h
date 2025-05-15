@@ -1,23 +1,46 @@
 #ifndef PROFILE_H
 #define PROFILE_H
 
+#if WIN32
+#include <windows.h>
+
+LARGE_INTEGER s_performanceCounterFrequency;
+
+struct InitializeProfiling
+{
+	InitializeProfiling()
+	{
+		QueryPerformanceFrequency(&s_performanceCounterFrequency);
+	}
+} _initializeProfiling;
+#else
 #include <time.h>
+
+#define NS_PER_S 1000000000LL
+#endif
 
 struct ProfileEntry
 {
 	const char *point;
 	long long timestamp;
 
-#define NS_PER_S 1000000000LL
-
 	ProfileEntry(const char *p)
 	{
+		point = p;
+
+#if WIN32
+		LARGE_INTEGER sample;
+
+		QueryPerformanceCounter(&sample);
+
+		timestamp = (long long)(sample.QuadPart * NS_PER_S / s_performanceCounterFrequency.QuadPart);
+#else
 		struct timespec ts;
 
 		clock_gettime(CLOCK_REALTIME, &ts);
 
-		point = p;
 		timestamp = ts.tv_sec * NS_PER_S + ts.tv_nsec;
+#endif // WIN32
 	}
 };
 

@@ -47,10 +47,12 @@ struct channel_MODULE : public channel
       fade_per_tick = (current_sample->fade_out / 1024.0) / module->ticks_per_frame;
   }
 
-  virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample)
+  virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile)
   {
     if (volume_slide)
     {
+      profile.push_back("start volume_slide");
+
       double t = double(ticks_left) / module->ticks_per_module_row;
       double new_intensity = previous_intensity * t + target_intensity * (1.0 - t);
       if (new_intensity < 0)
@@ -62,10 +64,14 @@ struct channel_MODULE : public channel
         tremolo_middle_intensity *= (new_intensity / intensity);
 
       intensity = new_intensity;
+
+      profile.push_back("end volume_slide");
     }
 
     if (panning_slide)
     {
+      profile.push_back("start panning_side");
+
       double t = double(ticks_left) / module->ticks_per_module_row;
       double new_panning = panning_slide_start * t + panning_slide_end * (1.0 - t);
       if (new_panning < -1.0)
@@ -77,10 +83,14 @@ struct channel_MODULE : public channel
         panbrello_middle = new_panning;
 
       panning.from_linear_pan(new_panning, -1.0, +1.0);
+
+      profile.push_back("end panning_side");
     }
 
     if (channel_volume_slide)
     {
+      profile.push_back("start channel_volume_slide");
+
       double t = double(ticks_left) / module->ticks_per_module_row;
       double new_channel_volume = channel_volume_slide_start * t + channel_volume_slide_end * (1.0 - t);
       if (new_channel_volume < 0.0)
@@ -89,10 +99,14 @@ struct channel_MODULE : public channel
         new_channel_volume = 1.0;
 
       channel_volume = new_channel_volume;
+
+      profile.push_back("end channel_volume_slide");
     }
 
     if (global_volume_slide)
     {
+      profile.push_back("start global_volume_slide");
+
       double t = double(ticks_left) / module->ticks_per_module_row;
       double new_global_volume = global_volume_slide_start * t + global_volume_slide_end * (1.0 - t);
       if (new_global_volume < 0.0)
@@ -101,10 +115,14 @@ struct channel_MODULE : public channel
         new_global_volume = 1.0;
 
       global_volume = new_global_volume;
+
+      profile.push_back("end global_volume_slide");
     }
 
     if (portamento)
     {
+      profile.push_back("start portamento");
+
       double t = double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
 
       if (!smooth_portamento_effect)
@@ -133,10 +151,14 @@ struct channel_MODULE : public channel
       }
 
       delta_offset_per_tick = note_frequency / ticks_per_second;
+
+      profile.push_back("end portamento");
     }
 
     if (vibrato)
     {
+      profile.push_back("start vibrato");
+
       double t = double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
 
       if (t >= vibrato_start_t)
@@ -179,10 +201,14 @@ struct channel_MODULE : public channel
 
         delta_offset_per_tick = note_frequency / ticks_per_second;
       }
+
+      profile.push_back("end vibrato");
     }
 
     if (panbrello)
     {
+      profile.push_back("start panbrello");
+
       double t = double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
 
       double t_panbrello = (panbrello_cycle_offset + t) * panbrello_cycle_frequency;
@@ -209,10 +235,14 @@ struct channel_MODULE : public channel
       }
 
       panning.from_linear_pan(value, -1.0, +1.0);
+
+      profile.push_back("end panbrello");
     }
 
     if (tremor)
     {
+      profile.push_back("start tremor");
+
       double frame = module->speed * double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
       int frame_mod = (int(floor(frame)) + tremor_frame_offset) % (tremor_ontime + tremor_offtime);
       if (frame_mod >= tremor_ontime)
@@ -220,10 +250,14 @@ struct channel_MODULE : public channel
         sample = 0.0;
         return ChannelPlaybackState::Ongoing;
       }
+
+      profile.push_back("end tremor");
     }
 
     if (arpeggio)
     {
+      profile.push_back("start arpeggio");
+
       double fiftieths_of_second = 50.0 * double(module->ticks_per_module_row - ticks_left + arpeggio_tick_offset) / ticks_per_second;
       switch (int(floor(fiftieths_of_second)) % 3)
       {
@@ -231,10 +265,14 @@ struct channel_MODULE : public channel
         case 1: delta_offset_per_tick = arpeggio_second_delta_offset; break;
         case 2: delta_offset_per_tick = arpeggio_third_delta_offset;  break;
       }
+
+      profile.push_back("end arpeggio");
     }
 
     if (note_delay)
     {
+      profile.push_back("start note_delay");
+
       double frame = module->speed * double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
       if (frame >= note_delay_frames)
       {
@@ -259,7 +297,11 @@ struct channel_MODULE : public channel
             }
           }
           else if (delayed_note->snote == -3)
+          {
+            profile.push_back("note_delay: call note_off");
             note_off();
+            profile.push_back("note_delay: note_off returned");
+          }
           else
           {
             if ((delayed_note->instrument != NULL) || module->it_module)
@@ -272,8 +314,11 @@ struct channel_MODULE : public channel
                 if (current_sample != NULL)
                 {
                   int translated_znote = delayed_note->znote;
+                  profile.push_back("note_delay: call begin_new_note");
                   current_sample->begin_new_note(delayed_note, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
+                  profile.push_back("note_delay: call recalc");
                   recalc(translated_znote, 1.0, false);
+                  profile.push_back("note_delay: call recalc returned");
                 }
                 else
                   current_sample_context = NULL;
@@ -295,6 +340,8 @@ struct channel_MODULE : public channel
 
     if (retrigger)
     {
+      profile.push_back("start retrigger");
+
       if (current_sample && retrigger_ticks && (((module->ticks_per_module_row - ticks_left) % retrigger_ticks) == 0))
       {
         offset = 0.0;
@@ -308,10 +355,14 @@ struct channel_MODULE : public channel
           intensity = 0.0;
         volume = int(intensity * 64.0 / original_intensity);
       }
+
+      profile.push_back("end retrigger");
     }
 
     if (tremolo)
     {
+      profile.push_back("start tremolo");
+
       double t = double(ticks_left) / module->ticks_per_module_row;
 
       if (t > tremolo_start_t)
@@ -345,10 +396,14 @@ struct channel_MODULE : public channel
         if (intensity > original_intensity)
           intensity = original_intensity;
       }
+
+      profile.push_back("end tremolo");
     }
 
     if (note_cut)
     {
+      profile.push_back("note cut");
+
       double frame = module->speed * double(module->ticks_per_module_row - ticks_left) / module->ticks_per_module_row;
       if (frame >= note_cut_frames)
       {
@@ -359,13 +414,20 @@ struct channel_MODULE : public channel
 
     if (tempo_slide)
     {
+      profile.push_back("tempo slide");
+
       int ticks_in = module->ticks_per_module_row - ticks_left;
       double frame = (module->speed - 1) * double(ticks_in) / module->ticks_per_module_row;
       tempo = (int)(original_tempo + frame * tempo_change_per_frame);
     }
 
+    profile.push_back("check ticks left");
+
     if (ticks_left)
+    {
+      profile.push_back("ticks are left");
       return ChannelPlaybackState::Ongoing;
+    }
 
     if (volume_slide)
     {
@@ -378,6 +440,8 @@ struct channel_MODULE : public channel
 
       intensity = original_intensity * volume / 64.0;
     }
+
+    profile.push_back("save state");
 
     p_volume_slide = volume_slide;                       volume_slide = false;
     p_portamento = p_portamento;                         portamento = false;
@@ -399,6 +463,8 @@ struct channel_MODULE : public channel
 
     if (pattern_jump_target >= 0)
     {
+      profile.push_back("check for pattern jump");
+
       if (pattern_jump_target >= int(module->pattern_list.size()))
       {
         if (module->auto_loop_target >= 0)
@@ -425,10 +491,16 @@ struct channel_MODULE : public channel
         pattern_jump_target = -1;
         row_jump_target = 0;
       }
+
+      profile.push_back("pattern jump end");
     }
+
+    profile.push_back("check for pattern delay");
 
     if (pattern_delay)
     {
+      profile.push_back("there is pattern delay");
+
       pattern_delay--;
       ticks_left = module->ticks_per_module_row;
       dropoff_start = 0;
@@ -440,6 +512,8 @@ struct channel_MODULE : public channel
     
     if (channel_number == 0)
     {
+      profile.push_back("we are on channel 0, so advance current_row/current_pattern");
+
       if (p_pattern_delay_by_frames)
         module->speed -= pattern_delay_frames;
 
@@ -460,11 +534,12 @@ struct channel_MODULE : public channel
 
       if (!trace_mod)
       {
+        profile.push_back("output trace");
+
         cerr << "starting " << module->current_pattern << ":" <<
           (module->current_row / 10) << (module->current_row % 10)
           << " -- number of dynamic channels: " << ancillary_channels.size()
           << "   " << string(79, (char)8);
-
       }
     }
 

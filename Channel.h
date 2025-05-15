@@ -99,7 +99,7 @@ struct channel
 		}
 	}
 
-	virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample)
+	virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile)
 	{
 		throw "no implementation for advance_pattern";
 	}
@@ -158,16 +158,24 @@ struct channel
 
 	one_sample &calculate_next_tick()
 	{
+		Profile profile;
+
+		profile.push_back("start");
+
 		return_sample.clear(output_channels);
 
 		if (finished)
 			return return_sample;
 
-		if (advance_pattern(return_sample) == ChannelPlaybackState::Finished)
+		profile.push_back("call advance_pattern");
+
+		if (advance_pattern(return_sample, profile) == ChannelPlaybackState::Finished)
 		{
 			return_sample = panning * (channel_volume * return_sample);
 			return return_sample;
 		}
+
+		profile.push_back("check for remaining ticks");
 
 		if (ticks_left)
 		{
@@ -177,6 +185,8 @@ struct channel
 				return_sample.clear();
 				return return_sample;
 			}
+
+			profile.push_back("generate/calculate sample for current waveform");
 
 			switch (current_waveform)
 			{
@@ -208,7 +218,15 @@ struct channel
 					break;
 				case Waveform::Sample:
 					if (current_sample)
-						return_sample = panning * (channel_volume * current_sample->get_sample(offset_major, offset, current_sample_context));
+					{
+						profile.push_back("interpolate sample from current_sample");
+						return_sample = current_sample->get_sample(offset_major, offset, current_sample_context);
+						profile.push_back("apply channel_volume");
+						return_sample = channel_volume * return_sample;
+						profile.push_back("apply panning");
+						return_sample = panning * return_sample;
+						profile.push_back("sample calculation complete");
+					}
 					else
 						return_sample.clear(output_channels);
 					break;
@@ -220,6 +238,8 @@ struct channel
 
 			if (fading)
 			{
+				profile.push_back("perform fading calculations");
+
 				if (fade_value <= 0)
 				{
 					fade_value = 0;
@@ -244,6 +264,8 @@ struct channel
 
 			if (volume_envelope != NULL)
 			{
+				profile.push_back("perform volume_envelope calculations");
+
 				return_sample *= volume_envelope->get_value_at(sample_offset);
 
 				if (is_on_final_zero_volume_from_volume_envelope())
@@ -264,10 +286,15 @@ struct channel
 			}
 
 			if (panning_envelope != NULL)
+			{
+				profile.push_back("perform panning_envelope calculations");
 				return_sample *= pan_value(panning_envelope->get_value_at(sample_offset));
+			}
 
 			if (pitch_envelope != NULL)
 			{
+				profile.push_back("perform pitch_envelope calculations");
+
 				double frequency = delta_offset_per_tick * ticks_per_second;
 				double exponent = lg(frequency);
 
@@ -282,6 +309,8 @@ struct channel
 			{
 				if ((current_waveform == Waveform::Sample) && (current_sample && current_sample->use_vibrato))
 				{
+					profile.push_back("perform vibrato calculations");
+
 					double frequency = delta_offset_per_tick * ticks_per_second;
 					double exponent = lg(frequency);
 					
@@ -295,6 +324,8 @@ struct channel
 			}
 
 			samples_this_note++;
+
+			profile.push_back("move unitary part of offset into offset_major");
 
 			if ((offset > 1.0) || (offset < 0.0))
 			{
@@ -312,6 +343,8 @@ struct channel
 				}
 			}
 
+			profile.push_back("apply dropoff");
+
 			if (ticks_left < dropoff_start)
 			{
 				double volume = double(ticks_left - rest_ticks) / (dropoff_start - rest_ticks);
@@ -321,8 +354,12 @@ struct channel
 			if (ticks_left == cutoff_ticks)
 				ticks_left = 0;
 
+			profile.push_back("apply intensity");
+
 			return_sample *= intensity;
 		}
+
+		profile.push_back("return");
 
 		return return_sample;
 	}

@@ -19,6 +19,8 @@ using namespace std;
 
 using namespace RAII;
 
+#include "Profile.h"
+
 namespace MultiPLAY
 {
   #include "one_sample.h"
@@ -693,6 +695,18 @@ namespace MultiPLAY
 
             next_clean_exit_sample = sustain_loop_end + sustain_loop_length;
 
+            int full_loop_length;
+
+            switch (sustain_loop_style)
+            {
+              case LoopStyle::Forward: full_loop_length = sustain_loop_length; break;
+              case LoopStyle::PingPong: full_loop_length = sustain_loop_length * 2; break;
+            }
+
+            int full_loops = overrun / full_loop_length;
+
+            overrun -= full_loops * full_loop_length;
+
             while (overrun > sustain_loop_length)
             {
               next_clean_exit_sample += sustain_loop_length;
@@ -742,6 +756,18 @@ namespace MultiPLAY
             int loop_length = loop_end - loop_begin + 1;
             double overrun = (sample + offset) - loop_end;
             int direction = -1;
+
+            int full_loop_length;
+
+            switch (sustain_loop_style)
+            {
+              case LoopStyle::Forward: full_loop_length = loop_length; break;
+              case LoopStyle::PingPong: full_loop_length = loop_length * 2; break;
+            }
+
+            int full_loops = overrun / full_loop_length;
+
+            overrun -= full_loops * full_loop_length;
 
             while (overrun > loop_length)
             {
@@ -2181,6 +2207,10 @@ int main(int argc, char *argv[])
 
     while (true)
     {
+      Profile profile;
+
+      profile.push_back("initialize sample");
+
       one_sample sample(output_channels);
       int count = 0;
 
@@ -2188,6 +2218,8 @@ int main(int argc, char *argv[])
           i != l;
           ++i)
       {
+        profile.push_back("process a channel");
+
         if ((*i)->finished)
           continue;
 
@@ -2197,6 +2229,8 @@ int main(int argc, char *argv[])
 
       for (int i = ancillary_channels.size() - 1; i >= 0; i--)
       {
+        profile.push_back("process an ancillary channel");
+
         channel &chan = *ancillary_channels[i];
 
         if (chan.finished)
@@ -2213,6 +2247,8 @@ int main(int argc, char *argv[])
       if (count == 0)
         break;
 
+      profile.push_back("apply global volume");
+
       sample *= global_volume;
 
       if (amplify)
@@ -2220,6 +2256,8 @@ int main(int argc, char *argv[])
 
       if (compress)
       {
+        profile.push_back("apply compression");
+
         bool overdriven = false;
         sample.reset();
 
@@ -2239,6 +2277,8 @@ int main(int argc, char *argv[])
           cerr << "Warning: overdriven output was detected. Output has been compressed." << endl;
       }
 
+      profile.push_back("send to direct output");
+
       switch (direct_output_type)
       {
         case direct_output::none:
@@ -2247,68 +2287,71 @@ int main(int argc, char *argv[])
             switch (bits)
             {
               case 8:
-                {
-                  signed char sample_char = (signed char)(127 * sample.next_sample());
+              {
+                signed char sample_char = (signed char)(127 * sample.next_sample());
 
-                  if (unsigned_samples)
-                  {
-                    unsigned char sample_uchar = (unsigned char)(int(sample_char) + 128); // bias sample
-                    output.put(sample_uchar);
-                  }
-                  else
-                    output.put(sample_char);
+                if (unsigned_samples)
+                {
+                  unsigned char sample_uchar = (unsigned char)(int(sample_char) + 128); // bias sample
+                  output.put(sample_uchar);
                 }
+                else
+                  output.put(sample_char);
+
                 break;
+              }
               case 16:
-                {
-                  short sample_short = (short)(32767 * sample.next_sample());
+              {
+                short sample_short = (short)(32767 * sample.next_sample());
 
-                  if (unsigned_samples)
+                if (unsigned_samples)
+                {
+                  unsigned short sample_ushort = short(int(sample_short) + 32768); // bias sample
+                  if (msb_output)
                   {
-                    unsigned short sample_ushort = short(int(sample_short) + 32768); // bias sample
-                    if (msb_output)
-                    {
-                      output.put((sample_ushort >> 8) & 0xFF);
-                      output.put(sample_ushort & 0xFF);
-                    }
-                    else if (lsb_output)
-                    {
-                      output.put(sample_ushort & 0xFF);
-                      output.put((sample_ushort >> 8) & 0xFF);
-                    }
-                    else
-                      output.write((char *)&sample_ushort, 2);
+                    output.put((sample_ushort >> 8) & 0xFF);
+                    output.put(sample_ushort & 0xFF);
                   }
-                  else if (ulaw)
-                    output.put(ulaw_encode_sample(sample_short));
-                  else if (alaw)
-                    output.put(alaw_encode_sample(sample_short));
+                  else if (lsb_output)
+                  {
+                    output.put(sample_ushort & 0xFF);
+                    output.put((sample_ushort >> 8) & 0xFF);
+                  }
                   else
-                  {
-                    unsigned short *pu16 = (unsigned short *)&sample_short;
-
-                    if (msb_output)
-                    {
-                      output.put(((*pu16) >> 8) & 0xFF);
-                      output.put((*pu16) & 0xFF);
-                    }
-                    else if (lsb_output)
-                    {
-                      output.put((*pu16) & 0xFF);
-                      output.put(((*pu16) >> 8) & 0xFF);
-                    }
-                    else
-                      output.write((char *)&sample_short, 2);
-                  }
+                    output.write((char *)&sample_ushort, 2);
                 }
-                break;
-              case 32:
+                else if (ulaw)
+                  output.put(ulaw_encode_sample(sample_short));
+                else if (alaw)
+                  output.put(alaw_encode_sample(sample_short));
+                else
                 {
-                  float sample_float = (float)sample.next_sample();
+                  unsigned short *pu16 = (unsigned short *)&sample_short;
 
-                  output.write((char *)&sample_float, 4);
+                  if (msb_output)
+                  {
+                    output.put(((*pu16) >> 8) & 0xFF);
+                    output.put((*pu16) & 0xFF);
+                  }
+                  else if (lsb_output)
+                  {
+                    output.put((*pu16) & 0xFF);
+                    output.put(((*pu16) >> 8) & 0xFF);
+                  }
+                  else
+                    output.write((char *)&sample_short, 2);
                 }
+
                 break;
+              }
+              case 32:
+              {
+                float sample_float = (float)sample.next_sample();
+
+                output.write((char *)&sample_float, 4);
+
+                break;
+              }
               case 64:
                 output.write((char *)&sample.next_sample(), 8);
                 break;
@@ -2325,6 +2368,8 @@ int main(int argc, char *argv[])
           break;
   #endif
       }
+
+      profile.push_back("count the tick");
 
       if (max_ticks > 0)
       {

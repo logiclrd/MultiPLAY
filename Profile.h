@@ -4,15 +4,7 @@
 #if WIN32
 #include <windows.h>
 
-LARGE_INTEGER s_performanceCounterFrequency;
-
-struct InitializeProfiling
-{
-	InitializeProfiling()
-	{
-		QueryPerformanceFrequency(&s_performanceCounterFrequency);
-	}
-} _initializeProfiling;
+extern LARGE_INTEGER s_performanceCounterFrequency;
 #else
 #include <time.h>
 #endif

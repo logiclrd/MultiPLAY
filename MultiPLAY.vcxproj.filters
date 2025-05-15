@@ -82,6 +82,9 @@
 		<ClCompile Include="pattern.cc">
 			<Filter>Source Files</Filter>
 		</ClCompile>
+		<ClCompile Include="Profile.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
 		<ClCompile Include="progress.cc">
 			<Filter>Source Files</Filter>
 		</ClCompile>
@@ -157,6 +160,9 @@
 			<Filter>Header Files</Filter>
 		</ClInclude>
 		<ClInclude Include="pattern.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="Profile.h">
 			<Filter>Header Files</Filter>
 		</ClInclude>
 		<ClInclude Include="progress.h">

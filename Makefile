@@ -24,6 +24,9 @@ HEADERS += Output-DirectX.h  Output-SDL.h
 SOURCES += uLaw-aLaw.cc
 HEADERS += uLaw-aLaw.h
 
+SOURCES += Profile.cc
+HEADERS += Profile.h
+
 HEADERS += RAII.h
 
 MultiPLAY: $(SOURCES) $(HEADERS)

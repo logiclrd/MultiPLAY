@@ -161,6 +161,7 @@
     <ClCompile Include="Output-DirectX.cc" />
     <ClCompile Include="Output-SDL.cc" />
     <ClCompile Include="pattern.cc" />
+    <ClCompile Include="Profile.cc" />
     <ClCompile Include="progress.cc" />
     <ClCompile Include="sample_builtintype.cc" />
     <ClCompile Include="sample.cc" />

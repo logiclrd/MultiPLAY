@@ -106,13 +106,13 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>SDL;WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>x:\sdl-devel-1.2.5a-vc6\sdl-1.2.5\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>x:\SDL2-2.32.6\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
     </ClCompile>
     <Link>
       <AdditionalDependencies>SDL.lib SDLmain.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>x:\sdl-devel-1.2.5a-vc6\sdl-1.2.5\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>x:\SDL2-2.32.6\lib\x64</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
@@ -152,13 +152,13 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>SDL;WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>x:\sdl-devel-1.2.5a-vc6\sdl-1.2.5\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>x:\SDL2-2.32.6\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
     </ClCompile>
     <Link>
       <AdditionalDependencies>SDL.lib SDLmain.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>x:\sdl-devel-1.2.5a-vc6\sdl-1.2.5\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>x:\SDL2-2.32.6\lib\x64</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
@@ -169,13 +169,13 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>DIRECTX;SDL;WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>x:\sdl-devel-1.2.5a-vc6\sdl-1.2.5\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>x:\SDL2-2.32.6\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>Level3</WarningLevel>
     </ClCompile>
     <Link>
       <AdditionalDependencies>dsound.lib dxguid.lib SDL.lib SDLmain.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>x:\sdl-devel-1.2.5a-vc6\sdl-1.2.5\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>x:\SDL2-2.32.6\lib\x64</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>

@@ -539,10 +539,28 @@ struct channel_MODULE : public channel
       {
         profile.push_back("output trace");
 
-        cerr << "starting sequence " << module->current_pattern << " - "
-          << module->pattern_list[module->current_pattern]->index << ":" <<
-          (module->current_row / 10) << (module->current_row % 10)
-          << " -- number of dynamic channels: " << ancillary_channels.size()
+        int second = (int)(current_absolute_tick_number / ticks_per_second);
+
+        int hour = second / 3600;
+
+        second -= hour * 3600;
+
+        int minute = second / 60;
+
+        second -= minute * 60;
+
+        // Wall time
+        cerr << '[' << setfill('0')
+          << setw(2) << hour << setw(0) << ':'
+          << setw(2) << minute << setw(0) << ':'
+          << setw(2) << second << setw(0)
+          << ']';
+
+        // Position in the module
+        cerr << " order " << module->current_pattern << " - pattern "
+          << module->pattern_list[module->current_pattern]->index << ":"
+          << setw(2) << module->current_row << setw(0)
+          << " -- dynamic channels: " << ancillary_channels.size()
           << "   " << string(79, (char)8);
       }
     }

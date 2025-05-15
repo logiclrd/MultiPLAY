@@ -182,6 +182,8 @@ namespace MultiPLAY
   }
 
   int ticks_per_second;
+  long long current_absolute_tick_number;
+
   double inter_note = p2(1.0 / 12.0);
 
   int from_lsb2(unsigned char in[2])
@@ -2097,8 +2099,10 @@ int main(int argc, char *argv[])
       {
         module->current_pattern = module_start_patterns[i];
 
-        cout << module_filenames[i] << endl;
-        for (int i=0, l=module_filenames[i].length(); i < l; i++)
+        string header_line = string("\"") + module->name + "\" (" + module->filename + ")";
+
+        cout << header_line << endl;
+        for (int i=0, l=header_line.length(); i < l; i++)
           cout.put('=');
         cout << endl;
 
@@ -2273,6 +2277,8 @@ int main(int argc, char *argv[])
     if (max_ticks > 0)
       cerr << "  time limit " << max_ticks << " samples (" << (double(max_ticks) / ticks_per_second) << " seconds)" << endl;
 
+    current_absolute_tick_number = 0;
+
     while (true)
     {
       Profile profile;
@@ -2438,6 +2444,8 @@ int main(int argc, char *argv[])
       }
 
       profile.push_back("count the tick");
+
+      current_absolute_tick_number++;
 
       if (max_ticks > 0)
       {

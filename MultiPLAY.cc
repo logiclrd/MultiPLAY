@@ -1202,13 +1202,48 @@ namespace MultiPLAY
   struct pattern
   {
     int index;
+    const bool is_skip_marker;
+    const bool is_end_marker;
     vector<vector<row>> row_list;
 
     pattern(int index)
+      : is_skip_marker(false), is_end_marker(false)
     {
       this->index = index;
     }
+
+    pattern(const pattern &other)
+      : index(other.index),
+        is_skip_marker(other.is_skip_marker),
+        is_end_marker(other.is_end_marker),
+        row_list(other.row_list)
+    {
+    }
+
+    pattern &operator =(const pattern &other)
+    {
+      this->index = other.index;
+
+      (bool &)this->is_skip_marker = other.is_skip_marker;
+      (bool &)this->is_end_marker = other.is_end_marker;
+
+      this->row_list = other.row_list;
+
+      return *this;
+    }
+
+  private:
+    pattern(bool is_skip_marker, bool is_end_marker)
+      : is_skip_marker(is_skip_marker), is_end_marker(is_end_marker)
+    {
+    }
+  public:
+    static pattern skip_marker;
+    static pattern end_marker;
   };
+
+  pattern pattern::skip_marker(true, false);
+  pattern pattern::end_marker(false, true);
 
   struct pattern_loop_type
   {
@@ -1266,7 +1301,6 @@ namespace MultiPLAY
     void initialize()
     {
       speed_change();
-      current_pattern = 0;
       current_row = -1;
       finished = false;
     }
@@ -1735,6 +1769,12 @@ namespace MultiPLAY
 
     input.close();
 
+    // Cap the pattern order, in case the loader hasn't already done it.
+    module->pattern_list.push_back(&pattern::end_marker);
+
+    if (module->auto_loop_target >= module->pattern_list.size())
+      module->auto_loop_target = module->pattern_list.size() - 1;
+
     return module;
   }
 
@@ -1757,20 +1797,23 @@ namespace MultiPLAY
     string indentws(strlen(cmd_name), char(32));
     //       12345678901234567890123456789012345678901234567890123456789012345678901234567890
     cerr << "usage: " << cmd_name << " [-play_overlap -play_no_overlap -play <PLAY files>] [-samples <sample files>]" << endl
-        << "       " << indentws << " [-module <S3M filenames>] [-frame-based_portamento]" << endl
-        << "       " << indentws << " [-anticlick] [-max_time <seconds>] [-max_ticks <ticks>]" << endl
-        << "       " << indentws << " [-output <output_file>] [-amplify <factor>] [-compress]" << endl
+        << "       " << indentws << " [-module_start_pattern <pattern order number>] [-module <S3M filenames>]" << endl
+        << "       " << indentws << " [-frame-based_portamento] [-anticlick] [-max_time <seconds>]" << endl
+        << "       " << indentws << " [-max_ticks <ticks>] [-output <output_file>] [-amplify <factor>] [-compress]" << endl
         << "       " << indentws << " {-stereo | -mono} {-lsb | -msb | -system_byte_order}" << endl
         << "       " << indentws << " { {-8 | -16} [-unsigned] | {-32 | -64} | [-ulaw] | [-alaw] }" << endl
         << "       " << indentws << " [-sample_rate <samples_per_sec>] [-looping]" << endl
         << "       " << indentws
   #ifdef DIRECTX
-                                  << " [-directx]"
+                                 << " [-directx]"
   #endif
   #ifdef SDL
-                                              << " [-sdl]"
+                                                  << " [-sdl]"
   #endif
-                                                      << endl
+                                                               << endl
+        << endl
+        << "If a module start pattern number is specified, it applies to any -module" << endl
+        << "specified after." << endl
         << endl
         << "8- and 16-bit sample sizes are integers, -32 and -64 are floating-point (IEEE" << endl
         << "standard). The default output filename is 'output.raw'. The default byte order" << endl
@@ -1856,7 +1899,9 @@ int main(int argc, char *argv[])
   direct_output::type direct_output_type = direct_output::none;
   bool stereo_output = true;
   bool looping = false;
+  int module_start_pattern;
   vector<string> play_filenames, play_sample_filenames, module_filenames;
+  vector<int> module_start_patterns;
   vector<bool> play_overlap_notes;
   vector<module_struct *> modules;
   bool lsb_output = false, msb_output = false;
@@ -1875,6 +1920,8 @@ int main(int argc, char *argv[])
   register_break_handler();
 
   bool next_play_overlap_notes = false;
+
+  module_start_pattern = 0;
 
   for (int i=1; i<argc; i++)
   {
@@ -1910,13 +1957,26 @@ int main(int argc, char *argv[])
       else
         expect_filenames(i, argc, argv, play_sample_filenames);
     }
+    else if (arg == "-module_start_pattern")
+    {
+      i++;
+      if (i >= argc)
+        cerr << argv[0] << ": missing argument for parameter " << arg << endl;
+      else
+        module_start_pattern = atoi(argv[i]);
+    }
     else if ((arg == "-module") || (arg == "-modules"))
     {
       i++;
       if (i >= argc)
         cerr << argv[0] << ": missing argument for parameter " << arg << endl;
       else
+      {
         expect_filenames(i, argc, argv, module_filenames);
+
+        while (module_start_patterns.size() < module_filenames.size())
+          module_start_patterns.push_back(module_start_pattern);
+      }
     }
     else if (arg == "-frame-based_portamento")
       smooth_portamento_effect = false;
@@ -2035,6 +2095,8 @@ int main(int argc, char *argv[])
 
       if (module)
       {
+        module->current_pattern = module_start_patterns[i];
+
         cout << module_filenames[i] << endl;
         for (int i=0, l=module_filenames[i].length(); i < l; i++)
           cout.put('=');

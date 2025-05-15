@@ -170,8 +170,8 @@ module_struct *load_s3m(ifstream *file)
   for (int i=0; i<32; i++)
     channels[i].value = file->get();
 
-  if (pattern_list_length & 1)
-    throw "pattern list length is not even";
+  //if (pattern_list_length & 1)
+  //  throw "pattern list length is not even";
 
   ArrayAllocator<unsigned char> pattern_list_index_allocator(pattern_list_length);
   unsigned char *pattern_list_index = pattern_list_index_allocator.getArray();
@@ -550,13 +550,11 @@ module_struct *load_s3m(ifstream *file)
   for (int i=0; i<pattern_list_length; i++)
   {
     if (pattern_list_index[i] == 254) //  ++ (skip)
-    {
-      ret->pattern_list.push_back(NULL);
-      continue;
-    }
-    if (pattern_list_index[i] == 255) //  -- (end of tune)
-      break;
-    ret->pattern_list.push_back(&ret->patterns[pattern_list_index[i]]);
+      ret->pattern_list.push_back(&pattern::skip_marker);
+    else if (pattern_list_index[i] == 255) //  -- (end of tune)
+      ret->pattern_list.push_back(&pattern::end_marker);
+    else
+      ret->pattern_list.push_back(&ret->patterns[pattern_list_index[i]]);
   }
 
   memset(ret->base_pan, 0, sizeof(ret->base_pan));

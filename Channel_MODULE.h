@@ -523,7 +523,10 @@ struct channel_MODULE : public channel
         module->current_row = 0;
         module->current_pattern++;
 
-        if (module->current_pattern >= int(module->pattern_list.size()))
+        while (module->pattern_list[module->current_pattern]->is_skip_marker)
+          module->current_pattern++;
+
+        if (module->pattern_list[module->current_pattern]->is_end_marker)
         {
           if (looping)
             module->current_pattern = 0;

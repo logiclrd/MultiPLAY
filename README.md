@@ -122,3 +122,9 @@ If you have a module file, you can play it with a command such as:
 ```
 ./MultiPLAY -module k_2deep.s3m
 ```
+
+## Sample Files
+
+_'Sample' in the sense of files to test out MultiPLAY_
+
+This repository has links to a quick grab bag of module files and a few `PLAY` syntax files. To avoid ballooning the Git repository with binary files, these are stored in Git-LFS. Install the Git-LFS extensions and then clone the repository and it should automatically download them into a subdirectory called `Samples`.

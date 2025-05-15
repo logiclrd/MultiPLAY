@@ -3,6 +3,7 @@ int next_play_channel_id = 0;
 struct channel_PLAY : public channel
 {
   istream *in;
+  long in_offset, in_length;
   double actual_intensity;
   bool overlap_notes;
 
@@ -18,8 +19,12 @@ struct channel_PLAY : public channel
 
     if (in->get() < 0)
       finished = true;
-    
+
+    in->seekg(0, ios::end);
+    in_length = (long)in->tellg();
+
     in->seekg(0, ios::beg);
+    in_offset = 0;
 
     actual_intensity = intensity;
     intensity = 0;
@@ -29,70 +34,153 @@ struct channel_PLAY : public channel
   virtual ~channel_PLAY()
   {
   }
-  
+
+  virtual void get_playback_position(PlaybackPosition &position)
+  {
+    position.Order = 0;
+    position.OrderCount = 0;
+    position.Pattern = 0;
+    position.PatternCount = 0;
+    position.Row = 0;
+    position.RowCount = 0;
+    position.Offset = in_offset;
+    position.OffsetCount = in_length;
+    position.FormatString = "{Offset}/{OffsetCount}";
+  }
+
+  bool looped;
+
+  int pull_char()
+  {
+    looped = false;
+
+    int ch = in->get();
+
+    if (ch < 0)
+    {
+      if (looping)
+      {
+        in->seekg(0, ios::beg);
+        in_offset = 0;
+
+        looped = true;
+
+        ch = in->get();
+      }
+      else
+        finished = true;
+    }
+
+    in_offset++;
+
+    return ch;
+  }
+
+  void push_char(char ch)
+  {
+    in->putback(ch);
+    in_offset--;
+  }
+
+  int expect_int()
+  {
+    int built_up = 0;
+
+    while (true)
+    {
+      int ch = pull_char();
+
+      if (finished)
+        return built_up;
+
+      if ((ch >= '0') && (ch <= '9'))
+        built_up = (built_up * 10) + (ch - '0');
+      else
+      {
+        push_char(ch);
+        return built_up;
+      }
+    }
+  }
+
+  int accidental()
+  {
+    int ch = pull_char();
+
+    if (ch == '-')
+      return -1;
+    if ((ch == '+') || (ch == '#'))
+      return +1;
+
+    if (ch > 0)
+      push_char(ch);
+
+    return 0;
+  }
+
+  double expect_duration(int *note_length_denominator = NULL)
+  {
+    double duration = 1.0;
+    double duration_add = 0.5;
+
+    int ch = pull_char();
+
+    if (isdigit(ch) && (note_length_denominator != NULL))
+    {
+      push_char(ch);
+      *note_length_denominator = expect_int();
+    }
+
+    while (ch == '.')
+    {
+      duration += duration_add;
+      duration_add /= 2.0;
+
+      ch = pull_char();
+    }
+
+    if (ch >= 0)
+      push_char(ch);
+
+    return duration;
+  }
+
   virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile)
   {
     intensity = overlap_notes ? 0 : actual_intensity;
 
     while (!ticks_left)
     {
-      int ch = in->get();
+      int ch = pull_char();
 
-      if (ch < 0)
+      if (finished)
       {
-        if (looping)
-        {
-          in->seekg(0, ios::beg);
-          ch = in->get();
-        }
-        else
-        {
-          finished = true;
-          sample = 0.0;
-          return ChannelPlaybackState::Finished;
-        }
+        sample = 0.0;
+        return ChannelPlaybackState::Finished;
       }
 
       while (ch == '\'')
       {
         while (true)
         {
-          ch = in->get();
+          ch = pull_char();
 
-          if (ch < 0)
+          if (finished)
           {
-            if (looping)
-            {
-              in->seekg(0, ios::beg);
-              ch = in->get();
-            }
-            else
-            {
-              finished = true;
-              sample = 0.0;
-              return ChannelPlaybackState::Finished;
-            }
+            sample = 0.0;
+            return ChannelPlaybackState::Finished;
           }
 
           if (ch == '\n')
             break;
         }
 
-        ch = in->get();
+        ch = pull_char();
 
-        if (ch < 0)
+        if (finished)
         {
-          if (looping)
-          {
-            in->seekg(0, ios::beg);
-            ch = in->get();
-          }
-          else
-          {
-            finished = true;
-            sample = 0.0;
-            return ChannelPlaybackState::Finished;
-          }
+          sample = 0.0;
+          return ChannelPlaybackState::Finished;
         }
       }
 
@@ -106,7 +194,7 @@ struct channel_PLAY : public channel
       {
         case 'o':
         case 'O':
-          octave = expect_int(in);
+          octave = expect_int();
           if (octave < 0)
           {
             cerr << "Warning: Syntax error in input: O" << octave << endl;
@@ -128,16 +216,21 @@ struct channel_PLAY : public channel
           break;
         case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g':
         case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G':
-          znote = note_by_name[tolower(ch) - 'a'] + 12*octave + accidental(in) + 1;
+        {
+          znote = note_by_name[tolower(ch) - 'a'] + 12*octave + accidental() + 1;
           this_note_length_denominator = note_length_denominator;
-          duration_scale = expect_duration(in, this_note_length_denominator);
+          duration_scale = expect_duration(&this_note_length_denominator);
           if (note_length_denominator && (this_note_length_denominator == 0))
           {
             cerr << "Warning: invalid note length denominator " << this_note_length_denominator << endl;
             this_note_length_denominator = note_length_denominator;
           }
 
-          if ((current_waveform == Waveform::Sample) && (current_sample != NULL))
+          bool use_sample = (current_waveform == Waveform::Sample) && (current_sample != NULL);
+
+          if (!use_sample)
+            recalc(znote, duration_scale);
+          else
           {
             current_sample->begin_new_note(NULL, this, &current_sample_context, 0.02 * ticks_per_second, true, &znote);
 
@@ -153,10 +246,11 @@ struct channel_PLAY : public channel
             }
           }
           break;
+        }
         case 'n':
         case 'N':
-          znote = expect_int(in);
-          duration_scale = expect_duration(in, *(int *)NULL);
+          znote = expect_int();
+          duration_scale = expect_duration();
           this_note_length_denominator = note_length_denominator;
           if (znote < 0)
           {
@@ -174,7 +268,7 @@ struct channel_PLAY : public channel
           break;
         case 'l':
         case 'L':
-          note_length_denominator = expect_int(in);
+          note_length_denominator = expect_int();
           if (note_length_denominator < 1)
           {
             if ((note_length_denominator < 0) || (current_waveform != Waveform::Sample))
@@ -191,13 +285,16 @@ struct channel_PLAY : public channel
           break;
         case 'm':
         case 'M':
-          ch = in->get();
-          if (ch < 0)
+          ch = pull_char();
+
+          if (finished)
           {
-            finished = true;
             sample = 0.0;
             return ChannelPlaybackState::Finished;
           }
+
+          if (looped)
+            break;
 
           switch (ch)
           {
@@ -225,8 +322,8 @@ struct channel_PLAY : public channel
           break;
         case 'p':
         case 'P':
-          rests = expect_int(in);
-          duration_scale = expect_duration(in, *(int *)NULL);
+          rests = expect_int();
+          duration_scale = expect_duration();
           if (rests < 1)
           {
             cerr << "Warning: Syntax error in input: P" << rests << endl;
@@ -242,7 +339,7 @@ struct channel_PLAY : public channel
           break;
         case 't':
         case 'T':
-          tempo = expect_int(in);
+          tempo = expect_int();
           if (tempo < 32)
           {
             cerr << "Warning: Syntax error in input: T" << tempo << endl;
@@ -256,10 +353,10 @@ struct channel_PLAY : public channel
           break;
         case 'w': // extended option
         case 'W':
-          ch = in->get();
-          if (ch < 0)
+          ch = pull_char();
+
+          if (finished)
           {
-            finished = true;
             sample = 0.0;
             return ChannelPlaybackState::Finished;
           }
@@ -296,8 +393,9 @@ struct channel_PLAY : public channel
               break;
             case '0': case '1': case '2': case '3': case '4':
             case '5': case '6': case '7': case '8': case '9':
-              in->putback(ch);
-              sample_number = expect_int(in);
+              push_char(ch);
+
+              sample_number = expect_int();
 
               if ((sample_number < 0) || (sample_number >= int(samples.size())))
                 cerr << "Warning: Sample number " << sample_number << " out of range" << endl;

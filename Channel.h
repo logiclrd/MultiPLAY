@@ -15,7 +15,7 @@ struct channel
 	double offset, delta_offset_per_tick;
 	double note_frequency;
 	long offset_major;
-	int ticks_left, dropoff_start, rest_ticks, cutoff_ticks;
+	int ticks_total, ticks_left, dropoff_start, rest_ticks, cutoff_ticks;
 	int current_znote;
 	bool play_full_sample;
 	double intensity, channel_volume;
@@ -87,6 +87,8 @@ struct channel
 			else
 				rest_ticks = ticks_left;
 
+			ticks_total = ticks_left;
+
 			double dropoff_time = seconds * dropoff_proportion;
 			if (dropoff_time < dropoff_min_length)
 				dropoff_time = dropoff_min_length;
@@ -154,6 +156,19 @@ struct channel
 			volume_envelope->past_end(samples_this_note) &&
 			(volume_envelope->env.node.size() > 0) &&
 			(volume_envelope->env.node.back().value < 0.0000001);
+	}
+
+	virtual void get_playback_position(PlaybackPosition &position)
+	{
+		position.Order = 0;
+		position.OrderCount = 0;
+		position.Pattern = 0;
+		position.PatternCount = 0;
+		position.Row = 0;
+		position.RowCount = 0;
+		position.Offset = offset_major;
+		position.OffsetCount = ticks_total;
+		position.FormatString = "{Offset}/{OffsetCount}";
 	}
 
 	one_sample &calculate_next_tick()

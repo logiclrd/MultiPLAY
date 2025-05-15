@@ -120,67 +120,6 @@ namespace MultiPLAY
 
   int output_channels;
 
-  int expect_int(istream *in)
-  {
-    int built_up = 0;
-
-    while (true)
-    {
-      int ch = in->get();
-
-      if (ch < 0)
-        return built_up;
-
-      if ((ch >= '0') && (ch <= '9'))
-        built_up = (built_up * 10) + (ch - '0');
-      else
-      {
-        in->putback(ch);
-        return built_up;
-      }
-    }
-  }
-
-  int accidental(istream *in)
-  {
-    int ch = in->get();
-
-    if (ch == '-')
-      return -1;
-    if ((ch == '+') || (ch == '#'))
-      return +1;
-
-    in->putback(ch);
-    return 0;
-  }
-
-  double expect_duration(istream *in, int &note_length_denominator)
-  {
-    double duration = 1.0;
-    double duration_add = 0.5;
-
-    int ch = in->get();
-
-    if (isdigit(ch) && (&note_length_denominator != NULL))
-    {
-      in->putback(ch);
-      note_length_denominator = expect_int(in);
-    }
-
-    while (ch == '.')
-    {
-      duration += duration_add;
-      duration_add /= 2.0;
-
-      ch = in->get();
-    }
-
-    if (ch >= 0)
-      in->putback(ch);
-
-    return duration;
-  }
-
   int ticks_per_second;
   long long current_absolute_tick_number;
 
@@ -521,6 +460,121 @@ namespace MultiPLAY
     bool past_end(long sample, double offset)
     {
       return past_end(sample + offset);
+    }
+  };
+
+  struct PlaybackPosition
+  {
+    int Order, OrderCount;
+    int Pattern, PatternCount;
+    int Row, RowCount;
+    long Offset, OffsetCount;
+    const char *FormatString;
+
+    PlaybackPosition()
+    {
+      clear();
+    }
+
+    void clear()
+    {
+      Order = OrderCount = Pattern = PatternCount = Row = RowCount = Offset = OffsetCount = 0;
+      FormatString = NULL;
+    }
+
+    bool is_changed(const PlaybackPosition &reference, const PlaybackPosition &relevant_fields)
+    {
+      if (FormatString != reference.FormatString)
+        return true;
+
+      if (relevant_fields.Order && (Order != reference.Order))
+        return true;
+      if (relevant_fields.OrderCount && (OrderCount != reference.OrderCount))
+        return true;
+      if (relevant_fields.Pattern && (Pattern != reference.Pattern))
+        return true;
+      if (relevant_fields.PatternCount && (PatternCount != reference.PatternCount))
+        return true;
+      if (relevant_fields.Row && (Row != reference.Row))
+        return true;
+      if (relevant_fields.RowCount && (RowCount != reference.RowCount))
+        return true;
+      if (relevant_fields.Offset && (Offset != reference.Offset))
+        return true;
+      if (relevant_fields.OffsetCount && (OffsetCount != reference.OffsetCount))
+        return true;
+
+      return false;
+    }
+
+    int get_field(const string &field_name)
+    {
+      if (field_name == "Order")
+        return Order;
+      if (field_name == "OrderCount")
+        return OrderCount;
+      if (field_name == "Pattern")
+        return Pattern;
+      if (field_name == "PatternCount")
+        return PatternCount;
+      if (field_name == "Row")
+        return Row;
+      if (field_name == "RowCount")
+        return RowCount;
+      if (field_name == "Offset")
+        return Offset;
+      if (field_name == "OffsetCount")
+        return OffsetCount;
+
+      return -1;
+    }
+
+    void set_field(const string &field_name, int value)
+    {
+      if (field_name == "Order")
+        Order = value;
+      if (field_name == "OrderCount")
+        OrderCount = value;
+      if (field_name == "Pattern")
+        Pattern = value;
+      if (field_name == "PatternCount")
+        PatternCount = value;
+      if (field_name == "Row")
+        Row = value;
+      if (field_name == "RowCount")
+        RowCount = value;
+      if (field_name == "Offset")
+        Offset = value;
+      if (field_name == "OffsetCount")
+        OffsetCount = value;
+    }
+  };
+
+  struct PlaybackTime
+  {
+    int Hour, Minute, Second;
+
+    void update(long tick_count, long ticks_per_second)
+    {
+      Second = tick_count / ticks_per_second;
+
+      Hour = Second / 3600;
+      Second -= Hour * 3600;
+
+      Minute = Second / 60;
+      Second -= Minute * 60;
+    }
+
+    bool is_changed(const PlaybackTime &reference)
+    {
+      if (Hour != reference.Hour)
+        return true;
+      if (Minute != reference.Minute)
+        return true;
+      if (Second != reference.Second)
+        return true;
+
+      return false;
     }
   };
 
@@ -2279,6 +2333,9 @@ int main(int argc, char *argv[])
 
     current_absolute_tick_number = 0;
 
+    PlaybackPosition playback_position, last_rendered_playback_position, last_rendered_playback_position_fields;
+    PlaybackTime playback_time, last_rendered_playback_time;
+
     while (true)
     {
       Profile profile;
@@ -2441,6 +2498,81 @@ int main(int argc, char *argv[])
           emit_sample_to_sdl_buffer(sample);
           break;
   #endif
+      }
+
+      profile.push_back("check for new playback_position");
+
+      channels.front()->get_playback_position(playback_position);
+
+      bool new_playback_position = playback_position.is_changed(last_rendered_playback_position, last_rendered_playback_position_fields);
+
+      profile.push_back("check for new playback_time");
+
+      playback_time.update(current_absolute_tick_number, ticks_per_second);
+
+      bool new_playback_time = playback_time.is_changed(last_rendered_playback_time);
+
+      if (new_playback_position || new_playback_time)
+      {
+        if (!trace_mod)
+        {
+          last_rendered_playback_position_fields.clear();
+
+          profile.push_back("render status line");
+
+          // Wall time
+          cerr << '[' << setfill('0')
+            << setw(2) << playback_time.Hour << setw(0) << ':'
+            << setw(2) << playback_time.Minute << setw(0) << ':'
+            << setw(2) << playback_time.Second << setw(0)
+            << "] ";
+
+          // Position per the channel
+          for (int i=0; playback_position.FormatString[i] != '\0'; i++)
+          {
+            if (playback_position.FormatString[i] != '{')
+              cerr << playback_position.FormatString[i];
+            else
+            {
+              int field_name_start = ++i;
+
+              while (playback_position.FormatString[i] != '}')
+                i++;
+
+              int field_name_length = i - field_name_start;
+
+              string field_name(&playback_position.FormatString[field_name_start], field_name_length);
+
+              string::size_type width_start = field_name.find(':');
+
+              int width = 0;
+
+              if (width_start != string::npos)
+              {
+                width = atoi(&field_name[width_start + 1]);
+                field_name.erase(width_start);
+              }
+
+              int value = playback_position.get_field(field_name);
+
+              if (width)
+                cerr << setw(width);
+              cerr << value;
+              if (width)
+                cerr << setw(0);
+
+              last_rendered_playback_position_fields.set_field(field_name, 1);
+            }
+          }
+
+#define BACKSPACES "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+
+          cerr << " -- dynamic channels: " << ancillary_channels.size()
+            << "       " << BACKSPACES;
+        }
+
+        last_rendered_playback_time = playback_time;
+        last_rendered_playback_position = playback_position;
       }
 
       profile.push_back("count the tick");

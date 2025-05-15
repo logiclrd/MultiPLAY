@@ -40,6 +40,19 @@ struct channel_DYNAMIC : channel
     this->finish_with_fade = true;
   }
 
+	virtual void get_playback_position(PlaybackPosition &position)
+	{
+		position.Order = 0;
+		position.OrderCount = 0;
+		position.Pattern = 0;
+		position.PatternCount = 0;
+		position.Row = 0;
+		position.RowCount = 0;
+		position.Offset = offset_major;
+		position.OffsetCount = ticks_total;
+		position.FormatString = "{Offset}/{OffsetCount}";
+	}
+
   ~channel_DYNAMIC()
   {
     iter_t parent_position = find(parent_channel.my_ancillary_channels.begin(), parent_channel.my_ancillary_channels.end(), this);

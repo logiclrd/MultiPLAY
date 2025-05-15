@@ -117,7 +117,7 @@ namespace MultiPLAY
       return 1;
     }
     desired.channels = channels;
-    desired.samples = Uint16(samples_per_sec / 2); // half a second
+    desired.samples = Uint16(samples_per_sec / 5); // 0.2 second
 
     desired.callback = sdl_callback;
 

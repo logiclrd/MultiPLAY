@@ -47,6 +47,19 @@ struct channel_MODULE : public channel
       fade_per_tick = (current_sample->fade_out / 1024.0) / module->ticks_per_frame;
   }
 
+	virtual void get_playback_position(PlaybackPosition &position)
+	{
+		position.Order = module->current_pattern;
+		position.OrderCount = module->pattern_list.size();
+		position.Pattern = module->pattern_list[module->current_pattern]->index;
+		position.PatternCount = module->patterns.size();
+		position.Row = module->current_row;
+		position.RowCount = module->pattern_list[module->current_pattern]->row_list.size();
+		position.Offset = offset_major;
+		position.OffsetCount = ticks_total;
+		position.FormatString = "order {Order}/{OrderCount} - {Pattern}:{Row:2}";
+	}
+
   virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile)
   {
     if (volume_slide)
@@ -533,35 +546,6 @@ struct channel_MODULE : public channel
           else
             module->finished = true;
         }
-      }
-
-      if (!trace_mod && (module->current_pattern < module->pattern_list.size()))
-      {
-        profile.push_back("output trace");
-
-        int second = (int)(current_absolute_tick_number / ticks_per_second);
-
-        int hour = second / 3600;
-
-        second -= hour * 3600;
-
-        int minute = second / 60;
-
-        second -= minute * 60;
-
-        // Wall time
-        cerr << '[' << setfill('0')
-          << setw(2) << hour << setw(0) << ':'
-          << setw(2) << minute << setw(0) << ':'
-          << setw(2) << second << setw(0)
-          << ']';
-
-        // Position in the module
-        cerr << " order " << module->current_pattern << "/" << module->pattern_list.size()
-          << " - pattern " << module->pattern_list[module->current_pattern]->index << ":"
-          << setw(2) << module->current_row << setw(0)
-          << " -- dynamic channels: " << ancillary_channels.size()
-          << "   " << string(79, (char)8);
       }
     }
 

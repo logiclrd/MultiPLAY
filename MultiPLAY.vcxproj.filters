@@ -1,0 +1,234 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+	<ItemGroup>
+		<Filter Include="Source Files">
+		</Filter>
+		<Filter Include="Source Files\Loaders">
+		</Filter>
+		<Filter Include="Source Files\Output">
+		</Filter>
+		<Filter Inculde="Source Files\Channels">
+		</Filter>
+		<Filter Include="Header Files">
+		</Filter>
+		<Filter Include="Header Files\Loaders">
+		</Filter>
+		<Filter Include="Header Files\Output">
+		</Filter>
+		<Filter Inculde="Header Files\Channels">
+		</Filter>
+	</ItemGroup>
+	<ItemGroup>
+		<ClCompile Include="bit_memory_stream.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="bit_value.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="conversion.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="channel.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="DSP.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="effect.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="envelope.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include=="Load_IT.cc">
+			<Filter>Source Files\Loaders</Filter>
+		</ClCompile>
+		<ClCompile Include=="Load_MOD.cc">
+			<Filter>Source Files\Loaders</Filter>
+		</ClCompile>
+		<ClCompile Include=="Load_MTM.cc">
+			<Filter>Source Files\Loaders</Filter>
+		</ClCompile>
+		<ClCompile Include=="Load_S3M.cc">
+			<Filter>Source Files\Loaders</Filter>
+		</ClCompile>
+		<ClCompile Include=="Load_Sample.cc">
+			<Filter>Source Files\Loaders</Filter>
+		</ClCompile>
+		<ClCompile Include=="Load_UMX.cc">
+			<Filter>Source Files\Loaders</Filter>
+		</ClCompile>
+		<ClCompile Include=="Load_XM.cc">
+			<Filter>Source Files\Loaders</Filter>
+		</ClCompile>
+		<ClCompile Include="math.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="mod_finetune.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="module.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="MultiPLAY.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="notes.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="one_sample.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="pattern.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="progress.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="sample_builtintype.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="sample.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="sample_instrument.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="uLaw-aLaw.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="unix_break_handler.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="wave_file.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="win32_break_handler.cc">
+			<Filter>Source Files</Filter>
+		</ClCompile>
+		<ClCompile Include="Output-DirectX.cc">
+			<Filter>Source Files\Output</Filter>
+		</ClCompile>
+		<ClCompile Include="Output-SDL.cc">
+			<Filter>Source Files\Output</Filter>
+		</ClCompile>
+		<ClCompile Include="Channel_DYNAMIC.cc">
+			<Filter>Source Files\Channels</Filter>
+		</ClCompile>
+		<ClCompile Include="Channel_MODULE.cc">
+			<Filter>Source Files\Channels</Filter>
+		</ClCompile>
+		<ClCompile Include="Channel_PLAY.cc">
+			<Filter>Source Files\Channels</Filter>
+		</ClCompile>
+	</ItemGroup>
+	<ItemGroup>
+		<ClInclude Include="bit_value.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="break_handler.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="conversion.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="DSP.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="effect.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="envelope.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="math.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="mod_finetune.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="module.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="MultiPLAY.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="notes.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="pattern.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="progress.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="RAII.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="bit_memory_stream.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="one_sample.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="Profile.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="sample_builtintype.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="sample.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="sample_instrument.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="uLaw-aLaw.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="wave_file.h">
+			<Filter>Header Files</Filter>
+		</ClInclude>
+		<ClInclude Include="Load_IT.h">
+			<Filter>Header Files\Loaders</Filter>
+		</ClInclude>
+		<ClInclude Include="Load_MOD.h">
+			<Filter>Header Files\Loaders</Filter>
+		</ClInclude>
+		<ClInclude Include="Load_MTM.h">
+			<Filter>Header Files\Loaders</Filter>
+		</ClInclude>
+		<ClInclude Include="Load_S3M.h">
+			<Filter>Header Files\Loaders</Filter>
+		</ClInclude>
+		<ClInclude Include="Load_Sample.h">
+			<Filter>Header Files\Loaders</Filter>
+		</ClInclude>
+		<ClInclude Include="Load_XM.h">
+			<Filter>Header Files\Loaders</Filter>
+		</ClInclude>
+		<ClInclude Include="Load_UMX.h">
+			<Filter>Header Files\Loaders</Filter>
+		</ClInclude>
+		<ClInclude Include="Output-DirectX.h">
+			<Filter>Header Files\Output</Filter>
+		</ClInclude>
+		<ClInclude Include="Output-SDL.h">
+			<Filter>Header Files\Output</Filter>
+		</ClInclude>
+		<ClInclude Include="channel.h">
+			<Filter>Header Files\Channels</Filter>
+		</ClInclude>
+		<ClInclude Include="Channel_DYNAMIC.h">
+			<Filter>Header Files\Channels</Filter>
+		</ClInclude>
+		<ClInclude Include="Channel_MODULE.h">
+			<Filter>Header Files\Channels</Filter>
+		</ClInclude>
+		<ClInclude Include="Channel_PLAY.h">
+			<Filter>Header Files\Channels</Filter>
+		</ClInclude>
+			</Filter>
+		</Filter>
+	</ItemGroup>
+</Project>

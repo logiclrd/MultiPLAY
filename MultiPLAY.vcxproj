@@ -167,7 +167,6 @@
     <ClCompile Include="sample.cc" />
     <ClCompile Include="sample_instrument.cc" />
     <ClCompile Include="uLaw-aLaw.cc" />
-    <ClCompile Include="unix_break_handler.cc" />
     <ClCompile Include="wave_file.cc" />
     <ClCompile Include="win32_break_handler.cc" />
   </ItemGroup>

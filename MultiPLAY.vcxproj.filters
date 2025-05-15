@@ -100,9 +100,6 @@
 		<ClCompile Include="uLaw-aLaw.cc">
 			<Filter>Source Files</Filter>
 		</ClCompile>
-		<ClCompile Include="unix_break_handler.cc">
-			<Filter>Source Files</Filter>
-		</ClCompile>
 		<ClCompile Include="wave_file.cc">
 			<Filter>Source Files</Filter>
 		</ClCompile>

@@ -15,9 +15,9 @@ struct InitializeProfiling
 } _initializeProfiling;
 #else
 #include <time.h>
+#endif
 
 #define NS_PER_S 1000000000LL
-#endif
 
 struct ProfileEntry
 {

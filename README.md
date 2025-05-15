@@ -82,7 +82,17 @@ MultiPLAY was originally written and tested on Windows, but was subsequently mod
 
 ### Windows
 
-Building MultiPLAY on Windows requires Microsoft's Visual C++ compiler (though not necessarily the IDE). It has been some time since I had access to this, so I cannot produce solid, verified instructions at the time of writing this document. Maybe they'll get added later :-)
+Building MultiPLAY on Windows requires Microsoft's Visual C++ compiler (though not necessarily the IDE). The configuration targets Platform Toolset v143, which corresponds to Visual Studio 2022. You can either use the Visual Studio 2022 GUI, or you can build from the command-line with one of these commands:
+```
+msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Debug"
+msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Debug DirectX"
+msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Debug SDL"
+msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Release"
+msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Release DirectX"
+msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Release SDL"
+msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Release All"
+```
+If an SDL configuration is selected, the current `MultiPLAY.vcxproj` file assumes the SDL2 libraries can be found in the folder `X:\SDL2-2.32.6`. You may need to alter this. :-)
 
 #### Visual C++
 

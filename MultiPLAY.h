@@ -42,7 +42,7 @@ namespace MultiPLAY
 
 	extern void start_shutdown();
 
-	extern bool shutdown_complete;
+	extern volatile bool shutdown_complete;
 }
 
 #endif // MULTIPLAY_H

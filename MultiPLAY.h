@@ -41,6 +41,8 @@ namespace MultiPLAY
 	extern std::vector<channel *> ancillary_channels;
 
 	extern void start_shutdown();
+
+	extern bool shutdown_complete;
 }
 
 #endif // MULTIPLAY_H

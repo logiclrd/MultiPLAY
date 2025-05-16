@@ -16,7 +16,7 @@ namespace Telephony
 		{
 			for (int i=0, j=1, k=0; i<256; i++)
 			{
-				ulaw_alaw_segment_end[i] = k;
+				ulaw_alaw_segment_end[i] = char(k);
 				if (i + 1 == j)
 					k++, j += j;
 			}
@@ -32,10 +32,10 @@ namespace Telephony
 				int scale = (inv & 0x70) >> 4;
 				int sign = (inv & 0x80);
 
-				ulaw_code_value[i] =
+				ulaw_code_value[i] = (short)(
 					sign
 					? 0x84 - (noise << scale)
-					: (noise << scale) - 0x84;
+					: (noise << scale) - 0x84);
 			}
 		}
 
@@ -53,7 +53,7 @@ namespace Telephony
 
 				value <<= (segment - 1);
 
-				alaw_code_value[i] = sign ? -value : value;
+				alaw_code_value[i] = short(sign ? -value : value);
 			}
 		}
 	}
@@ -67,7 +67,7 @@ namespace Telephony
 
 	extern unsigned char ulaw_encode_sample(short sample)
 	{
-		unsigned short asample = abs(sample);
+		unsigned short asample = (unsigned short)abs(sample);
 		unsigned char uhigh = ((unsigned short)sample) >> 8;
 
 		if (asample > 0x7F7B)
@@ -78,7 +78,7 @@ namespace Telephony
 		int segment = ulaw_alaw_segment_end[sample >> 8];
 		int drop_bits = segment + 3;
 
-		return 0xFF ^ (uhigh & 0x80) ^ ((segment << 4) | ((sample >> drop_bits) & 0xF));
+		return (unsigned char)(0xFF ^ (uhigh & 0x80) ^ ((segment << 4) | ((sample >> drop_bits) & 0xF)));
 	}
 
 	extern unsigned char alaw_encode_sample(short sample)
@@ -98,7 +98,7 @@ namespace Telephony
 		if (drop_bits < 4)
 			drop_bits = 4;
 
-		return 0x55 ^ (uhigh & 0x80) ^ ((segment << 4) | ((sample >> drop_bits) & 0xF));
+		return (unsigned char)(0x55 ^ (uhigh & 0x80) ^ ((segment << 4) | ((sample >> drop_bits) & 0xF)));
 	}
 
 	extern short ulaw_decode_sample(unsigned char sample)

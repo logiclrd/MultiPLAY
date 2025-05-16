@@ -32,10 +32,10 @@ namespace MultiPLAY
 
 		bool directx_playing = false, directx_locked_buffer = false;
 
-		inline void lock_directx_buffer(LPDIRECTSOUNDBUFFER dsBuffer)
+		inline void lock_directx_buffer(LPDIRECTSOUNDBUFFER dsBufferToLock)
 		{
 			for (int retry=0; retry<2; retry++)
-				switch (dsBuffer->Lock(
+				switch (dsBufferToLock->Lock(
 									directx_buffer_index * directx_quarter_buffer_size,
 									directx_quarter_buffer_size,
 									&dsBufPtr1, &dsBufLen1,
@@ -43,7 +43,7 @@ namespace MultiPLAY
 									0))
 				{
 					case DSERR_BUFFERLOST:
-						dsBuffer->Restore();
+						dsBufferToLock->Restore();
 						continue;
 					case DSERR_PRIOLEVELNEEDED:
 						Sleep(500);
@@ -59,9 +59,9 @@ namespace MultiPLAY
 			directx_buffer_index = (directx_buffer_index + 1) & 3;
 		}
 
-		inline void unlock_directx_buffer(LPDIRECTSOUNDBUFFER dsBuffer)
+		inline void unlock_directx_buffer(LPDIRECTSOUNDBUFFER dsBufferToUnlock)
 		{
-			dsBuffer->Unlock(dsBufPtr1, dsBufLen1, dsBufPtr2, dsBufLen2);
+			dsBufferToUnlock->Unlock(dsBufPtr1, dsBufLen1, dsBufPtr2, dsBufLen2);
 		}
 
 		inline void swap_directx_buffer_halves(LPDIRECTSOUNDBUFFER buffer)
@@ -150,11 +150,11 @@ namespace MultiPLAY
 		WAVEFORMATEX waveFormat;
 
 		waveFormat.wFormatTag = WAVE_FORMAT_PCM;
-		waveFormat.nChannels = channels;
+		waveFormat.nChannels = (WORD)channels;
 		waveFormat.nSamplesPerSec = samples_per_sec;
 		waveFormat.nAvgBytesPerSec = samples_per_sec * channels * ((bits + 7) / 8);
-		waveFormat.nBlockAlign = channels * ((bits + 7) / 8);
-		waveFormat.wBitsPerSample = bits;
+		waveFormat.nBlockAlign = (WORD)(channels * ((bits + 7) / 8));
+		waveFormat.wBitsPerSample = (WORD)bits;
 		waveFormat.cbSize = 0;
 
 		bufferDesc.dwSize = sizeof(bufferDesc);
@@ -251,7 +251,7 @@ namespace MultiPLAY
 
 			dsBuffer->GetCurrentPosition(&play_cursor, &write_cursor);
 			directx_buffer_index = (directx_buffer_index + 2) & 3;
-			while ((play_cursor / directx_quarter_buffer_size) != directx_buffer_index)
+			while (int(play_cursor / directx_quarter_buffer_size) != directx_buffer_index)
 			{
 				ResetEvent(dsNotifyEvent);
 				WaitForSingleObject(dsNotifyEvent, INFINITE);

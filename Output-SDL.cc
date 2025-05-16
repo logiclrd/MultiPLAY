@@ -166,7 +166,7 @@ namespace MultiPLAY
 
 					{
 						sdl_mutex_lock_release release(&lock);
-						sdl_mutex_lock lock(sdl_silly_lock);
+						sdl_mutex_lock silly_lock(sdl_silly_lock);
 
 						::SDL_CondWait(sdl_buffer_available_event, sdl_silly_lock);
 					} // ~sdl_mutex_lock, ~sdl_mutex_lock_release
@@ -260,7 +260,7 @@ namespace MultiPLAY
 			cerr << "The SDL module does not support more than 2 output channels." << endl;
 			return 1;
 		}
-		desired.channels = channels;
+		desired.channels = (Uint8)channels;
 		desired.samples = Uint16(samples_per_sec / 5); // 0.2 second
 
 		desired.callback = sdl_callback;

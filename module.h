@@ -34,6 +34,7 @@ namespace MultiPLAY
 		int speed, tempo;
 		unsigned int current_pattern;
 		int current_row;
+		int override_next_row;
 		unsigned int num_channels;
 		int auto_loop_target;
 		bool stereo, use_instruments;

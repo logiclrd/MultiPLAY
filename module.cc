@@ -1,5 +1,9 @@
 #include "module.h"
 
+#include <cstring>
+
+using namespace std;
+
 namespace MultiPLAY
 {
 	// struct module_struct
@@ -29,5 +33,10 @@ namespace MultiPLAY
 		it_module_portamento_link = false;
 		it_module_linear_slides = false;
 		auto_loop_target = -1;
+		override_next_row = -1;
+
+		memset(&channel_enabled, 0, sizeof(channel_enabled));
+		memset(&channel_map, 0, sizeof(channel_map));
+		memset(&base_pan, 0, sizeof(base_pan));
 	}
 }

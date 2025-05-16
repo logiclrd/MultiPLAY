@@ -566,6 +566,8 @@ namespace MultiPLAY
 
 			return ChannelPlaybackState::Ongoing;
 		}
+
+		bool just_looped = false;
 		
 		if (channel_number == 0)
 		{
@@ -574,7 +576,15 @@ namespace MultiPLAY
 			if (p_pattern_delay_by_frames)
 				module->speed -= pattern_delay_frames;
 
-			module->current_row++;
+			if (module->override_next_row >= 0)
+			{
+				module->current_row = module->override_next_row;
+				module->override_next_row = -1;
+
+				just_looped = true;
+			}
+			else
+				module->current_row++;
 
 			if (module->current_row == int(module->pattern_list[module->current_pattern]->row_list.size()))
 			{
@@ -644,7 +654,7 @@ namespace MultiPLAY
 						}
 						break;
 					case 'S': // extended commands
-						switch ((row_list[i].effect.info >> 4) & 15)
+						switch (row_list[i].effect.info.high_nybble)
 						{
 							case 0x6: // pattern delay in ticks
 								pattern_delay_by_frames = true;
@@ -654,8 +664,11 @@ namespace MultiPLAY
 							case 0xB: // pattern loop
 								if (row_list[i].effect.info.low_nybble == 0)
 								{
-									module->pattern_loop[i].row = module->current_row;
-									module->pattern_loop[i].need_repetitions = true;
+									if (!just_looped)
+									{
+										module->pattern_loop[i].row = module->current_row;
+										module->pattern_loop[i].need_repetitions = true;
+									}
 								}
 								else
 								{
@@ -664,9 +677,10 @@ namespace MultiPLAY
 										module->pattern_loop[i].repetitions = row_list[i].effect.info.low_nybble;
 										module->pattern_loop[i].need_repetitions = false;
 									}
+
 									if (module->pattern_loop[i].repetitions)
 									{
-										module->current_row = module->pattern_loop[i].row - 1;
+										module->override_next_row = module->pattern_loop[i].row;
 										module->pattern_loop[i].repetitions--;
 									}
 								}

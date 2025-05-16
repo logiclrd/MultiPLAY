@@ -24,7 +24,7 @@ namespace MultiPLAY
 		bool looped;
 
 		int pull_char();
-		void push_char(char ch);
+		void push_char(int ch);
 		int expect_int();
 		int accidental();
 		double expect_duration(int *note_length_denominator = NULL);

@@ -58,7 +58,7 @@ namespace MultiPLAY
 			int tick;
 			double yValue;
 
-			it_envelope_node(unsigned char t, double y)
+			it_envelope_node(int t, double y)
 				: tick(t), yValue(y)
 			{
 			}
@@ -149,8 +149,8 @@ namespace MultiPLAY
 			file->read((char *)&lsb_bytes, 2);
 			unsigned fade_out = from_lsb2_u(lsb_bytes) * 2; // fadeout is twice as fine in the new format
 
-			char new_note_action = file->get();
-			char duplicate_note_check = file->get();
+			char new_note_action = char(file->get());
+			char duplicate_note_check = char(file->get());
 
 			file->ignore(3);
 
@@ -163,22 +163,22 @@ namespace MultiPLAY
 			unsigned char instrument_for_note[120] = { 0 }; // empty array
 			int note_difference[120] = { 0 }; // empty
 
-			for (int i=0; i<120; i++)
+			for (int note_index=0; note_index<120; note_index++)
 			{
 				unsigned char instrument, note;
 
 				file->read((char *)&note, 1);
 				file->read((char *)&instrument, 1);
 
-				instrument_for_note[i] = instrument;
-				note_difference[i] = note - i;
+				instrument_for_note[note_index] = instrument;
+				note_difference[note_index] = note - i;
 			}
 
 			char rendered_volume_envelope[200];
 			file->read(rendered_volume_envelope, 200);
 
 			vector<it_envelope_node> volume_envelope;
-			for (int i=0; i<25; i++)
+			for (int node_index=0; node_index<25; node_index++)
 			{
 				unsigned char tick, magnitude;
 
@@ -205,10 +205,10 @@ namespace MultiPLAY
 				desc.duplicate_note_check = DuplicateCheck::Off;
 			desc.duplicate_check_action = DuplicateCheckAction::Cut;
 
-			for (int i=0; i<120; i++)
+			for (int note_index=0; note_index<120; note_index++)
 			{
-				desc.note_sample[i] = instrument_for_note[i];
-				desc.tone_offset[i] = note_difference[i];
+				desc.note_sample[note_index] = instrument_for_note[note_index];
+				desc.tone_offset[note_index] = note_difference[note_index];
 			}
 
 			desc.volume_envelope.enabled = instrument_flags.use_volume_envelope();
@@ -230,7 +230,7 @@ namespace MultiPLAY
 		void load_it_new_instrument_envelope(ifstream *file, it_envelope_description &desc, bool signed_magnitude)
 		{
 			it_envelope_flags flags;
-			flags.value = file->get();
+			flags.value = char(file->get());
 
 			int num_node_points = file->get();
 
@@ -300,9 +300,9 @@ namespace MultiPLAY
 				cerr << "Warning: DOS filename not properly null-terminated in instrument #" << i << endl;
 			}
 
-			char new_note_action = file->get();
-			char duplicate_check_type = file->get();
-			char duplicate_check_action = file->get();
+			char new_note_action = char(file->get());
+			char duplicate_check_type = char(file->get());
+			char duplicate_check_action = char(file->get());
 
 			unsigned char lsb_bytes[2];
 
@@ -313,8 +313,8 @@ namespace MultiPLAY
 			file->read((char *)&pitch_pan_separation, 1);
 			file->read((char *)&pitch_pan_center, 1);
 
-			unsigned char global_volume, default_pan;
-			file->read((char *)&global_volume, 1);
+			unsigned char global_volume_from_file, default_pan;
+			file->read((char *)&global_volume_from_file, 1);
 			file->read((char *)&default_pan, 1);
 
 			unsigned char volume_variation;
@@ -329,28 +329,28 @@ namespace MultiPLAY
 			instrument_name[26] = 0;
 
 			char ipc, ipr;
-			ipc = file->get();
-			ipr = file->get();
+			ipc = char(file->get());
+			ipr = char(file->get());
 
 			char midi_channel, midi_program;
 			unsigned midi_bank;
-			midi_channel = file->get();
-			midi_program = file->get();
+			midi_channel = char(file->get());
+			midi_program = char(file->get());
 			file->read((char *)&lsb_bytes[0], 2);
 			midi_bank = from_lsb2_u(lsb_bytes);
 
 			unsigned char instrument_for_note[120] = { 0 }; // empty array
 			int note_difference[120] = { 0 }; // empty
 
-			for (int i=0; i<120; i++)
+			for (int note_index=0; note_index<120; note_index++)
 			{
 				unsigned char instrument, note;
 
 				file->read((char *)&note, 1);
 				file->read((char *)&instrument, 1);
 
-				instrument_for_note[i] = instrument;
-				note_difference[i] = note - i;
+				instrument_for_note[note_index] = instrument;
+				note_difference[note_index] = note - i;
 			}
 
 			it_envelope_description volume_envelope, pan_envelope, pitch_envelope;
@@ -359,7 +359,7 @@ namespace MultiPLAY
 			load_it_new_instrument_envelope(file, pan_envelope, true);
 			load_it_new_instrument_envelope(file, pitch_envelope, true);
 
-			desc.global_volume = global_volume / 128.0;
+			desc.global_volume = global_volume_from_file / 128.0;
 
 			desc.use_default_pan = (0 == (default_pan & 128));
 			if (desc.use_default_pan)
@@ -377,10 +377,10 @@ namespace MultiPLAY
 			desc.duplicate_note_check = (DuplicateCheck::Type)duplicate_check_type;
 			desc.duplicate_check_action = (DuplicateCheckAction::Type)duplicate_check_action;
 
-			for (int i=0; i<120; i++)
+			for (int note_index=0; note_index<120; note_index++)
 			{
-				desc.note_sample[i] = instrument_for_note[i];
-				desc.tone_offset[i] = note_difference[i];
+				desc.note_sample[note_index] = instrument_for_note[note_index];
+				desc.tone_offset[note_index] = note_difference[note_index];
 			}
 
 			desc.volume_envelope = volume_envelope;
@@ -547,10 +547,10 @@ namespace MultiPLAY
 					if (double_delta)
 					{
 						integrator2 += integrator;
-						ret[offset++] = integrator2;
+						ret[offset++] = T(integrator2);
 					}
 					else
-						ret[offset++] = integrator;
+						ret[offset++] = T(integrator);
 
 					block_samples_left--;
 				}
@@ -588,14 +588,14 @@ namespace MultiPLAY
 						case 2:
 							if (conversion.msb_order())
 								if (conversion.signed_samples())
-									data[j][i] = from_msb2(&data_block[offset]);
+									data[j][i] = T(from_msb2(&data_block[offset]));
 								else
-									data[j][i] = from_msb2_u(&data_block[offset]) - 0x8000;
+									data[j][i] = T(from_msb2_u(&data_block[offset]) - 0x8000);
 							else
 								if (conversion.signed_samples())
-									data[j][i] = from_lsb2(&data_block[offset]);
+									data[j][i] = T(from_lsb2(&data_block[offset]));
 								else
-									data[j][i] = from_lsb2_u(&data_block[offset]) - 0x8000;
+									data[j][i] = T(from_lsb2_u(&data_block[offset]) - 0x8000);
 							offset += 2;
 							break;
 					}
@@ -624,10 +624,10 @@ namespace MultiPLAY
 				cerr << "Warning: DOS filename not properly null-terminated in sample #" << i << endl;
 			}
 
-			int global_volume = file->get();
+			file->get(); // global volume -- TODO?
 
 			it_sample_flags flags;
-			flags.value = file->get();
+			flags.value = char(file->get());
 
 			if (flags.sample_present() == false)
 				return new sample_builtintype<signed char>(i, 1);
@@ -639,9 +639,9 @@ namespace MultiPLAY
 			sample_name[26] = 0;
 
 			it_sample_conversion_flags conversion;
-			conversion.value = file->get();
+			conversion.value = char(file->get());
 
-			char default_panning = file->get();
+			file->get(); // default panning -- TODO?
 
 			unsigned long sample_length, loop_begin, loop_end, c5spd;
 			unsigned long susloop_begin, susloop_end, sample_pointer;
@@ -674,10 +674,12 @@ namespace MultiPLAY
 			loop_style = flags.pingpong_loop() ? LoopStyle::PingPong : LoopStyle::Forward;
 			susloop_style = flags.pingpong_sustain_loop() ? LoopStyle::PingPong : LoopStyle::Forward;
 
-			char auto_vibrato_speed = file->get();
-			char auto_vibrato_depth = file->get();
-			char auto_vibrato_waveform_char = file->get();
-			char auto_vibrato_rate = file->get();
+			file->get(); // auto vibrato speed -- TODO?
+			file->get(); // auto vibrato depth -- TODO?
+
+			char auto_vibrato_waveform_char = char(file->get());
+
+			file->get(); // auto vibrato rate -- TODO?
 
 			Waveform::Type auto_vibrato_waveform;
 
@@ -692,7 +694,7 @@ namespace MultiPLAY
 
 			sample *ret;
 
-			unsigned channels = flags.stereo() ? 2 : 1;
+			unsigned channels_from_file = flags.stereo() ? 2 : 1;
 
 			if (flags.looping() == false)
 				loop_end = 0xFFFFFFFF; // special value to mean 'no loop'
@@ -747,15 +749,15 @@ namespace MultiPLAY
 				if (flags.sixteen_bit())
 				{
 					signed short *data[MAX_CHANNELS];
-					load_it_sample_uncompressed<signed short>(file, channels, sample_length, conversion, data);
-					ret = new sample_builtintype<signed short>(i, int(channels), data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end, loop_style, susloop_style);
+					load_it_sample_uncompressed<signed short>(file, channels_from_file, sample_length, conversion, data);
+					ret = new sample_builtintype<signed short>(i, int(channels_from_file), data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end, loop_style, susloop_style);
 					((sample_builtintype<signed short> *)ret)->default_volume = default_volume / 64.0;
 				}
 				else
 				{
 					signed char *data[MAX_CHANNELS];
-					load_it_sample_uncompressed<signed char>(file, channels, sample_length, conversion, data);
-					ret = new sample_builtintype<signed char>(i, int(channels), data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end, loop_style, susloop_style);
+					load_it_sample_uncompressed<signed char>(file, channels_from_file, sample_length, conversion, data);
+					ret = new sample_builtintype<signed char>(i, int(channels_from_file), data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end, loop_style, susloop_style);
 					((sample_builtintype<signed char> *)ret)->default_volume = default_volume / 64.0;
 				}
 			}
@@ -900,22 +902,22 @@ namespace MultiPLAY
 						else if (c.volume_panning <= 74)
 						{
 							int param = c.volume_panning - 64;
-							r.secondary_effect = effect_struct(EffectType::IT, 'D', (param << 4) | 0xF);
+							r.secondary_effect = effect_struct(EffectType::IT, 'D', unsigned char((param << 4) | 0xF));
 						}
 						else if (c.volume_panning <= 84)
 						{
 							int param = c.volume_panning - 74;
-							r.secondary_effect = effect_struct(EffectType::IT, 'D', param | 0xF0);
+							r.secondary_effect = effect_struct(EffectType::IT, 'D', unsigned char(param | 0xF0));
 						}
 						else if (c.volume_panning <= 94)
 						{
 							int param = c.volume_panning - 84;
-							r.secondary_effect = effect_struct(EffectType::IT, 'D', (param << 4));
+							r.secondary_effect = effect_struct(EffectType::IT, 'D', unsigned char(param << 4));
 						}
 						else if (c.volume_panning <= 104)
 						{
 							int param = c.volume_panning - 94;
-							r.secondary_effect = effect_struct(EffectType::IT, 'D', param);
+							r.secondary_effect = effect_struct(EffectType::IT, 'D', unsigned char(param));
 						}
 						else if (c.volume_panning <= 114)
 						{
@@ -932,38 +934,38 @@ namespace MultiPLAY
 							if (c.volume_panning <= 192)
 							{
 								int param = c.volume_panning - 128;
-								r.secondary_effect = effect_struct(EffectType::IT, 'X', param);
+								r.secondary_effect = effect_struct(EffectType::IT, 'X', unsigned char(param));
 							}
 							else if (c.volume_panning <= 202)
 							{
 								int param = c.volume_panning - 192;
-								r.secondary_effect = effect_struct(EffectType::IT, 'G', param);
+								r.secondary_effect = effect_struct(EffectType::IT, 'G', unsigned char(param));
 							}
 							else if (c.volume_panning <= 212)
 							{
 								int param = c.volume_panning - 202;
-								r.secondary_effect = effect_struct(EffectType::IT, 'H', param); // TODO
+								r.secondary_effect = effect_struct(EffectType::IT, 'H', unsigned char(param)); // TODO
 							}
 						}
 					}
 
-					r.effect = effect_struct(EffectType::IT, char(c.effect_command), c.effect_data);
+					r.effect = effect_struct(EffectType::IT, char(c.effect_command), unsigned char(c.effect_data));
 
 					if (r.effect.present)
 						has_note_events[channel] = true;
 				}
 
-				for (int i=0; i<64; i++)
+				for (int row_index=0; row_index<64; row_index++)
 				{
-					if (cur_row[i].note != -1)
-						last_row[i].note = cur_row[i].note;
-					if (cur_row[i].instrument != it_pattern_slot::NoInstrument)
-						last_row[i].instrument = cur_row[i].instrument;
-					if (cur_row[i].volume_panning != -1)
-						last_row[i].volume_panning = cur_row[i].volume_panning;
-					if (cur_row[i].effect_command != -1)
-						last_row[i].effect_command = cur_row[i].effect_command,
-						last_row[i].effect_data = cur_row[i].effect_data;
+					if (cur_row[row_index].note != -1)
+						last_row[row_index].note = cur_row[row_index].note;
+					if (cur_row[row_index].instrument != it_pattern_slot::NoInstrument)
+						last_row[row_index].instrument = cur_row[row_index].instrument;
+					if (cur_row[row_index].volume_panning != -1)
+						last_row[row_index].volume_panning = cur_row[row_index].volume_panning;
+					if (cur_row[row_index].effect_command != -1)
+						last_row[row_index].effect_command = cur_row[row_index].effect_command,
+						last_row[row_index].effect_data = cur_row[row_index].effect_data;
 				}
 
 				p.row_list.push_back(rowdata);
@@ -1000,9 +1002,9 @@ namespace MultiPLAY
 		}
 	}
 
-	module_struct *load_it(ifstream *file, bool modplug_style/* = false*/)
+	module_struct *load_it(ifstream *file, bool /*modplug_style = false*/)
 	{
-		unsigned int file_base_offset = file->tellg();
+		unsigned int file_base_offset = (unsigned int)file->tellg();
 
 		char magic[4];
 		file->read(magic, 4);
@@ -1043,8 +1045,7 @@ namespace MultiPLAY
 		file->read(&flags.value, 1);
 		file->ignore(1);
 
-		file->read((char *)&lsb_bytes[0], 2);
-		unsigned special = from_lsb2_u(lsb_bytes);
+		file->read((char *)&lsb_bytes[0], 2); // special
 
 		it_settings settings;
 
@@ -1059,14 +1060,9 @@ namespace MultiPLAY
 		unsigned char midi_pitch_wheel_depth;
 		file->read((char *)&midi_pitch_wheel_depth, 1);
 
-		file->read((char *)&lsb_bytes[0], 2);
-		unsigned message_length = from_lsb2_u(lsb_bytes);
-
-		file->read((char *)&lsb_bytes[0], 4);
-		unsigned long message_offset = from_lsb4_lu(lsb_bytes);
-
-		file->read((char *)&lsb_bytes[0], 4);
-		unsigned long reserved = from_lsb4_lu(lsb_bytes);
+		file->read((char *)&lsb_bytes[0], 2); // message length
+		file->read((char *)&lsb_bytes[0], 4); // message offset
+		file->read((char *)&lsb_bytes[0], 4); // reserved
 
 		unsigned char initial_channel_pan[64];
 		unsigned char initial_channel_volume[64];
@@ -1106,7 +1102,7 @@ namespace MultiPLAY
 
 		{
 			unsigned expected_offset = file_base_offset + 0xC0u + order_list_length + 4u * (num_instruments + num_samples + num_patterns);
-			unsigned actual_offset = file->tellg();
+			unsigned actual_offset = (unsigned)file->tellg();
 
 			if (expected_offset != actual_offset)
 				throw "internal error (file offset is not what it should be)";
@@ -1135,7 +1131,7 @@ namespace MultiPLAY
 			samps.push_back(smp);
 		}
 
-		int channels = flags.stereo() ? 2 : 1;
+		int channel_count = flags.stereo() ? 2 : 1;
 
 		if (flags.use_instruments()) // this conversion MUST be done before loading patterns
 		{
@@ -1148,7 +1144,7 @@ namespace MultiPLAY
 				sample_instrument *is = new sample_instrument(int(i));
 
 				is->global_volume = id.global_volume;
-				is->default_pan.set_channels(channels).from_linear_pan(id.default_pan, 0, 64);
+				is->default_pan.set_channels(channel_count).from_linear_pan(id.default_pan, 0, 64);
 				is->use_default_pan = id.use_default_pan;
 
 				is->pitch_pan_center = id.pitch_pan_center;
@@ -1163,13 +1159,13 @@ namespace MultiPLAY
 				is->duplicate_check_action = id.duplicate_check_action;
 				is->new_note_action = id.new_note_action;
 
-				for (unsigned i=0; i<120; i++)
+				for (unsigned note_index=0; note_index<120; note_index++)
 				{
-					is->tone_offset[i] = id.tone_offset[i];
-					if (id.note_sample[i])
-						is->note_sample[i] = samps[unsigned(id.note_sample[i] - 1)];
+					is->tone_offset[note_index] = id.tone_offset[note_index];
+					if (id.note_sample[note_index])
+						is->note_sample[note_index] = samps[unsigned(id.note_sample[note_index] - 1)];
 					else
-						is->note_sample[i] = NULL;
+						is->note_sample[note_index] = NULL;
 				}
 
 				load_it_convert_envelope(is->volume_envelope, id.volume_envelope);

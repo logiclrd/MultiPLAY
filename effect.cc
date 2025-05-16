@@ -294,9 +294,9 @@ namespace MultiPLAY
 	{
 		if (command != effect)
 			return true;
-		if ((high_nybble != -1) && (info.high_nybble != (char)high_nybble))
+		if ((high_nybble != -1) && (info.high_nybble != (unsigned char)high_nybble))
 			return true;
-		if ((low_nybble != -1) && (info.low_nybble != (char)high_nybble))
+		if ((low_nybble != -1) && (info.low_nybble != (unsigned char)high_nybble))
 			return true;
 		return false;
 	}

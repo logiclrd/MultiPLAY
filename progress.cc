@@ -86,9 +86,9 @@ namespace MultiPLAY
 	}
 
 	// struct PlaybackTime
-	void PlaybackTime::update(long tick_count, long ticks_per_second)
+	void PlaybackTime::update(long long tick_count, long ticks_per_second)
 	{
-		Second = tick_count / ticks_per_second;
+		Second = int(tick_count / ticks_per_second);
 
 		Hour = Second / 3600;
 		Second -= Hour * 3600;

@@ -92,9 +92,9 @@ namespace MultiPLAY
 		return ch;
 	}
 
-	void channel_PLAY::push_char(char ch)
+	void channel_PLAY::push_char(int ch)
 	{
-		in->putback(ch);
+		in->putback(char(ch));
 		in_offset--;
 	}
 

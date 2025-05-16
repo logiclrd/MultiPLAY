@@ -27,7 +27,7 @@ namespace MultiPLAY
 
 	void bit_memory_stream::seekg(long offset, seek_dir dir/* = ios::beg*/)
 	{
-		long base;
+		long base = 0;
 
 		switch (dir)
 		{
@@ -41,8 +41,8 @@ namespace MultiPLAY
 
 	bool bit_memory_stream::get()
 	{
-		unsigned offset = index >> 3;
-		unsigned bit = index & 7;
+		unsigned offset = unsigned(index >> 3);
+		unsigned bit = unsigned(index & 7);
 
 		index++;
 
@@ -64,7 +64,7 @@ namespace MultiPLAY
 				if (get())
 					value |= bit_value[i];
 
-			*ptr = value;
+			*ptr = (char)value;
 			ptr++;
 			num_bits -= 8;
 			pad_to_length--;
@@ -76,7 +76,7 @@ namespace MultiPLAY
 			if (get())
 				value |= bit_value[i];
 
-		*ptr = value;
+		*ptr = (char)value;
 		ptr++;
 		pad_to_length--;
 

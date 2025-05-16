@@ -124,8 +124,8 @@ namespace MultiPLAY
 			unsigned char default_volume;
 			file->read((char *)&default_volume, 1);
 
-			unsigned char attribute;
-			file->read((char *)&attribute, 1);
+			unsigned char sample_attribute;
+			file->read((char *)&sample_attribute, 1);
 
 			mtm_sample_description description;
 
@@ -135,7 +135,7 @@ namespace MultiPLAY
 			description.loop_end = loop_end;
 			description.finetune = finetune;
 			description.default_volume = default_volume;
-			description.sixteen_bit = (0 != (attribute & 1));
+			description.sixteen_bit = (0 != (sample_attribute & 1));
 
 			sample_description[i] = description;
 		}
@@ -152,7 +152,7 @@ namespace MultiPLAY
 
 			file->read((char *)&track_data[0], 192);
 
-			for (int i=0, o=0; i<64; i++, o += 3)
+			for (int row_index=0, o=0; row_index<64; row_index++, o += 3)
 			{
 				mtm_track_data row;
 
@@ -224,7 +224,7 @@ namespace MultiPLAY
 
 				for (unsigned j=0; j < smp->num_samples; j++)
 				{
-					data_sgn[j] = from_lsb2_u(data + (j << 1));
+					data_sgn[j] = (signed short)(from_lsb2_u(data + (j << 1)));
 				}
 
 				smp->sample_data[0] = data_sgn;

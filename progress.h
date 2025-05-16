@@ -25,7 +25,7 @@ namespace MultiPLAY
 	{
 		int Hour, Minute, Second;
 
-		void update(long tick_count, long ticks_per_second);
+		void update(long long tick_count, long ticks_per_second);
 		bool is_changed(const PlaybackTime &reference);
 	};
 }

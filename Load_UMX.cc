@@ -30,7 +30,7 @@ namespace MultiPLAY
 
 		int read_compressed_unreal_integer(std::ifstream &file) // "index"
 		{
-			char b = file.get();
+			char b = char(file.get());
 
 			bool is_signed = (b & 0x80) != 0;
 			
@@ -41,7 +41,7 @@ namespace MultiPLAY
 			{
 				do
 				{
-					b = file.get();
+					b = char(file.get());
 
 					result |= int(b & 0x7F) << shift;
 
@@ -73,7 +73,7 @@ namespace MultiPLAY
 
 			while (true)
 			{
-				char ch = file.get();
+				char ch = char(file.get());
 
 				if (ch == '\0')
 					break;
@@ -127,16 +127,17 @@ namespace MultiPLAY
 				read_int32(file);
 			}
 
-			int export_count = *(int *)&header_bytes[20];
+			//int export_count = *(int *)&header_bytes[20];
 			int export_offset = *(int *)&header_bytes[24];
 
 			file.seekg(export_offset);
 
-			int export_class = read_compressed_unreal_integer(file);
-			int export_super = read_compressed_unreal_integer(file);
-			int group = (package_version >= 60) ? read_int32(file) : -1;
-			int name_index = read_compressed_unreal_integer(file);
-			int flags = read_int32(file);
+			read_compressed_unreal_integer(file); // export class
+			read_compressed_unreal_integer(file); // export super
+			if (package_version >= 60)
+				read_int32(file); // group
+			read_compressed_unreal_integer(file); // name index
+			read_int32(file); // flags
 			int data_size = read_compressed_unreal_integer(file);
 			int data_offset = read_compressed_unreal_integer(file);
 

@@ -1,13 +1,5 @@
-//#include <algorithm>
-//#include <iostream>
 #include <cstring>
-//#include <fstream>
-//#include <iomanip>
-//#include <sstream>
-//#include <locale>
-//#include <vector>
-//#include <string>
-//#include <map>
+#include <sstream>
 
 using namespace std;
 
@@ -124,16 +116,18 @@ namespace MultiPLAY
 			throw e;
 		}
 
-		if (module != NULL)
-			module->filename = filename;
-
 		input.close();
 
-		// Cap the pattern order, in case the loader hasn't already done it.
-		module->pattern_list.push_back(&pattern::end_marker);
+		if (module != NULL)
+		{
+			module->filename = filename;
 
-		if (module->auto_loop_target >= (int)module->pattern_list.size())
-			module->auto_loop_target = module->pattern_list.size() - 1;
+			// Cap the pattern order, in case the loader hasn't already done it.
+			module->pattern_list.push_back(&pattern::end_marker);
+
+			if (module->auto_loop_target >= (int)module->pattern_list.size())
+				module->auto_loop_target = int(module->pattern_list.size() - 1);
+		}
 
 		return module;
 	}
@@ -462,7 +456,7 @@ int main(int argc, char *argv[])
 
 				cout << endl;
 
-				for (size_t j=0; j<MAX_MODULE_CHANNELS; j++)
+				for (unsigned j=0; j<MAX_MODULE_CHANNELS; j++)
 					if (module->channel_enabled[j])
 						channels.push_back(new channel_MODULE(j, module, 64, looping));
 
@@ -526,7 +520,9 @@ int main(int argc, char *argv[])
 
 		ofstream output;
 
+#if (defined(SDL) && defined(SDL_DEFAULT)) || (defined(DIRECTX) && defined(DIRECTX_DEFAULT))
 	retry_output:
+#endif
 		switch (direct_output_type)
 		{
 			case direct_output::none:
@@ -653,7 +649,7 @@ int main(int argc, char *argv[])
 				count++;
 			}
 
-			for (int i = ancillary_channels.size() - 1; i >= 0; --i)
+			for (int i = int(ancillary_channels.size() - 1); i >= 0; --i)
 			{
 				profile.push_back("process an ancillary channel");
 

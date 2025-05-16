@@ -177,7 +177,7 @@ namespace MultiPLAY
 		file->read((char *)&settings.master_volume, 1);
 
 		file->ignore(1); // ultraclick removal
-		char default_panning = file->get();
+		char default_panning = char(file->get());
 		file->ignore(8);
 
 	/*  short special_ptr;
@@ -187,9 +187,9 @@ namespace MultiPLAY
 		if (int(file->tellg()) != 64)
 			throw "internal error: not at the right place in the file";
 
-		s3m_channel_description channels[32];
+		s3m_channel_description file_channels[32];
 		for (int i=0; i<32; i++)
-			channels[i].value = file->get();
+			file_channels[i].value = char(file->get());
 
 		//if (pattern_list_length & 1)
 		//  throw "pattern list length is not even";
@@ -217,9 +217,9 @@ namespace MultiPLAY
 		s3m_channel_default_pan default_panning_value[32];
 	#pragma pack()
 
-		if (default_panning == char(0xFC))
+		if (default_panning == 0xFC)
 			for (unsigned i=0; i<32; i++)
-				default_panning_value[i].value = file->get();
+				default_panning_value[i].value = char(file->get());
 		else
 			for (unsigned i=0; i<32; i++)
 				default_panning_value[i].default_specified(false);
@@ -230,9 +230,9 @@ namespace MultiPLAY
 		{
 			file->seekg(file_base_offset + sample_parapointer[i] * 16, ios::beg);
 
-			int type = file->get();
+			int sample_type = file->get();
 
-			if (type != 1)
+			if (sample_type != 1)
 			{
 				samps.push_back(new sample_builtintype<char>(int(i), 1));
 				continue;
@@ -258,15 +258,15 @@ namespace MultiPLAY
 			file->read((char *)&lsb_bytes[0], 4);
 			loop_end = from_lsb4_lu(lsb_bytes);
 
-			char volume = file->get();
+			char volume = char(file->get());
 
 			file->ignore(1);
 
 			bool packed;
 			packed = (file->get() == 1);
 
-			s3m_sample_flags flags;
-			file->read((char *)&flags.value, 1);
+			s3m_sample_flags sample_flags;
+			file->read((char *)&sample_flags.value, 1);
 
 			file->read((char *)&lsb_bytes[0], 4);
 			unsigned long c2spd = from_lsb4_lu(lsb_bytes);
@@ -281,26 +281,26 @@ namespace MultiPLAY
 			sample_name[28] = 0;
 			file->read(sample_name, 28);
 
-			char magic[4];
-			file->read(magic, 4);
+			char sample_magic[4];
+			file->read(sample_magic, 4);
 
-			if (string(magic, 4) != "SCRS")
+			if (string(sample_magic, 4) != "SCRS")
 				throw "invalid sample format";
 
 			file->seekg(file_base_offset + parapointer * 16, ios::beg);
 
-			/*if (flags.stereo())
+			/*if (sample_flags.stereo())
 				length >>= 1; /* */
 
-			if (flags.sixteen_bit())
+			if (sample_flags.sixteen_bit())
 			{
 				//length >>= 1;
 				if (unsigned_samples)
 				{
 					unsigned short *data = new unsigned short[length];
-					unsigned short *data_right;
+					unsigned short *data_right = data;
 					
-					if (flags.stereo())
+					if (sample_flags.stereo())
 					{
 						data_right = new unsigned short[length];
 
@@ -315,39 +315,39 @@ namespace MultiPLAY
 
 					unsigned char *uc_data = (unsigned char *)&data[0];
 					unsigned char *uc_data_right = NULL;
-					if (flags.stereo())
+					if (sample_flags.stereo())
 						uc_data_right = (unsigned char *)&data_right[0];
 
 					for (unsigned int j=0; j<length; j++)
 					{
 						data[j] = from_lsb2_u(uc_data + 2*j);
-						if (flags.stereo())
+						if (sample_flags.stereo())
 							data_right[j] = from_lsb2_u(uc_data_right + 2*j);
 					}
 
 					signed short *data_sgn = (signed short *)data;
 					signed short *data_right_sgn = (signed short *)data_right;
 
-					if (flags.stereo())
-						for (unsigned int i=0; i<length; i++)
+					if (sample_flags.stereo())
+						for (unsigned int sample_offset=0; sample_offset<length; sample_offset++)
 						{
-							data_sgn[i] = (short)(int(data[i]) - 32768);
-							data_right_sgn[i] = (short)(int(data_right[i]) - 32768);
+							data_sgn[sample_offset] = (short)(int(data[sample_offset]) - 32768);
+							data_right_sgn[sample_offset] = (short)(int(data_right[sample_offset]) - 32768);
 						}
 					else
-						for (unsigned int i=0; i<length; i++)
-							data_sgn[i] = (short)(int(data[i]) - 32768);
+						for (unsigned int sample_offset=0; sample_offset<length; sample_offset++)
+							data_sgn[sample_offset] = (short)(int(data[sample_offset]) - 32768);
 
-					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), flags.stereo() ? 2 : 1);
+					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), sample_flags.stereo() ? 2 : 1);
 
 					smp->name = sample_name;
 
 					smp->num_samples = length;
 					smp->sample_data[0] = data_sgn;
-					if (flags.stereo())
+					if (sample_flags.stereo())
 						smp->sample_data[1] = data_right_sgn;
 					smp->samples_per_second = c2spd;
-					if (flags.loop())
+					if (sample_flags.loop())
 					{
 						smp->loop_begin = loop_begin;
 						smp->loop_end = loop_end - 1;
@@ -359,9 +359,9 @@ namespace MultiPLAY
 				else
 				{
 					signed short *data = new signed short[length];
-					signed short *data_right;
+					signed short *data_right = data;
 
-					if (flags.stereo())
+					if (sample_flags.stereo())
 					{
 						data_right = new signed short[length];
 
@@ -376,26 +376,26 @@ namespace MultiPLAY
 
 					unsigned char *uc_data = (unsigned char *)&data[0];
 					unsigned char *uc_data_right = NULL;
-					if (flags.stereo())
+					if (sample_flags.stereo())
 						uc_data_right = (unsigned char *)&data_right[0];
 
 					for (unsigned int j=0; j<length; j++)
 					{
 						data[j] = from_lsb2(uc_data + 2*j);
-						if (flags.stereo())
+						if (sample_flags.stereo())
 							data_right[j] = from_lsb2(uc_data_right + 2*j);
 					}
 
-					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), flags.stereo() ? 2 : 1);
+					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), sample_flags.stereo() ? 2 : 1);
 
 					smp->name = sample_name;
 
 					smp->num_samples = length;
 					smp->sample_data[0] = data;
-					if (flags.stereo())
+					if (sample_flags.stereo())
 						smp->sample_data[1] = data_right;
 					smp->samples_per_second = c2spd;
-					if (flags.loop())
+					if (sample_flags.loop())
 					{
 						smp->loop_begin = loop_begin;
 						smp->loop_end = loop_end - 1;
@@ -410,9 +410,9 @@ namespace MultiPLAY
 				if (unsigned_samples)
 				{
 					unsigned char *data = new unsigned char[length];
-					unsigned char *data_right;
+					unsigned char *data_right = data;
 
-					if (flags.stereo())
+					if (sample_flags.stereo())
 					{
 						data_right = new unsigned char[length];
 
@@ -428,26 +428,26 @@ namespace MultiPLAY
 					signed char *data_sgn = (signed char *)data;
 					signed char *data_right_sgn = (signed char *)data_right;
 
-					if (flags.stereo())
-						for (unsigned int i=0; i<length; i++)
+					if (sample_flags.stereo())
+						for (unsigned int sample_offset=0; sample_offset<length; sample_offset++)
 						{
-							data_sgn[i] = (char)(int(data[i]) - 128);
-							data_right_sgn[i] = (char)(int(data_right[i]) - 128);
+							data_sgn[sample_offset] = (char)(int(data[sample_offset]) - 128);
+							data_right_sgn[sample_offset] = (char)(int(data_right[sample_offset]) - 128);
 						}
 					else
-						for (unsigned int i=0; i<length; i++)
-							data_sgn[i] = (char)(int(data[i]) - 128);
+						for (unsigned int sample_offset=0; sample_offset<length; sample_offset++)
+							data_sgn[sample_offset] = (char)(int(data[sample_offset]) - 128);
 
-					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), flags.stereo() ? 2 : 1);
+					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), sample_flags.stereo() ? 2 : 1);
 
 					smp->name = sample_name;
 
 					smp->num_samples = length;
 					smp->sample_data[0] = data_sgn;
-					if (flags.stereo())
+					if (sample_flags.stereo())
 						smp->sample_data[1] = data_right_sgn;
 					smp->samples_per_second = c2spd;
-					if (flags.loop())
+					if (sample_flags.loop())
 					{
 						smp->loop_begin = loop_begin;
 						smp->loop_end = loop_end - 1;
@@ -459,9 +459,9 @@ namespace MultiPLAY
 				else
 				{
 					signed char *data = new signed char[length];
-					signed char *data_right;
+					signed char *data_right = data;
 
-					if (flags.stereo())
+					if (sample_flags.stereo())
 					{
 						data_right = new signed char[length];
 
@@ -474,16 +474,16 @@ namespace MultiPLAY
 					else
 						file->read((char *)data, streamsize(length));
 
-					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), flags.stereo() ? 2 : 1);
+					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), sample_flags.stereo() ? 2 : 1);
 
 					smp->name = sample_name;
 
 					smp->num_samples = length;
 					smp->sample_data[0] = data;
-					if (flags.stereo())
+					if (sample_flags.stereo())
 						smp->sample_data[1] = data_right;
 					smp->samples_per_second = c2spd;
-					if (flags.loop())
+					if (sample_flags.loop())
 					{
 						smp->loop_begin = loop_begin;
 						smp->loop_end = loop_end - 1;
@@ -514,7 +514,7 @@ namespace MultiPLAY
 
 				while (true)
 				{
-					char what = file->get(); if (!--bytes_left) break;
+					char what = char(file->get()); if (!--bytes_left) break;
 
 					if (what == 0)
 						break;
@@ -547,7 +547,7 @@ namespace MultiPLAY
 						int command = file->get(); if (!--bytes_left) break;
 						int info = file->get(); if (!--bytes_left) break;
 
-						rowdata[channel].effect = effect_struct(EffectType::S3M, command, info);
+						rowdata[channel].effect = effect_struct(EffectType::S3M, char(command), unsigned char(info));
 					}
 				}
 
@@ -585,13 +585,13 @@ namespace MultiPLAY
 
 			for (i=0, j=0; i<32; i++)
 			{
-				ret->channel_enabled[i] = !channels[i].disabled();
+				ret->channel_enabled[i] = !file_channels[i].disabled();
 				if (ret->channel_enabled[i])
 					ret->channel_map[i] = j++;
 				if (ret->stereo)
 				{
 					ret->initial_panning[i].set_channels(2);
-					if (default_panning == char(0xFC))
+					if (default_panning == 0xFC)
 					{
 						if (default_panning_value[i].default_specified())
 							ret->base_pan[i] = (int)default_panning_value[i].default_pan();
@@ -600,7 +600,7 @@ namespace MultiPLAY
 						ret->initial_panning[i].from_s3m_pan(ret->base_pan[i]);
 					}
 					else
-						switch (channels[i].channel_type())
+						switch (file_channels[i].channel_type())
 						{
 							case 0x0: case 0x1: case 0x2: case 0x3: case 0x4: case 0x5: case 0x6: case 0x7:
 								ret->base_pan[i] = 0x3;

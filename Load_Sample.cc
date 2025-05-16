@@ -54,13 +54,13 @@ namespace MultiPLAY
 			unsigned char lsb_bytes[4];
 
 			file->read((char *)&lsb_bytes[0], 4);
-			unsigned long file_length = from_lsb4_lu(lsb_bytes); // not including 8-byte RIFF header
+			//unsigned long file_length = from_lsb4_lu(lsb_bytes); // not including 8-byte RIFF header
 
 			file->read((char *)magic, 4);
 			if (string((char *)magic, 4) == "WAVE") // then it's a WAV audio file
 			{
-				WAV::chunk chunk;
-				WAV::format_chunk format_chunk;
+				WAV::chunk chunk = { 0 };
+				WAV::format_chunk format_chunk = { 0 };
 				bool have_format_chunk = false;
 
 				while (true)
@@ -271,8 +271,8 @@ namespace MultiPLAY
 			file->read(magic, 4);
 			if (string(magic, 4) == "AIFF") // then it's an AIFF audio file
 			{
-				AIFF::chunk chunk;
-				AIFF::common_chunk common_chunk;
+				AIFF::chunk chunk = { 0 };
+				AIFF::common_chunk common_chunk = { 0 };
 				bool have_common_chunk = false;
 
 				while (true)
@@ -505,7 +505,7 @@ namespace MultiPLAY
 			}
 
 			file->seekg(0, ios::end);
-			long length = file->tellg();
+			long length = long(file->tellg());
 			file->seekg(0, ios::beg);
 
 			if ((diff_8bit < diff_16bit) && (diff_8bit < diff_16bit_msb)) // then try for 8-bit data :-)

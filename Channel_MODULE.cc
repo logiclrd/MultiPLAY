@@ -78,11 +78,11 @@ namespace MultiPLAY
 	/*virtual*/ void channel_MODULE::get_playback_position(PlaybackPosition &position)
 	{
 		position.Order = int(module->current_pattern);
-		position.OrderCount = module->pattern_list.size();
+		position.OrderCount = int(module->pattern_list.size());
 		position.Pattern = module->pattern_list[module->current_pattern]->index;
-		position.PatternCount = module->patterns.size();
+		position.PatternCount = int(module->patterns.size());
 		position.Row = module->current_row;
-		position.RowCount = module->pattern_list[module->current_pattern]->row_list.size();
+		position.RowCount = int(module->pattern_list[module->current_pattern]->row_list.size());
 		position.Offset = offset_major;
 		position.OffsetCount = ticks_total;
 		position.FormatString = "order {Order}/{OrderCount} - {Pattern}:{Row:2}";
@@ -238,14 +238,14 @@ namespace MultiPLAY
 						break;
 				}
 
-				double note_frequency;
+				double this_note_frequency;
 				
 				if (it_linear_slides)
-					note_frequency = p2(value);
+					this_note_frequency = p2(value);
 				else
-					note_frequency = 14317056.0 / value;
+					this_note_frequency = 14317056.0 / value;
 
-				delta_offset_per_tick = note_frequency / ticks_per_second;
+				delta_offset_per_tick = this_note_frequency / ticks_per_second;
 			}
 
 			profile.push_back("end vibrato");
@@ -747,7 +747,7 @@ namespace MultiPLAY
 					cerr << string(9 + 18 * module->num_channels, '-') << endl;
 
 				cerr << setfill(' ') << setw(3) << module->current_pattern << ":"
-						 << setfill('0') << setw(req_digits(module->pattern_list[module->current_pattern]->row_list.size())) << module->current_row << " | ";
+						 << setfill('0') << setw(req_digits(int(module->pattern_list[module->current_pattern]->row_list.size()))) << module->current_row << " | ";
 			}                                      // .- escaped for trigraph avoidance
 			cerr << string("C-C#D-D#E-F-F#G-G#A-A#B-?\?==^^--").substr((row.snote & 15) * 2, 2)
 					 << char((row.snote >= 0) ? (48 + (row.snote >> 4)) : '-') << " ";
@@ -1009,25 +1009,23 @@ namespace MultiPLAY
 					else
 						last_param['E'] = last_param['F'] = info;
 
-					if (info.high_nybble == 0xF) // 'fine'
+					if ((info.high_nybble == 0xF) || (info.high_nybble == 0xE))
 					{
-						if (it_linear_slides)
-							portamento_target = portamento_start - info.low_nybble / 192.0;
-						else
-							portamento_target = portamento_start + 4 * info.low_nybble;
-						fine = true;
-					}
-					else if (info.high_nybble == 0xE) // 'extra fine'
-					{
-						if (it_linear_slides)
-							portamento_target = portamento_start - info.low_nybble / 768.0;
-						else
-							portamento_target = portamento_start + info.low_nybble;
-						fine = true;
-					}
+						if (info.high_nybble == 0xF) // 'fine'
+						{
+							if (it_linear_slides)
+								portamento_target = portamento_start - info.low_nybble / 192.0;
+							else
+								portamento_target = portamento_start + 4 * info.low_nybble;
+						}
+						else // E - 'extra fine'
+						{
+							if (it_linear_slides)
+								portamento_target = portamento_start - info.low_nybble / 768.0;
+							else
+								portamento_target = portamento_start + info.low_nybble;
+						}
 
-					if (fine)
-					{
 						if (it_linear_slides)
 							note_frequency = p2(portamento_target);
 						else
@@ -1057,25 +1055,23 @@ namespace MultiPLAY
 					else
 						last_param['E'] = last_param['F'] = info;
 
-					if (info.high_nybble == 0xF) // 'fine'
+					if ((info.high_nybble == 0xF) || (info.high_nybble == 0xE))
 					{
-						if (it_linear_slides)
-							portamento_target = portamento_start + info.low_nybble / 192.0;
-						else
-							portamento_target = portamento_start - 4 * info.low_nybble;
-						fine = true;
-					}
-					else if (info.high_nybble == 0xE) // 'extra fine'
-					{
-						if (it_linear_slides)
-							portamento_target = portamento_start + info.low_nybble / 768.0;
-						else
-							portamento_target = portamento_start - info.low_nybble;
-						fine = true;
-					}
+						if (info.high_nybble == 0xF) // 'fine'
+						{
+							if (it_linear_slides)
+								portamento_target = portamento_start + info.low_nybble / 192.0;
+							else
+								portamento_target = portamento_start - 4 * info.low_nybble;
+						}
+						else // E -- 'extra fine'
+						{
+							if (it_linear_slides)
+								portamento_target = portamento_start + info.low_nybble / 768.0;
+							else
+								portamento_target = portamento_start - info.low_nybble;
+						}
 
-					if (fine)
-					{
 						if (it_linear_slides)
 							note_frequency = p2(portamento_target);
 						else
@@ -1587,7 +1583,7 @@ namespace MultiPLAY
 									case 8: // disable volume envelope for this note
 										break;
 									case 0: // note cut
-										for (int i = ancillary_channels.size() - 1; i >= 0; i--)
+										for (int i = int(ancillary_channels.size() - 1); i >= 0; i--)
 										{
 											auto my_own = find(my_ancillary_channels.begin(), my_ancillary_channels.end(), ancillary_channels[unsigned(i)]);
 

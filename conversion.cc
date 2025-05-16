@@ -8,12 +8,12 @@ using namespace std;
 
 namespace MultiPLAY
 {
-	extern int from_lsb2(unsigned char in[2])
+	extern short from_lsb2(unsigned char in[2])
 	{
 		return in[0] | (static_cast<signed char>(in[1]) << 8);
 	}
 
-	extern unsigned int from_lsb2_u(unsigned char in[2])
+	extern unsigned short from_lsb2_u(unsigned char in[2])
 	{
 		return in[0] | (in[1] << 8);
 	}
@@ -33,12 +33,12 @@ namespace MultiPLAY
 		return in[0] | (in[1] << 8) | (in[2] << 16) | (in[3] << 24);
 	}
 
-	extern int from_msb2(unsigned char in[2])
+	extern short from_msb2(unsigned char in[2])
 	{
 		return in[1] | (static_cast<signed char>(in[0]) << 8);
 	}
 
-	extern unsigned int from_msb2_u(unsigned char in[2])
+	extern unsigned short from_msb2_u(unsigned char in[2])
 	{
 		return in[1] | (in[0] << 8);
 	}

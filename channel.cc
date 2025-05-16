@@ -30,7 +30,7 @@ namespace MultiPLAY
 		bool reset_sample_offset/* = true*/,
 		bool zero_means_no_note/* = true*/)
 	{
-		double seconds;
+		double seconds = 0.0;
 
 		if (calculate_length)
 		{
@@ -233,9 +233,7 @@ namespace MultiPLAY
 					break;
 			}
 
-			double sample_offset;
-			if (volume_envelope || panning_envelope || pitch_envelope)
-				sample_offset = samples_this_note;
+			double sample_offset = samples_this_note;
 
 			if (fading)
 			{

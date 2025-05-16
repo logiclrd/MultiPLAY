@@ -30,7 +30,7 @@ namespace MultiPLAY
 
 	extern module_struct *load_mod(ifstream *file, bool mud/* = false*/)
 	{
-		unsigned file_base_offset = file->tellg();
+		unsigned file_base_offset = (unsigned)file->tellg();
 
 		char songname[21];
 		songname[20] = 0;
@@ -47,8 +47,8 @@ namespace MultiPLAY
 			file->read((char *)msb_chars, 2);
 			sample_description[i].byte_length = 2 * from_msb2_u(msb_chars);
 			
-			sample_description[i].finetune = file->get();
-			sample_description[i].volume = file->get();
+			sample_description[i].finetune = char(file->get());
+			sample_description[i].volume = unsigned char(file->get());
 
 			file->read((char *)msb_chars, 2);
 			sample_description[i].repeat_start = 2 * from_msb2_u(msb_chars);
@@ -105,7 +105,7 @@ namespace MultiPLAY
 		unsigned file_length;
 
 		{
-			int tmp = file->tellg();
+			int tmp = (int)file->tellg();
 			file->seekg(0, ios::end);
 			file_length = unsigned(file->tellg()) - file_base_offset;
 			file->seekg(tmp, ios::beg);
@@ -326,7 +326,7 @@ namespace MultiPLAY
 			ret->channel_enabled[i] = (i < num_channels);
 			ret->channel_map[i] = i;
 
-			bool left = (i & 1) ^ (0 == (i & 2));
+			bool left = (i & 1) ^ ((2 - (i & 2)) >> 1);
 
 			if (left)
 				ret->base_pan[i] = 0x3;

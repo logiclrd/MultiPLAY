@@ -133,12 +133,12 @@ namespace MultiPLAY
 				context.sustain_loop_state = SustainLoopState::Finishing;
 		}
 
-		virtual void kill_note(sample_context *c = NULL)
+		virtual void kill_note(sample_context */*c = NULL*/)
 		{
 			// no implementation required
 		}
 
-		virtual bool past_end(unsigned int sample, double offset, sample_context *c = NULL)
+		virtual bool past_end(unsigned int sample, double /*offset*/, sample_context *c = NULL)
 		{
 			if (c == NULL)
 				throw "need context for instrument";
@@ -201,13 +201,12 @@ namespace MultiPLAY
 
 						unsigned full_loop_length;
 
-						switch (sustain_loop_style)
-						{
-							case LoopStyle::Forward: full_loop_length = sustain_loop_length; break;
-							case LoopStyle::PingPong: full_loop_length = sustain_loop_length * 2; break;
-						}
+						if (sustain_loop_style == LoopStyle::PingPong)
+							full_loop_length = sustain_loop_length * 2;
+						else
+							full_loop_length = sustain_loop_length;
 
-						unsigned full_loops = overrun / full_loop_length;
+						unsigned full_loops = (unsigned)floor(overrun / full_loop_length);
 
 						overrun -= full_loops * full_loop_length;
 
@@ -224,10 +223,10 @@ namespace MultiPLAY
 						if (direction < 0)
 						{
 							next_clean_exit_sample += sustain_loop_length;
-							new_sample = sustain_loop_end - overrun;
+							new_sample = (unsigned int)(sustain_loop_end - floor(overrun));
 						}
 						else
-							new_sample = sustain_loop_begin + overrun;
+							new_sample = (unsigned int)(sustain_loop_begin + floor(overrun));
 
 						new_subsequent_sample = unsigned(int(new_sample) + direction);
 
@@ -263,13 +262,12 @@ namespace MultiPLAY
 
 						unsigned full_loop_length;
 
-						switch (sustain_loop_style)
-						{
-							case LoopStyle::Forward: full_loop_length = loop_length; break;
-							case LoopStyle::PingPong: full_loop_length = loop_length * 2; break;
-						}
+						if (sustain_loop_style == LoopStyle::PingPong)
+							full_loop_length = loop_length * 2;
+						else
+							full_loop_length = loop_length;
 
-						unsigned full_loops = overrun / full_loop_length;
+						unsigned full_loops = (unsigned)floor(overrun / full_loop_length);
 
 						overrun -= full_loops * full_loop_length;
 
@@ -283,9 +281,9 @@ namespace MultiPLAY
 							direction = 1;
 
 						if (direction < 0)
-							new_sample = loop_end - overrun;
+							new_sample = (unsigned int)(loop_end - floor(overrun));
 						else
-							new_sample = loop_begin + overrun;
+							new_sample = (unsigned int)(loop_begin + floor(overrun));
 
 						new_subsequent_sample = unsigned(int(new_sample) + direction);
 

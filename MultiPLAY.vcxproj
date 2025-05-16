@@ -80,7 +80,10 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -93,7 +96,10 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>DIRECTX;WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <AdditionalDependencies>dsound.lib;dxguid.lib</AdditionalDependencies>
@@ -108,7 +114,10 @@
       <PreprocessorDefinitions>SDL;WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>x:\SDL2-2.32.6\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib</AdditionalDependencies>
@@ -124,7 +133,10 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -138,7 +150,10 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>DIRECTX;WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <AdditionalDependencies>dsound.lib;dxguid.lib</AdditionalDependencies>
@@ -154,7 +169,10 @@
       <PreprocessorDefinitions>SDL;WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>x:\SDL2-2.32.6\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <AdditionalDependencies>SDL2.lib;SDL2main.lib</AdditionalDependencies>
@@ -171,7 +189,10 @@
       <PreprocessorDefinitions>DIRECTX;SDL;WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>x:\SDL2-2.32.6\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
+      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
     <Link>
       <AdditionalDependencies>dsound.lib;dxguid.lib SDL2.lib;SDL2main.lib</AdditionalDependencies>
@@ -184,6 +205,7 @@
 
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{B88B0338-14D2-4898-B0D0-BFD0752C42A2}</ProjectGuid>
   </PropertyGroup>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -205,7 +227,6 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
 
-  <ItemDefinitionGroup></ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="bit_memory_stream.cc" />
     <ClCompile Include="bit_value.cc" />
@@ -243,6 +264,44 @@
     <ClCompile Include="win32_break_handler.cc" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ClInclude Include="bit_memory_stream.h" />
+    <ClInclude Include="bit_value.h" />
+    <ClInclude Include="break_handler.h" />
+    <ClInclude Include="channel.h" />
+    <ClInclude Include="Channel_DYNAMIC.h" />
+    <ClInclude Include="Channel_MODULE.h" />
+    <ClInclude Include="Channel_NIHONGOBANGOO.h" />
+    <ClInclude Include="Channel_PLAY.h" />
+    <ClInclude Include="conversion.h" />
+    <ClInclude Include="DSP.h" />
+    <ClInclude Include="effect.h" />
+    <ClInclude Include="envelope.h" />
+    <ClInclude Include="Load_IT.h" />
+    <ClInclude Include="Load_MOD.h" />
+    <ClInclude Include="Load_MTM.h" />
+    <ClInclude Include="Load_S3M.h" />
+    <ClInclude Include="Load_Sample.h" />
+    <ClInclude Include="Load_UMX.h" />
+    <ClInclude Include="Load_XM.h" />
+    <ClInclude Include="math.h" />
+    <ClInclude Include="module.h" />
+    <ClInclude Include="mod_finetune.h" />
+    <ClInclude Include="MultiPLAY.h" />
+    <ClInclude Include="notes.h" />
+    <ClInclude Include="one_sample.h" />
+    <ClInclude Include="Output-DirectX.h" />
+    <ClInclude Include="Output-SDL.h" />
+    <ClInclude Include="pattern.h" />
+    <ClInclude Include="Profile.h" />
+    <ClInclude Include="progress.h" />
+    <ClInclude Include="RAII.h" />
+    <ClInclude Include="sample.h" />
+    <ClInclude Include="sample_builtintype.h" />
+    <ClInclude Include="sample_instrument.h" />
+    <ClInclude Include="uLaw-aLaw.h" />
+    <ClInclude Include="wave_file.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 
   <ImportGroup Label="ExtensionTargets">

@@ -217,7 +217,7 @@ namespace MultiPLAY
 		s3m_channel_default_pan default_panning_value[32];
 	#pragma pack()
 
-		if (default_panning == 0xFC)
+		if ((unsigned char)default_panning == 0xFC)
 			for (unsigned i=0; i<32; i++)
 				default_panning_value[i].value = char(file->get());
 		else
@@ -591,7 +591,7 @@ namespace MultiPLAY
 				if (ret->stereo)
 				{
 					ret->initial_panning[i].set_channels(2);
-					if (default_panning == 0xFC)
+					if ((unsigned char)default_panning == 0xFC)
 					{
 						if (default_panning_value[i].default_specified())
 							ret->base_pan[i] = (int)default_panning_value[i].default_pan();

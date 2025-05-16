@@ -615,7 +615,7 @@ namespace MultiPLAY
 				for (int i=0; i<length; i++)
 				{
 					file->read((char *)&msb_bytes[0], 2);
-					data[i] = from_msb2(msb_bytes);
+					data[i] = from_msb2_u(msb_bytes);
 				}
 
 				// now find signed-ness

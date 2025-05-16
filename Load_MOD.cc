@@ -48,7 +48,7 @@ namespace MultiPLAY
 			sample_description[i].byte_length = 2 * from_msb2_u(msb_chars);
 			
 			sample_description[i].finetune = char(file->get());
-			sample_description[i].volume = unsigned char(file->get());
+			sample_description[i].volume = (unsigned char)file->get();
 
 			file->read((char *)msb_chars, 2);
 			sample_description[i].repeat_start = 2 * from_msb2_u(msb_chars);

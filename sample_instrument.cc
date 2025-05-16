@@ -117,9 +117,6 @@ namespace MultiPLAY
 
 			fade_per_tick = (c.created_with->fade_out / 1024.0) / c.effect_tick_length;
 
-			if (fade_per_tick < 0.1)
-				fade_per_tick = 0.1;
-
 			channel_DYNAMIC *ancillary;
 			
 			ancillary = new channel_DYNAMIC(*p, (*context)->created_with, *context, fade_per_tick);

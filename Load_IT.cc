@@ -171,7 +171,7 @@ namespace MultiPLAY
 				file->read((char *)&instrument, 1);
 
 				instrument_for_note[note_index] = instrument;
-				note_difference[note_index] = note - i;
+				note_difference[note_index] = note - note_index;
 			}
 
 			char rendered_volume_envelope[200];
@@ -350,7 +350,7 @@ namespace MultiPLAY
 				file->read((char *)&instrument, 1);
 
 				instrument_for_note[note_index] = instrument;
-				note_difference[note_index] = note - i;
+				note_difference[note_index] = note - note_index;
 			}
 
 			it_envelope_description volume_envelope, pan_envelope, pitch_envelope;

@@ -31,9 +31,9 @@ namespace MultiPLAY
 
 		switch (dir)
 		{
-			case ios::beg: base = 0;
-			case ios::cur: base = tellg();
-			case ios::end: base = size();
+			case ios::beg: base = 0; break;
+			case ios::cur: base = tellg(); break;
+			case ios::end: base = size(); break;
 		}
 
 		index = base + offset;
@@ -41,12 +41,12 @@ namespace MultiPLAY
 
 	bool bit_memory_stream::get()
 	{
-		int offset = index >> 3;
-		int bit = index & 7;
+		unsigned offset = index >> 3;
+		unsigned bit = index & 7;
 
 		index++;
 
-		return (0 != (memory[offset] & bit_value[bit]));
+		return (0 != (unsigned(memory[offset]) & bit_value[bit]));
 	}
 
 	bool bit_memory_stream::eof()
@@ -58,7 +58,7 @@ namespace MultiPLAY
 	{
 		while (num_bits > 8)
 		{
-			int value = 0;
+			unsigned int value = 0;
 
 			for (int i=0; i<8; i++)
 				if (get())
@@ -70,7 +70,7 @@ namespace MultiPLAY
 			pad_to_length--;
 		}
 
-		int value = 0;
+		unsigned int value = 0;
 
 		for (int i=0; i<num_bits; i++)
 			if (get())
@@ -86,12 +86,12 @@ namespace MultiPLAY
 
 	int bit_memory_stream::read_int(int num_bits/* = 32*/)
 	{
-		int value = 0;
+		unsigned int value = 0;
 
 		for (int i=0; i<num_bits; i++)
 			if (get())
 				value |= bit_value[i];
 
-		return value;
+		return int(value);
 	}
 }

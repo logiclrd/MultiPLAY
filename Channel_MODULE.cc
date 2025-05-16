@@ -12,7 +12,7 @@ using namespace std;
 namespace MultiPLAY
 {
 	// struct channel_MODULE
-	channel_MODULE::channel_MODULE(int channel_number, module_struct *module, int channel_volume, bool looping)
+	channel_MODULE::channel_MODULE(unsigned int channel_number, module_struct *module, int channel_volume, bool looping)
 		: channel(module->initial_panning[channel_number], looping),
 		  unmapped_channel_number(channel_number),
 		  channel_number(module->channel_map[channel_number]),
@@ -77,7 +77,7 @@ namespace MultiPLAY
 
 	/*virtual*/ void channel_MODULE::get_playback_position(PlaybackPosition &position)
 	{
-		position.Order = module->current_pattern;
+		position.Order = int(module->current_pattern);
 		position.OrderCount = module->pattern_list.size();
 		position.Pattern = module->pattern_list[module->current_pattern]->index;
 		position.PatternCount = module->patterns.size();
@@ -216,6 +216,11 @@ namespace MultiPLAY
 				
 				switch (vibrato_waveform)
 				{
+					case Waveform::Triangle:
+					case Waveform::Sawtooth:
+					case Waveform::Sample:
+						// Undefined.
+						break;
 					case Waveform::Sine:
 						value += vibrato_depth * sin(t_vibrato * 6.283185);
 						break;
@@ -258,6 +263,11 @@ namespace MultiPLAY
 			
 			switch (panbrello_waveform)
 			{
+				case Waveform::Triangle:
+				case Waveform::Sawtooth:
+				case Waveform::Sample:
+					// Undefined.
+					break;
 				case Waveform::Sine:
 					value += panbrello_depth * sin(t_panbrello * 6.283185);
 					break;
@@ -383,12 +393,12 @@ namespace MultiPLAY
 		{
 			profile.push_back("start retrigger");
 
-			if (current_sample && retrigger_ticks && (((module->ticks_per_module_row - ticks_left) % retrigger_ticks) == 0))
+			if (current_sample && retrigger_ticks && (module->current_row >= 0) && (((module->ticks_per_module_row - ticks_left) % retrigger_ticks) == 0))
 			{
 				offset = 0.0;
 				offset_major = 0;
 				int ignored = 0;
-				current_sample->begin_new_note(&module->pattern_list[module->current_pattern]->row_list[module->current_row][unmapped_channel_number], this, &current_sample_context, module->ticks_per_frame, true, &ignored);
+				current_sample->begin_new_note(&module->pattern_list[module->current_pattern]->row_list[unsigned(module->current_row)][unsigned(unmapped_channel_number)], this, &current_sample_context, module->ticks_per_frame, true, &ignored);
 				intensity = intensity * retrigger_factor + retrigger_bias;
 				if (intensity > original_intensity)
 					intensity = original_intensity;
@@ -415,6 +425,12 @@ namespace MultiPLAY
 
 				switch (tremolo_waveform)
 				{
+					case Waveform::Triangle:
+					case Waveform::Sawtooth:
+					case Waveform::Sample:
+						// Undefined.
+						break;
+
 					case Waveform::Sine:
 						intensity += tremolo_depth * sin(t_tremolo * 6.283185);
 						break;
@@ -510,7 +526,7 @@ namespace MultiPLAY
 			{
 				if (module->auto_loop_target >= 0)
 				{
-					module->current_pattern = module->auto_loop_target;
+					module->current_pattern = unsigned(module->auto_loop_target);
 					module->current_row = -1;
 					pattern_jump_target = -1;
 					row_jump_target = 0;
@@ -527,7 +543,7 @@ namespace MultiPLAY
 			}
 			else
 			{
-				module->current_pattern = pattern_jump_target;
+				module->current_pattern = unsigned(pattern_jump_target);
 				module->current_row = row_jump_target - 1;
 				pattern_jump_target = -1;
 				row_jump_target = 0;
@@ -559,7 +575,8 @@ namespace MultiPLAY
 				module->speed -= pattern_delay_frames;
 
 			module->current_row++;
-			if (module->current_row == module->pattern_list[module->current_pattern]->row_list.size())
+
+			if (module->current_row == int(module->pattern_list[module->current_pattern]->row_list.size()))
 			{
 				module->current_row = 0;
 				module->current_pattern++;
@@ -587,7 +604,7 @@ namespace MultiPLAY
 			return ChannelPlaybackState::Finished;
 		}
 
-		vector<row> &row_list = module->pattern_list[module->current_pattern]->row_list[module->current_row];
+		vector<row> &row_list = module->pattern_list[module->current_pattern]->row_list[unsigned(module->current_row)];
 
 		if (channel_number == 0)
 		{
@@ -615,7 +632,7 @@ namespace MultiPLAY
 						pattern_jump_target = row_list[i].effect.info.data;
 						break;
 					case 'C': // pattern/row jump
-						pattern_jump_target = module->current_pattern + 1;
+						pattern_jump_target = int(module->current_pattern + 1);
 						if (it_effects)
 							row_jump_target = row_list[i].effect.info;
 						else
@@ -908,7 +925,8 @@ namespace MultiPLAY
 		int old_current_znote;
 		sample_context *temp_sc;
 
-		int second_note, third_note, target_offset;
+		int second_note, third_note;
+		unsigned int target_offset;
 		double portamento_target, before_finetune;
 
 		bool fine = false;
@@ -950,14 +968,14 @@ namespace MultiPLAY
 						target_volume = volume - (module->speed - 1) * info.low_nybble;
 					else if (info.low_nybble == 0xF) // fine slide up
 					{
-						volume += info.high_nybble;
+						volume += int(info.high_nybble);
 						if (volume > 64)
 							volume = 64;
 						fine = true;
 					}
 					else if (info.high_nybble == 0xF) // fine slide down
 					{
-						volume -= info.low_nybble;
+						volume -= int(info.low_nybble);
 						if (volume < 0)
 							volume = 0;
 						fine = true;
@@ -1517,10 +1535,11 @@ namespace MultiPLAY
 						case 0x4: // set tremolo waveform
 							switch (info.low_nybble & 0x3)
 							{
+								case 0x3:
 								case 0x0: tremolo_waveform = Waveform::Sine;     break;
 								case 0x1: tremolo_waveform = Waveform::RampDown; break;
 								case 0x2: tremolo_waveform = Waveform::Square;   break;
-								case 0x3: tremolo_waveform = Waveform::Random;   break;
+								// case 0x3: tremolo_waveform = Waveform::Random;   break;
 							}
 							if (info.low_nybble & 0x4)
 								tremolo_retrig = false;
@@ -1536,10 +1555,11 @@ namespace MultiPLAY
 							{
 								switch (info.low_nybble & 0x3)
 								{
+									case 0x3:
 									case 0x0: panbrello_waveform = Waveform::Sine;     break;
 									case 0x1: panbrello_waveform = Waveform::RampDown; break;
 									case 0x2: panbrello_waveform = Waveform::Square;   break;
-									case 0x3: panbrello_waveform = Waveform::Random;   break;
+									// case 0x3: panbrello_waveform = Waveform::Random;   break;
 								}
 								if (info.low_nybble & 0x4)
 									panbrello_retrig = false;
@@ -1569,7 +1589,7 @@ namespace MultiPLAY
 									case 0: // note cut
 										for (int i = ancillary_channels.size() - 1; i >= 0; i--)
 										{
-											auto my_own = find(my_ancillary_channels.begin(), my_ancillary_channels.end(), ancillary_channels[i]);
+											auto my_own = find(my_ancillary_channels.begin(), my_ancillary_channels.end(), ancillary_channels[unsigned(i)]);
 
 											if (my_own != my_ancillary_channels.end())
 											{
@@ -1629,6 +1649,7 @@ namespace MultiPLAY
 							else
 								cerr << "Ignoring pre-IT command: S7"
 									<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+							break;
 						case 0xA: // old ST panning, IT set high offset
 							if (it_effects)
 								set_offset_high = info.low_nybble << 16;

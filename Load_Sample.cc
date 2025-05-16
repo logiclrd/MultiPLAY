@@ -29,6 +29,10 @@ namespace MultiPLAY
 
 		switch (filetype_hint)
 		{
+			case SampleFileType::RAW:
+			case SampleFileType::Unknown:
+				// Nothing to do.
+				break;
 			case SampleFileType::WAV:
 				if (string(magic) != "RIFF")
 				{
@@ -63,7 +67,7 @@ namespace MultiPLAY
 				{
 					file->read(chunk.raw.chunkID, 4);
 					file->read((char *)&lsb_bytes[0], 4);
-					chunk.raw.chunkSize = from_lsb4(lsb_bytes);
+					chunk.raw.chunkSize = unsigned(from_lsb4(lsb_bytes));
 
 					if (!file->good())
 						throw "unexpected end-of-file";
@@ -72,7 +76,7 @@ namespace MultiPLAY
 					{
 						if (chunk.raw.chunkSize > sizeof(chunk))
 						{
-							file->ignore(chunk.raw.chunkSize);
+							file->ignore(streamsize(chunk.raw.chunkSize));
 							continue;
 						}
 
@@ -122,7 +126,7 @@ namespace MultiPLAY
 
 							int padding = format_chunk.wBlockAlign - format_chunk.wChannels;
 
-							for (int i=0; i<smp->num_samples; i++)
+							for (unsigned i=0; i<smp->num_samples; i++)
 							{
 								for (int j=0; j<smp->sample_channels; j++)
 								{
@@ -150,7 +154,7 @@ namespace MultiPLAY
 
 							int padding = format_chunk.wBlockAlign - format_chunk.wChannels * 2;
 
-							for (int i=0; i<smp->num_samples; i++)
+							for (unsigned i=0; i<smp->num_samples; i++)
 							{
 								for (int j=0; j<smp->sample_channels; j++)
 								{
@@ -178,7 +182,7 @@ namespace MultiPLAY
 							int padding = format_chunk.wBlockAlign - format_chunk.wChannels * 3;
 
 							lsb_bytes[0] = 0;
-							for (int i=0; i<smp->num_samples; i++)
+							for (unsigned i=0; i<smp->num_samples; i++)
 							{
 								for (int j=0; j<smp->sample_channels; j++)
 								{
@@ -205,7 +209,7 @@ namespace MultiPLAY
 
 							int padding = format_chunk.wBlockAlign - format_chunk.wChannels * 4;
 
-							for (int i=0; i<smp->num_samples; i++)
+							for (unsigned i=0; i<smp->num_samples; i++)
 							{
 								for (int j=0; j<format_chunk.wChannels; j++)
 								{
@@ -233,7 +237,7 @@ namespace MultiPLAY
 							int padding = format_chunk.wBlockAlign - format_chunk.wChannels * 4;
 							int differential = (format_chunk.wBitsPerSample - 25) / 8;
 
-							for (int i=0; i<smp->num_samples; i++)
+							for (unsigned i=0; i<smp->num_samples; i++)
 							{
 								for (int j=0; j<smp->sample_channels; j++)
 								{
@@ -262,7 +266,7 @@ namespace MultiPLAY
 
 			unsigned long file_length; // not including 8-byte RIFF header
 			file->read((char *)&msb_bytes[0], 4);
-			file_length = from_msb4(msb_bytes);
+			file_length = unsigned(from_msb4(msb_bytes));
 
 			file->read(magic, 4);
 			if (string(magic, 4) == "AIFF") // then it's an AIFF audio file
@@ -275,7 +279,7 @@ namespace MultiPLAY
 				{
 					file->read(chunk.raw.chunkID, 4);
 					file->read((char *)&msb_bytes[0], 4);
-					chunk.raw.chunkSize = from_msb4(msb_bytes);
+					chunk.raw.chunkSize = unsigned(from_msb4(msb_bytes));
 
 					if (!file->good())
 						throw "unexpected end-of-file";
@@ -284,7 +288,7 @@ namespace MultiPLAY
 					{
 						if (chunk.raw.chunkSize > sizeof(chunk) - 8)
 						{
-							file->ignore(chunk.raw.chunkSize);
+							file->ignore(streamsize(chunk.raw.chunkSize));
 							continue;
 						}
 
@@ -292,7 +296,7 @@ namespace MultiPLAY
 						chunk.common.numChannels = from_msb2(msb_bytes);
 
 						file->read((char *)&msb_bytes[0], 4);
-						chunk.common.numSampleFrames = from_msb4(msb_bytes);
+						chunk.common.numSampleFrames = unsigned(from_msb4(msb_bytes));
 
 						file->read((char *)&msb_bytes[0], 2);
 						chunk.common.sampleSize = from_msb2(msb_bytes);
@@ -312,10 +316,10 @@ namespace MultiPLAY
 							throw "did not find a valid COMM chunk before SSND";
 
 						file->read((char *)&msb_bytes[0], 4);
-						chunk.ssnd.offset = from_msb4(msb_bytes);
+						chunk.ssnd.offset = unsigned(from_msb4(msb_bytes));
 
 						file->read((char *)&msb_bytes[0], 4);
-						chunk.ssnd.blockSize = from_msb4(msb_bytes);
+						chunk.ssnd.blockSize = unsigned(from_msb4(msb_bytes));
 						
 						if (common_chunk.sampleSize <= 8)
 						{
@@ -337,11 +341,11 @@ namespace MultiPLAY
 							ArrayAllocator<char> block_allocator(chunk.ssnd.blockSize);
 							char *block = block_allocator.getArray();
 
-							for (int i=0; i<smp->num_samples; i++)
+							for (unsigned i=0; i<smp->num_samples; i++)
 							{
 								for (int j=0; j<common_chunk.numChannels; j++)
 								{
-									file->read(block, chunk.ssnd.blockSize);
+									file->read(block, streamsize(chunk.ssnd.blockSize));
 									smp->sample_data[j][i] = (signed char)block[chunk.ssnd.offset];
 								}
 							}
@@ -369,11 +373,11 @@ namespace MultiPLAY
 							ArrayAllocator<unsigned char> block_allocator(chunk.ssnd.blockSize);
 							unsigned char *block = block_allocator.getArray();
 
-							for (int i=0; i<smp->num_samples; i++)
+							for (unsigned i=0; i<smp->num_samples; i++)
 							{
 								for (int j=0; j<common_chunk.numChannels; j++)
 								{
-									file->read((char *)block, chunk.ssnd.blockSize);
+									file->read((char *)block, streamsize(chunk.ssnd.blockSize));
 									smp->sample_data[j][i] = from_msb2(block + chunk.ssnd.offset);
 								}
 							}
@@ -402,11 +406,11 @@ namespace MultiPLAY
 							unsigned char *block = block_allocator.getArray();;
 							block[chunk.ssnd.blockSize] = 0;
 
-							for (int i=0; i<smp->num_samples; i++)
+							for (unsigned i=0; i<smp->num_samples; i++)
 							{
 								for (int j=0; j<common_chunk.numChannels; j++)
 								{
-									file->read((char *)block, chunk.ssnd.blockSize);
+									file->read((char *)block, unsigned(chunk.ssnd.blockSize));
 									smp->sample_data[j][i] = from_msb4(block + chunk.ssnd.offset);
 								}
 							}
@@ -434,11 +438,11 @@ namespace MultiPLAY
 							ArrayAllocator<unsigned char> block_allocator(chunk.ssnd.blockSize);
 							unsigned char *block = block_allocator.getArray();;
 
-							for (int i=0; i<smp->num_samples; i++)
+							for (unsigned i=0; i<smp->num_samples; i++)
 							{
 								for (int j=0; j<common_chunk.numChannels; j++)
 								{
-									file->read((char *)block, chunk.ssnd.blockSize);
+									file->read((char *)block, unsigned(chunk.ssnd.blockSize));
 									smp->sample_data[j][i] = from_msb4(block + chunk.ssnd.offset);
 								}
 							}
@@ -461,18 +465,18 @@ namespace MultiPLAY
 
 							if (chunk.ssnd.blockSize == 0)
 							{
-								chunk.ssnd.blockSize = (common_chunk.sampleSize + 7) / 8;
+								chunk.ssnd.blockSize = ((unsigned long)(common_chunk.sampleSize) + 7) / 8;
 								chunk.ssnd.offset = chunk.ssnd.blockSize - 4;
 							}
 
 							ArrayAllocator<unsigned char> block_allocator(chunk.ssnd.blockSize);
 							unsigned char *block = block_allocator.getArray();
 
-							for (int i=0; i<smp->num_samples; i++)
+							for (unsigned i=0; i<smp->num_samples; i++)
 							{
 								for (int j=0; j<common_chunk.numChannels; j++)
 								{
-									file->read((char *)block, chunk.ssnd.blockSize);
+									file->read((char *)block, streamsize(chunk.ssnd.blockSize));
 									smp->sample_data[j][i] = from_msb4(block + chunk.ssnd.offset);
 								}
 							}

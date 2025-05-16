@@ -17,11 +17,8 @@ namespace MultiPLAY
 
 	struct effect_info_type
 	{
-		struct // anonymous structs like this are not valid ISO C++, but both VC++ and g++ support them
-		{
-			unsigned int low_nybble  : 4;
-			unsigned int high_nybble : 4;
-		};
+		unsigned int low_nybble  : 4;
+		unsigned int high_nybble : 4;
 		unsigned char data;
 
 		effect_info_type();

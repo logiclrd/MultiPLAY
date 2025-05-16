@@ -141,13 +141,13 @@ namespace MultiPLAY
 		file->ignore(2);
 
 		file->read((char *)&lsb_bytes[0], 2);
-		short pattern_list_length = from_lsb2(lsb_bytes);
+		unsigned pattern_list_length = from_lsb2_u(lsb_bytes);
 
 		file->read((char *)&lsb_bytes[0], 2);
-		short num_samples = from_lsb2(lsb_bytes);
+		unsigned num_samples = from_lsb2_u(lsb_bytes);
 
 		file->read((char *)&lsb_bytes[0], 2);
-		short num_patterns = from_lsb2(lsb_bytes);
+		unsigned num_patterns = from_lsb2_u(lsb_bytes);
 
 		s3m_flags flags;
 		file->read((char *)&flags.flags, 1);
@@ -200,7 +200,7 @@ namespace MultiPLAY
 
 		ArrayAllocator<unsigned short> sample_parapointer_allocator(num_samples);
 		unsigned short *sample_parapointer = sample_parapointer_allocator.getArray();
-		for (int i=0; i<num_samples; i++)
+		for (unsigned i=0; i<num_samples; i++)
 		{
 			file->read((char *)&lsb_bytes[0], 2);
 			sample_parapointer[i] = from_lsb2_u(lsb_bytes);
@@ -208,7 +208,7 @@ namespace MultiPLAY
 
 		ArrayAllocator<unsigned short> pattern_parapointer_allocator(num_patterns);
 		unsigned short *pattern_parapointer = pattern_parapointer_allocator.getArray();
-		for (int i=0; i<num_patterns; i++)
+		for (unsigned i=0; i<num_patterns; i++)
 		{
 			file->read((char *)&lsb_bytes[0], 2);
 			pattern_parapointer[i] = from_lsb2_u(lsb_bytes);
@@ -218,15 +218,15 @@ namespace MultiPLAY
 	#pragma pack()
 
 		if (default_panning == char(0xFC))
-			for (int i=0; i<32; i++)
+			for (unsigned i=0; i<32; i++)
 				default_panning_value[i].value = file->get();
 		else
-			for (int i=0; i<32; i++)
+			for (unsigned i=0; i<32; i++)
 				default_panning_value[i].default_specified(false);
 
 		vector<sample *> samps;
 
-		for (int i=0; i<num_samples; i++)
+		for (unsigned i=0; i<num_samples; i++)
 		{
 			file->seekg(file_base_offset + sample_parapointer[i] * 16, ios::beg);
 
@@ -234,7 +234,7 @@ namespace MultiPLAY
 
 			if (type != 1)
 			{
-				samps.push_back(new sample_builtintype<char>(i, 1));
+				samps.push_back(new sample_builtintype<char>(int(i), 1));
 				continue;
 			}
 
@@ -245,7 +245,7 @@ namespace MultiPLAY
 			file->ignore(1);
 
 			file->read((char *)&lsb_bytes[0], 2);
-			int parapointer = from_lsb2_u(lsb_bytes);;
+			int parapointer = (int)from_lsb2_u(lsb_bytes);
 
 			unsigned long length, loop_begin, loop_end;
 
@@ -311,7 +311,7 @@ namespace MultiPLAY
 						}
 					}
 					else
-						file->read((char *)data, 2 * length);
+						file->read((char *)data, streamsize(2 * length));
 
 					unsigned char *uc_data = (unsigned char *)&data[0];
 					unsigned char *uc_data_right = NULL;
@@ -338,7 +338,7 @@ namespace MultiPLAY
 						for (unsigned int i=0; i<length; i++)
 							data_sgn[i] = (short)(int(data[i]) - 32768);
 
-					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(i, flags.stereo() ? 2 : 1);
+					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), flags.stereo() ? 2 : 1);
 
 					smp->name = sample_name;
 
@@ -372,7 +372,7 @@ namespace MultiPLAY
 						}
 					}
 					else
-						file->read((char *)data, 2 * length);
+						file->read((char *)data, streamsize(2 * length));
 
 					unsigned char *uc_data = (unsigned char *)&data[0];
 					unsigned char *uc_data_right = NULL;
@@ -386,7 +386,7 @@ namespace MultiPLAY
 							data_right[j] = from_lsb2(uc_data_right + 2*j);
 					}
 
-					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(i, flags.stereo() ? 2 : 1);
+					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), flags.stereo() ? 2 : 1);
 
 					smp->name = sample_name;
 
@@ -423,7 +423,7 @@ namespace MultiPLAY
 						}
 					}
 					else
-						file->read((char *)data, length);
+						file->read((char *)data, streamsize(length));
 
 					signed char *data_sgn = (signed char *)data;
 					signed char *data_right_sgn = (signed char *)data_right;
@@ -438,7 +438,7 @@ namespace MultiPLAY
 						for (unsigned int i=0; i<length; i++)
 							data_sgn[i] = (char)(int(data[i]) - 128);
 
-					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(i, flags.stereo() ? 2 : 1);
+					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), flags.stereo() ? 2 : 1);
 
 					smp->name = sample_name;
 
@@ -472,9 +472,9 @@ namespace MultiPLAY
 						}
 					}
 					else
-						file->read((char *)data, length);
+						file->read((char *)data, streamsize(length));
 
-					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(i, flags.stereo() ? 2 : 1);
+					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), flags.stereo() ? 2 : 1);
 
 					smp->name = sample_name;
 
@@ -497,7 +497,7 @@ namespace MultiPLAY
 
 		vector<pattern> pats;
 
-		for (int i=0; i<num_patterns; i++)
+		for (unsigned i=0; i<num_patterns; i++)
 		{
 			file->seekg(file_base_offset + pattern_parapointer[i] * 16, ios::beg);
 
@@ -506,7 +506,7 @@ namespace MultiPLAY
 
 			int bytes_left = pattern_data_length;
 
-			pattern new_pattern(i);
+			pattern new_pattern((int)i);
 
 			for (int row_number=0; row_number<64; row_number++)
 			{
@@ -519,7 +519,7 @@ namespace MultiPLAY
 					if (what == 0)
 						break;
 
-					int channel = (what & 31);
+					unsigned channel = (what & 31);
 
 					if (what & 32)
 					{
@@ -529,8 +529,8 @@ namespace MultiPLAY
 						rowdata[channel].snote = snote;
 						rowdata[channel].znote = znote_from_snote(snote);
 
-						int instrument = file->get();
-						if ((instrument > 0) && (instrument <= int(samps.size())))
+						unsigned instrument = unsigned(file->get());
+						if ((instrument > 0) && (instrument <= samps.size()))
 							rowdata[channel].instrument = samps[instrument - 1];
 						else
 							rowdata[channel].instrument = NULL;
@@ -568,7 +568,7 @@ namespace MultiPLAY
 		ret->patterns = pats;
 		ret->samples = samps;
 
-		for (int i=0; i<pattern_list_length; i++)
+		for (unsigned i=0; i<pattern_list_length; i++)
 		{
 			if (pattern_list_index[i] == 254) //  ++ (skip)
 				ret->pattern_list.push_back(&pattern::skip_marker);
@@ -581,7 +581,7 @@ namespace MultiPLAY
 		memset(ret->base_pan, 0, sizeof(ret->base_pan));
 
 		{
-			int i, j;
+			unsigned i, j;
 
 			for (i=0, j=0; i<32; i++)
 			{
@@ -594,7 +594,7 @@ namespace MultiPLAY
 					if (default_panning == char(0xFC))
 					{
 						if (default_panning_value[i].default_specified())
-							ret->base_pan[i] = default_panning_value[i].default_pan();
+							ret->base_pan[i] = (int)default_panning_value[i].default_pan();
 						else
 							ret->base_pan[i] = (i & 1) ? 0xC : 0x3;
 						ret->initial_panning[i].from_s3m_pan(ret->base_pan[i]);

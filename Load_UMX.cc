@@ -68,7 +68,7 @@ namespace MultiPLAY
 			if (package_version >= 64)
 			{
 				// this is nominally the string length, but the string is guaranteed to be 0-terminated anyway
-				buffer.reserve(read_compressed_unreal_integer(file));
+				buffer.reserve(unsigned(read_compressed_unreal_integer(file)));
 			}
 
 			while (true)
@@ -103,15 +103,15 @@ namespace MultiPLAY
 			if (file.gcount() != 36)
 				throw "Partial read";
 
-			int signature = *(int *)&header_bytes[0];
+			unsigned int signature = *(unsigned int *)&header_bytes[0];
 
-			if (signature != 0x9E2A83C1)
+			if (signature != 0x9E2A83C1u)
 				throw "Signature not present, are you sure this is a UMX file?";
 
 			int package_version = *(int *)&header_bytes[4];
 
-			int names_count = *(int *)&header_bytes[12];
-			int names_offset = *(int *)&header_bytes[16];
+			unsigned names_count = *(unsigned *)&header_bytes[12];
+			unsigned names_offset = *(unsigned *)&header_bytes[16];
 
 			std::vector<std::string> names;
 
@@ -119,7 +119,7 @@ namespace MultiPLAY
 
 			file.seekg(names_offset);
 
-			for (int i=0; i < names_count; i++)
+			for (unsigned i=0; i < names_count; i++)
 			{
 				names.push_back(read_name(file, package_version));
 
@@ -182,8 +182,10 @@ namespace MultiPLAY
 
 			for (int i=0; i < 27; i++)
 			{
-				bool nul = (signature[i] == 0);
-				bool printable = ((signature[i] >= 32) && (signature[i] <= 126)) || (signature[i] >= 128);
+				unsigned char ch = (unsigned char)signature[i];
+
+				bool nul = (ch == 0);
+				bool printable = ((ch >= 32) && (ch <= 126)) || (ch >= 128);
 
 				if (!nul && !printable)
 					return false;

@@ -1,7 +1,7 @@
 #ifndef PROFILE_H
 #define PROFILE_H
 
-#if WIN32
+#ifdef WIN32
 #include <windows.h>
 
 extern LARGE_INTEGER s_performanceCounterFrequency;
@@ -20,7 +20,7 @@ struct ProfileEntry
 	{
 		point = p;
 
-#if WIN32
+#ifdef WIN32
 		LARGE_INTEGER sample;
 
 		QueryPerformanceCounter(&sample);

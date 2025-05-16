@@ -16,7 +16,7 @@ namespace MultiPLAY
 		double sample_scale[MAX_CHANNELS];
 		int num_scales;
 
-		pan_value(int channels=1);
+		pan_value(int num_channels=1);
 		pan_value(double position);
 
 		static pan_value from_exponential(double position);
@@ -33,7 +33,7 @@ namespace MultiPLAY
 		}
 
 		template <class T>
-		inline void from_linear_pan(T pan_value, T lower_limit, T upper_limit)
+		inline void from_linear_pan(T linear_pan_value, T lower_limit, T upper_limit)
 		{
 			if (num_scales == 1)
 				sample_scale[0] = 1.0;
@@ -42,13 +42,13 @@ namespace MultiPLAY
 				double middle     = (upper_limit + lower_limit) / 2.0;
 				double half_range = (upper_limit - lower_limit) / 2.0;
 
-				if (pan_value > middle)
-					sample_scale[0] = exp((middle - pan_value) / half_range);
+				if (linear_pan_value > middle)
+					sample_scale[0] = exp((middle - linear_pan_value) / half_range);
 				else
 					sample_scale[0] = 1.0;
 
-				if (pan_value < middle)
-					sample_scale[1] = exp((pan_value - middle) / half_range);
+				if (linear_pan_value < middle)
+					sample_scale[1] = exp((linear_pan_value - middle) / half_range);
 				else
 					sample_scale[1] = 1.0;
 
@@ -88,63 +88,70 @@ namespace MultiPLAY
 			}
 		}
 
-		inline void from_s3m_pan(int pan_value)
-		{ // pan_value 0 == left, pan_value 15 == right
+		inline void from_s3m_pan(int s3m_pan_value)
+		{ // s3m_pan_value 0 == left, s3m_pan_value 15 == right
 			if (num_scales == 1)
 				sample_scale[0] = 1.0;
 			else
 			{
-				if (pan_value > 7)
-					sample_scale[0] = exp((8 - pan_value) / 8.0);
+				if (s3m_pan_value < 0)
+					s3m_pan_value = 0;
+				if (s3m_pan_value > 15)
+					s3m_pan_value = 15;
+
+				if (s3m_pan_value > 7)
+					sample_scale[0] = exp((8 - s3m_pan_value) / 8.0);
 				else
 					sample_scale[0] = 1.0;
-				if (pan_value < 8)
-					sample_scale[1] = exp((pan_value - 8) / 8.0);
+
+				if (s3m_pan_value < 8)
+					sample_scale[1] = exp((s3m_pan_value - 8) / 8.0);
 				else
 					sample_scale[1] = 1.0;
+					
 				for (int i=2; i<num_scales; i++)
 					sample_scale[i] = 0.0;
 			}
 		}
 
-		inline void from_amiga_pan(int pan_value)
+		inline void from_amiga_pan(int amiga_pan_value)
 		{
-			if (pan_value > 0x80)
+			if (amiga_pan_value > 0x80)
 			{
-				if (pan_value == 0xA4)
+				if (amiga_pan_value == 0xA4)
 					to_surround_sound();
 				else
 					cerr << "Amiga pan of value "
-						<< setfill('0') << setw(2) << hex << uppercase << pan_value << nouppercase << dec
+						<< setfill('0') << setw(2) << hex << uppercase << amiga_pan_value << nouppercase << dec
 						<< " is not defined" << endl;
 			}
 			else if (num_scales == 0)
 				sample_scale[1] = 1.0;
 			else
 			{
-				if (pan_value <= 0x40)
+				if (amiga_pan_value <= 0x40)
 				{
 					sample_scale[0] = 1.0;
-					sample_scale[1] = exp((pan_value - 64.0) / 64.0);
+					sample_scale[1] = exp((amiga_pan_value - 64.0) / 64.0);
 				}
-				else if (pan_value > 0x40)
+				else if (amiga_pan_value > 0x40)
 				{
-					sample_scale[0] = exp((64.0 - pan_value) / 64.0);
+					sample_scale[0] = exp((64.0 - amiga_pan_value) / 64.0);
 					sample_scale[1] = 1.0;
 				}
 			}
 		}
 
-		inline void from_mod_pan(int pan_value)
+		inline void from_mod_pan(int mod_pan_value)
 		{
-			if (pan_value < 0x80)
+			if (mod_pan_value < 0x80)
 			{
 				sample_scale[0] = 1.0;
-				sample_scale[1] = exp((pan_value - 127.5) / 127.5);
+				sample_scale[1] = exp((mod_pan_value - 127.5) / 127.5);
 			}
-			else if (pan_value > 0x7F)
+			else if (mod_pan_value > 0x7F)
 			{
-				sample_scale[0] = exp((127.5 - pan_value) / 127.5);
+				sample_scale[0] = exp((127.5 - mod_pan_value) / 127.5);
 				sample_scale[1] = 1.0;
 			}
 		}
@@ -196,14 +203,14 @@ namespace MultiPLAY
 		double sample[MAX_CHANNELS];
 		int num_samples, cur_sample;
 
-		inline one_sample(int channels = MAX_CHANNELS)
+		inline one_sample(int num_channels = MAX_CHANNELS)
 		{
-			if (channels > MAX_CHANNELS)
+			if (num_channels > MAX_CHANNELS)
 				throw "Too many channels in one_sample initialization";
 
-			num_samples = channels;
-			while (channels--)
-				sample[channels] = 0.0;
+			num_samples = num_channels;
+			while (num_channels--)
+				sample[num_channels] = 0.0;
 		}
 
 		inline double &next_sample()

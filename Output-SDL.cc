@@ -2,7 +2,7 @@
 
 #ifdef SDL
 
-#if WIN32
+#ifdef WIN32
 #include <SDL.h>
 #else
 #include <SDL2/SDL.h>
@@ -13,7 +13,7 @@ namespace MultiPLAY
 	namespace
 	{
 		SDL_AudioSpec sdl_audio_spec;
-		char *sdl_buffer;
+		unsigned char *sdl_buffer;
 		int sdl_buffer_size;
 		SDL_cond *sdl_buffer_available_event, *sdl_finished_event;
 		SDL_mutex *sdl_buffer_lock, *sdl_silly_lock;
@@ -115,7 +115,7 @@ namespace MultiPLAY
 			{
 				if (bytes_available < len)
 				{
-					memset(&stream[bytes_available], 0, len - bytes_available);
+					memset(&stream[bytes_available], 0, unsigned(len - bytes_available));
 					len = bytes_available;
 				}
 
@@ -126,11 +126,11 @@ namespace MultiPLAY
 					int remaining = sdl_buffer_size - sdl_play_cursor;
 					if (len > remaining)
 					{
-						memcpy(stream, &sdl_buffer[sdl_play_cursor], remaining);
-						memcpy(stream + remaining, &sdl_buffer[0], len - remaining);
+						memcpy(stream, &sdl_buffer[sdl_play_cursor], unsigned(remaining));
+						memcpy(stream + remaining, &sdl_buffer[0], unsigned(len - remaining));
 					}
 					else
-						memcpy(stream, &sdl_buffer[sdl_play_cursor], len);
+						memcpy(stream, &sdl_buffer[sdl_play_cursor], unsigned(len));
 
 					sdl_play_cursor = (sdl_play_cursor + len - 1) % sdl_buffer_size;
 					sdl_buffer_full = false;
@@ -183,8 +183,8 @@ namespace MultiPLAY
 						else
 						{
 							int first_half_bytes = 128 - sdl_mini_buffer_start;
-							memcpy(&sdl_buffer[sdl_write_cursor], &sdl_mini_buffer[sdl_mini_buffer_start], first_half_bytes);
-							memcpy(&sdl_buffer[sdl_write_cursor + first_half_bytes], &sdl_mini_buffer[0], 128 - first_half_bytes);
+							memcpy(&sdl_buffer[sdl_write_cursor], &sdl_mini_buffer[sdl_mini_buffer_start], unsigned(first_half_bytes));
+							memcpy(&sdl_buffer[sdl_write_cursor + first_half_bytes], &sdl_mini_buffer[0], unsigned(128 - first_half_bytes));
 						}
 					}
 					else
@@ -192,8 +192,8 @@ namespace MultiPLAY
 						if (sdl_mini_buffer_start == 0)
 						{
 							int first_half_bytes = sdl_buffer_size - sdl_write_cursor;
-							memcpy(&sdl_buffer[sdl_write_cursor], &sdl_mini_buffer[0], first_half_bytes);
-							memcpy(&sdl_buffer[0], &sdl_mini_buffer[first_half_bytes], 128 - first_half_bytes);
+							memcpy(&sdl_buffer[sdl_write_cursor], &sdl_mini_buffer[0], unsigned(first_half_bytes));
+							memcpy(&sdl_buffer[0], &sdl_mini_buffer[first_half_bytes], unsigned(128 - first_half_bytes));
 						}
 						else
 						{
@@ -202,16 +202,16 @@ namespace MultiPLAY
 
 							if (first_half_mini_bytes <= first_half_buf_bytes)
 							{
-								memcpy(&sdl_buffer[sdl_write_cursor], &sdl_mini_buffer[sdl_mini_buffer_start], first_half_mini_bytes);
+								memcpy(&sdl_buffer[sdl_write_cursor], &sdl_mini_buffer[sdl_mini_buffer_start], unsigned(first_half_mini_bytes));
 								if (first_half_mini_bytes != first_half_buf_bytes)
-									memcpy(&sdl_buffer[sdl_write_cursor + first_half_mini_bytes], &sdl_mini_buffer[0], first_half_buf_bytes - first_half_mini_bytes);
-								memcpy(&sdl_buffer[0], &sdl_mini_buffer[first_half_buf_bytes - first_half_mini_bytes], 128 - first_half_buf_bytes);
+									memcpy(&sdl_buffer[sdl_write_cursor + first_half_mini_bytes], &sdl_mini_buffer[0], unsigned(first_half_buf_bytes - first_half_mini_bytes));
+								memcpy(&sdl_buffer[0], &sdl_mini_buffer[first_half_buf_bytes - first_half_mini_bytes], unsigned(128 - first_half_buf_bytes));
 							}
 							else
 							{
-								memcpy(&sdl_buffer[sdl_write_cursor], &sdl_mini_buffer[sdl_mini_buffer_start], first_half_buf_bytes);
-								memcpy(&sdl_buffer[0], &sdl_mini_buffer[sdl_mini_buffer_start + first_half_buf_bytes], first_half_mini_bytes - first_half_buf_bytes);
-								memcpy(&sdl_buffer[first_half_mini_bytes - first_half_buf_bytes], &sdl_mini_buffer[0], 128 - first_half_mini_bytes);
+								memcpy(&sdl_buffer[sdl_write_cursor], &sdl_mini_buffer[sdl_mini_buffer_start], unsigned(first_half_buf_bytes));
+								memcpy(&sdl_buffer[0], &sdl_mini_buffer[sdl_mini_buffer_start + first_half_buf_bytes], unsigned(first_half_mini_bytes - first_half_buf_bytes));
+								memcpy(&sdl_buffer[first_half_mini_bytes - first_half_buf_bytes], &sdl_mini_buffer[0], unsigned(128 - first_half_mini_bytes));
 							}
 						}
 					}
@@ -272,7 +272,7 @@ namespace MultiPLAY
 		}
 
 		sdl_buffer_size = sdl_audio_spec.samples * channels * (bits / 8) * 2; // twice the length of the output buffer
-		sdl_buffer = new char[sdl_buffer_size];
+		sdl_buffer = new unsigned char[sdl_buffer_size];
 
 		sdl_buffer_available_event = ::SDL_CreateCond();
 		sdl_finished_event = ::SDL_CreateCond();

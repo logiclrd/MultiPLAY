@@ -33,7 +33,7 @@ namespace MultiPLAY
 		{
 			unsigned char pitch;
 			unsigned char instrument;
-			unsigned char effect;
+			char effect;
 			unsigned char effect_param;
 		};
 
@@ -75,14 +75,14 @@ namespace MultiPLAY
 		unsigned char lsb_bytes[4];
 		file->read((char *)&lsb_bytes[0], 2);
 
-		int num_tracks = from_lsb2_u(lsb_bytes);
+		unsigned num_tracks = from_lsb2_u(lsb_bytes);
 
 		unsigned char last_pattern, last_order;
 		file->read((char *)&last_pattern, 1);
 		file->read((char *)&last_order, 1);
 
 		file->read((char *)&lsb_bytes[0], 2);
-		int extra_comment_length = from_lsb2_u(lsb_bytes);
+		unsigned extra_comment_length = from_lsb2_u(lsb_bytes);
 
 		unsigned char num_samples;
 		file->read((char *)&num_samples, 1);
@@ -101,7 +101,7 @@ namespace MultiPLAY
 
 		vector<mtm_sample_description> sample_description(num_samples);
 
-		for (int i=0; i<num_samples; i++)
+		for (unsigned i=0; i<num_samples; i++)
 		{
 			char sample_name[23];
 			file->read(sample_name, 22);
@@ -146,7 +146,7 @@ namespace MultiPLAY
 		vector<vector<mtm_track_data> > tracks;
 		unsigned char track_data[192];
 
-		for (int i=0; i<num_tracks; i++)
+		for (unsigned i=0; i<num_tracks; i++)
 		{
 			vector<mtm_track_data> track;
 
@@ -178,10 +178,10 @@ namespace MultiPLAY
 			{
 				file->read((char *)&lsb_bytes[0], 2);
 
-				int track = from_lsb2_u(lsb_bytes);
+				unsigned track = from_lsb2_u(lsb_bytes);
 
-				if (track)
-					pattern.channel[j] = &tracks[track - 1];
+				if (track > 0)
+					pattern.channel[j] = &tracks[unsigned(track - 1)];
 				else
 					pattern.channel[j] = NULL;
 			}
@@ -193,17 +193,17 @@ namespace MultiPLAY
 
 		vector<sample *> samps;
 
-		for (int i=0; i<num_samples; i++)
+		for (unsigned i=0; i<num_samples; i++)
 		{
 			if (sample_description[i].byte_length == 0)
 			{
-				samps.push_back(new sample_builtintype<signed char>(i, 1));
+				samps.push_back(new sample_builtintype<signed char>(int(i), 1));
 				continue;
 			}
 
 			if (sample_description[i].sixteen_bit)
 			{
-				sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(i, 1);
+				sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), 1);
 
 				smp->name = sample_description[i].sample_name;
 
@@ -222,7 +222,7 @@ namespace MultiPLAY
 
 				file->read((char *)&data[0], smp->num_samples * 2);
 
-				for (int j=0; j < smp->num_samples; j++)
+				for (unsigned j=0; j < smp->num_samples; j++)
 				{
 					data_sgn[j] = from_lsb2_u(data + (j << 1));
 				}
@@ -243,7 +243,7 @@ namespace MultiPLAY
 			}
 			else
 			{
-				sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(i, 1);
+				sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), 1);
 
 				smp->num_samples = sample_description[i].byte_length;
 
@@ -259,7 +259,7 @@ namespace MultiPLAY
 
 				signed char *data_sgn = (signed char *)data;
 
-				for (int j=0; j<smp->num_samples; j++)
+				for (unsigned j=0; j<smp->num_samples; j++)
 					data_sgn[j] = (signed char)(int(data[j]) - 128); // unbias data
 
 				smp->sample_data[0] = data_sgn;
@@ -278,24 +278,24 @@ namespace MultiPLAY
 
 		bool channel_used[32] = { false }; // clear array
 
-		for (int i=0; i < last_pattern + 1; i++)
+		for (unsigned i=0; i <= last_pattern; i++)
 		{
-			pattern new_pattern(i);
+			pattern new_pattern((int)i);
 
 			vector<mtm_track_data> *track[32];
 
-			for (int j=0; j<32; j++)
+			for (unsigned j=0; j<32; j++)
 			{
 				track[j] = patterns[i].channel[j];
 				if (track[j])
 					channel_used[j] = true;
 			}
 	
-			for (int j=0; j<64; j++)
+			for (unsigned j=0; j<64; j++)
 			{
 				vector<row> rowdata(32);
 				
-				for (int k=0; k<32; k++)
+				for (unsigned k=0; k<32; k++)
 					if (track[k])
 					{
 						mtm_track_data &m = track[k][0][j];
@@ -326,7 +326,7 @@ namespace MultiPLAY
 		ret->tempo = 125;
 		ret->stereo = true;
 
-		for (int i=0; i<32; i++)
+		for (unsigned i=0; i<32; i++)
 		{
 			ret->channel_enabled[i] = channel_used[i];
 			ret->channel_map[i] = i;

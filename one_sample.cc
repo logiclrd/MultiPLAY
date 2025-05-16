@@ -3,12 +3,12 @@
 namespace MultiPLAY
 {
 	// struct pan_value
-	pan_value::pan_value(int channels/*=1*/)
+	pan_value::pan_value(int num_channels/*=1*/)
 	{
-		num_scales = channels;
-		for (int i=0; i<channels; i++)
+		num_scales = num_channels;
+		for (int i=0; i<num_channels; i++)
 			sample_scale[i] = 1.0;
-		for (int i=channels; i < MAX_CHANNELS; i++)
+		for (int i=num_channels; i < MAX_CHANNELS; i++)
 			sample_scale[i] = 0.0;
 	}
 

@@ -7,7 +7,7 @@
 
 namespace MultiPLAY
 {
-	template <int buffer_size>
+	template <long unsigned int buffer_size>
 	struct rotating_sample_buffer
 	{
 		int offset;
@@ -17,12 +17,12 @@ namespace MultiPLAY
 
 		void turn()
 		{
-			offset = (offset + 1) % buffer_size;
+			offset = (offset + 1) % int(buffer_size);
 		}
 
 		one_sample &operator[](int index)
 		{
-			index = (index + offset) % buffer_size;
+			index = (index + offset) % int(buffer_size);
 			return buffer[index];
 		}
 	};

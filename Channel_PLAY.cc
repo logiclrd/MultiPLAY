@@ -203,7 +203,7 @@ namespace MultiPLAY
 			if (isspace(ch))
 				continue;
 
-			int znote, rests, sample_number;
+			int znote, rests;
 			double duration_scale = 1.0;
 
 			switch (ch)
@@ -409,11 +409,12 @@ namespace MultiPLAY
 							break;
 						case '0': case '1': case '2': case '3': case '4':
 						case '5': case '6': case '7': case '8': case '9':
+						{
 							push_char(ch);
 
-							sample_number = expect_int();
+							unsigned sample_number = unsigned(expect_int());
 
-							if ((sample_number < 0) || (sample_number >= int(samples.size())))
+							if (sample_number >= samples.size())
 								cerr << "Warning: Sample number " << sample_number << " out of range" << endl;
 							else
 							{
@@ -422,7 +423,9 @@ namespace MultiPLAY
 									current_sample_context = NULL;
 								current_waveform = Waveform::Sample;
 							}
+							
 							break;
+						}
 						default:
 							cerr << "Warning: Syntax error in input: W" << char(toupper(ch)) << endl;
 					}

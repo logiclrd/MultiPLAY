@@ -1,6 +1,7 @@
 #ifndef MULTIPLAY_H
 #define MULTIPLAY_H
 
+#include <string>
 #include <vector>
 
 namespace MultiPLAY
@@ -9,19 +10,19 @@ namespace MultiPLAY
 	{
 		enum Type
 		{
-			Sine,     // ._.�'�'�._.�'�'�._.
+			Sine,     // ._.·'‾'·._.·'‾'·._.
 
-			Square,   // _|�|_|�|_|�|_|�|_|�
+			Square,   // _|‾|_|‾|_|‾|_|‾|_|‾
 
 			Sawtooth, // /|/|/|/|/|/|/|/|/|/
 			
-			RampDown, // \|\|\|\|\|\|\|\|\|\
+			RampDown, // |\|\|\|\|\|\|\|\|\|
 
 			Triangle, // /\/\/\/\/\/\/\/\/\/
 
 			Sample,
 
-			Random,   // crazy all over the place (changes at arbitrary intervals)
+			// Random,   // crazy all over the place (changes at arbitrary intervals)
 		};
 	}
 
@@ -35,11 +36,15 @@ namespace MultiPLAY
 
 	struct sample;
 	struct channel;
+	struct module_struct;
 
 	extern std::vector<sample *> samples;
 	extern std::vector<channel *> channels;
 	extern std::vector<channel *> ancillary_channels;
 
+	extern module_struct *load_module(const std::string &filename);
+
+	extern void show_usage(char *cmd_name);
 	extern void start_shutdown();
 
 	extern volatile bool shutdown_complete;

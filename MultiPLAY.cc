@@ -1,14 +1,13 @@
-#include <functional>
-#include <algorithm>
-#include <iostream>
+//#include <algorithm>
+//#include <iostream>
 #include <cstring>
-#include <fstream>
-#include <iomanip>
-#include <sstream>
-#include <locale>
-#include <vector>
-#include <string>
-#include <map>
+//#include <fstream>
+//#include <iomanip>
+//#include <sstream>
+//#include <locale>
+//#include <vector>
+//#include <string>
+//#include <map>
 
 using namespace std;
 
@@ -86,18 +85,10 @@ namespace MultiPLAY
 	vector<sample *> samples;
 	vector<channel *> channels;
 	vector<channel *> ancillary_channels;
-
-	typedef vector<channel *>::iterator iter_t;
 }
 
 namespace MultiPLAY
 {
-	string &tolower(string &s)
-	{
-		transform(s.begin(), s.end(), s.begin(), std::function<int(int)>(::tolower));
-		return s;
-	}
-
 	module_struct *load_module(const string &filename)
 	{
 		ifstream input(filename.c_str(), ios::binary);
@@ -106,7 +97,7 @@ namespace MultiPLAY
 		size_t offset = filename.find_last_of('.');
 		string extension(filename.substr(offset + 1));
 
-		tolower(extension);
+		make_lowercase(extension);
 
 		try
 		{
@@ -141,7 +132,7 @@ namespace MultiPLAY
 		// Cap the pattern order, in case the loader hasn't already done it.
 		module->pattern_list.push_back(&pattern::end_marker);
 
-		if (module->auto_loop_target >= module->pattern_list.size())
+		if (module->auto_loop_target >= (int)module->pattern_list.size())
 			module->auto_loop_target = module->pattern_list.size() - 1;
 
 		return module;
@@ -190,65 +181,54 @@ namespace MultiPLAY
 				<< "The byte order setting applies only to integer output (8- and 16-bit samples)." << endl;
 	}
 
-	void expect_filenames(int &index, int count, char *argv[], vector<string> &collection)
+	namespace
 	{
-		while (argv[index])
+		void expect_filenames(int &index, int count, char *argv[], vector<string> &collection)
 		{
-			if (argv[index][0] == '-')
-				break;
-
-			if (argv[index][0] == '"')
+			while (argv[index])
 			{
-				stringstream filename;
+				if (argv[index][0] == '-')
+					break;
 
-				string arg(&argv[index][1]);
-
-				size_t offset = arg.find('"');
-
-				if (offset != string::npos)
-					filename << arg.substr(0, arg.size() - 1);
-				else
+				if (argv[index][0] == '"')
 				{
-					filename << arg;
+					stringstream filename;
 
-					while (true)
+					string arg(&argv[index][1]);
+
+					size_t offset = arg.find('"');
+
+					if (offset != string::npos)
+						filename << arg.substr(0, arg.size() - 1);
+					else
 					{
-						index++;
+						filename << arg;
 
-						filename << ' ';
-
-						arg = argv[index];
-
-						offset = arg.find('"');
-
-						if (offset == string::npos)
-							filename << arg;
-						else
+						while (true)
 						{
-							filename << arg.substr(0, offset);
-							break;
+							index++;
+
+							filename << ' ';
+
+							arg = argv[index];
+
+							offset = arg.find('"');
+
+							if (offset == string::npos)
+								filename << arg;
+							else
+							{
+								filename << arg.substr(0, offset);
+								break;
+							}
 						}
 					}
+					collection.push_back(filename.str());
 				}
-				collection.push_back(filename.str());
+				else
+					collection.push_back(string(argv[index++]));
 			}
-			else
-				collection.push_back(string(argv[index++]));
-		}
-		index--;
-	}
-
-	string trim(string in)
-	{
-		int start = in.find_first_not_of(" \t\n");
-
-		if (start == string::npos)
-			return "";
-		else
-		{
-			int end = in.find_last_not_of(" \t\n");
-
-			return in.substr(start, end - start + 1);
+			index--;
 		}
 	}
 }
@@ -266,9 +246,9 @@ int main(int argc, char *argv[])
 	direct_output::type direct_output_type = direct_output::none;
 	bool stereo_output = true;
 	bool looping = false;
-	int module_start_pattern;
+	unsigned int module_start_pattern;
 	vector<string> play_filenames, play_sample_filenames, module_filenames;
-	vector<int> module_start_patterns;
+	vector<unsigned int> module_start_patterns;
 	vector<bool> play_overlap_notes;
 	vector<module_struct *> modules;
 	bool lsb_output = false, msb_output = false;
@@ -330,7 +310,7 @@ int main(int argc, char *argv[])
 			if (i >= argc)
 				cerr << argv[0] << ": missing argument for parameter " << arg << endl;
 			else
-				module_start_pattern = atoi(argv[i]);
+				module_start_pattern = strtoul(argv[i], NULL, 10);
 		}
 		else if ((arg == "-module") || (arg == "-modules"))
 		{
@@ -446,7 +426,7 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		for (int i=0; i < int(module_filenames.size()); i++)
+		for (vector<string>::size_type i=0; i < module_filenames.size(); i++)
 		{
 			module_struct *module;
 
@@ -467,30 +447,30 @@ int main(int argc, char *argv[])
 				string header_line = string("\"") + module->name + "\" (" + module->filename + ")";
 
 				cout << header_line << endl;
-				for (int i=0, l=header_line.length(); i < l; i++)
+				for (string::size_type j=0, l=header_line.length(); j < l; j++)
 					cout.put('=');
 				cout << endl;
 
-				int last_specified_sample_name = module->samples.size() - 1;
+				auto last_specified_sample_name_index = module->samples.size() - 1;
 
-				while ((last_specified_sample_name >= 0)
-						&& (trim(module->samples[last_specified_sample_name]->name) == ""))
-					last_specified_sample_name--;
+				while ((last_specified_sample_name_index > 0)
+						&& (trim(module->samples[last_specified_sample_name_index]->name) == ""))
+					last_specified_sample_name_index--;
 
-				for (int i=0; i <= last_specified_sample_name; i++)
-					cout << module->samples[i]->name << endl;
+				for (vector<string>::size_type j=0; j <= last_specified_sample_name_index; j++)
+					cout << module->samples[j]->name << endl;
 
 				cout << endl;
 
-				for (int i=0; i<MAX_MODULE_CHANNELS; i++)
-					if (module->channel_enabled[i])
-						channels.push_back(new channel_MODULE(i, module, 64, looping));
+				for (size_t j=0; j<MAX_MODULE_CHANNELS; j++)
+					if (module->channel_enabled[j])
+						channels.push_back(new channel_MODULE(j, module, 64, looping));
 
 				modules.push_back(module);
 			}
 		}
 
-		for (int i=0; i < int(play_filenames.size()); i++)
+		for (vector<string>::size_type i=0; i < play_filenames.size(); i++)
 		{
 			ifstream *file = new ifstream(play_filenames[i].c_str(), ios::binary);
 			if (!file->is_open())
@@ -502,7 +482,7 @@ int main(int argc, char *argv[])
 				channels.push_back(new channel_PLAY(file, looping, play_overlap_notes[i]));
 		}
 
-		for (int i=0; i < int(play_sample_filenames.size()); i++)
+		for (vector<string>::size_type i=0; i < play_sample_filenames.size(); i++)
 		{
 			ifstream file(play_sample_filenames[i].c_str(), ios::binary);
 			if (!file.is_open())
@@ -525,6 +505,7 @@ int main(int argc, char *argv[])
 		}
 
 		if (ulaw || alaw)
+		{
 			if (direct_output_type == direct_output::none)
 			{
 				bits = 16;
@@ -533,6 +514,7 @@ int main(int argc, char *argv[])
 			}
 			else
 				cerr << argv[0] << ": " << (ulaw ? "u" : "A") << "-Law can't be used with direct output systems (they expect PCM)" << endl;
+		}
 
 		if ((bits > 16) && unsigned_samples)
 		{
@@ -589,15 +571,19 @@ int main(int argc, char *argv[])
 	#endif
 		}
 
-		for (int i=0; i < int(modules.size()); i++)
-			modules[i]->initialize();
+		for (auto i = modules.begin(), l = modules.end(); i != l; ++i)
+		{
+			auto module = *i;
+
+			module->initialize();
+		}
 
 		if (max_time >= 0.0)
 			max_ticks = long(max_time * ticks_per_second);
 
-		for (int i=0; i < int(modules.size()); i++)
+		for (auto i = modules.begin(), l = modules.end(); i != l; ++i)
 		{
-			module_struct *module = modules[i];
+			module_struct *module = *i;
 
 			cerr << "Rendering " << module->filename << ":" << endl
 				<< "  \"" << trim(module->name) << "\"" << endl
@@ -656,9 +642,7 @@ int main(int argc, char *argv[])
 			one_sample sample(output_channels);
 			int count = 0;
 
-			for (iter_t i = channels.begin(), l = channels.end();
-					i != l;
-					++i)
+			for (auto i = channels.begin(), l = channels.end(); i != l; ++i)
 			{
 				profile.push_back("process a channel");
 
@@ -669,20 +653,20 @@ int main(int argc, char *argv[])
 				count++;
 			}
 
-			for (int i = ancillary_channels.size() - 1; i >= 0; i--)
+			for (int i = ancillary_channels.size() - 1; i >= 0; --i)
 			{
 				profile.push_back("process an ancillary channel");
 
-				channel &chan = *ancillary_channels[i];
+				channel *chan = ancillary_channels[unsigned(i)];
 
-				if (chan.finished)
+				if (chan->finished)
 				{
-					delete &chan;
+					delete chan;
 					ancillary_channels.erase(ancillary_channels.begin() + i);
 					continue;
 				}
 
-				sample += chan.calculate_next_tick();
+				sample += chan->calculate_next_tick();
 				count++;
 			}
 
@@ -735,7 +719,7 @@ int main(int argc, char *argv[])
 								if (unsigned_samples)
 								{
 									unsigned char sample_uchar = (unsigned char)(int(sample_char) + 128); // bias sample
-									output.put(sample_uchar);
+									output.put(char(sample_uchar));
 								}
 								else
 									output.put(sample_char);
@@ -748,7 +732,7 @@ int main(int argc, char *argv[])
 
 								if (unsigned_samples)
 								{
-									unsigned short sample_ushort = short(int(sample_short) + 32768); // bias sample
+									unsigned short sample_ushort = (unsigned short)(int(sample_short) + 32768); // bias sample
 									if (msb_output)
 									{
 										output.put((sample_ushort >> 8) & 0xFF);
@@ -763,9 +747,9 @@ int main(int argc, char *argv[])
 										output.write((char *)&sample_ushort, 2);
 								}
 								else if (ulaw)
-									output.put(ulaw_encode_sample(sample_short));
+									output.put(char(ulaw_encode_sample(sample_short)));
 								else if (alaw)
-									output.put(alaw_encode_sample(sample_short));
+									output.put(char(alaw_encode_sample(sample_short)));
 								else
 								{
 									unsigned short *pu16 = (unsigned short *)&sample_short;
@@ -839,18 +823,18 @@ int main(int argc, char *argv[])
 						<< "] ";
 
 					// Position per the channel
-					for (int i=0; playback_position.FormatString[i] != '\0'; i++)
+					for (string::size_type i=0; playback_position.FormatString[i] != '\0'; i++)
 					{
 						if (playback_position.FormatString[i] != '{')
 							cerr << playback_position.FormatString[i];
 						else
 						{
-							int field_name_start = ++i;
+							auto field_name_start = ++i;
 
 							while (playback_position.FormatString[i] != '}')
 								i++;
 
-							int field_name_length = i - field_name_start;
+							auto field_name_length = i - field_name_start;
 
 							string field_name(&playback_position.FormatString[field_name_start], field_name_length);
 

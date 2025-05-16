@@ -12,7 +12,7 @@ namespace MultiPLAY
 	struct channel_MODULE : public channel
 	{
 		module_struct *module;
-		int channel_number, unmapped_channel_number;
+		unsigned int channel_number, unmapped_channel_number;
 		int pattern_jump_target, row_jump_target;
 		double original_intensity, previous_intensity, target_intensity;
 		double portamento_start, portamento_end, portamento_end_t;
@@ -41,7 +41,7 @@ namespace MultiPLAY
 		bool p_channel_volume_slide, p_tempo_slide, p_global_volume_slide, p_pattern_delay_by_frames;
 		int pattern_delay;
 		double base_note_frequency;
-		int set_offset_high;
+		unsigned int set_offset_high;
 
 		bool portamento_glissando;
 		Waveform::Type vibrato_waveform, tremolo_waveform, panbrello_waveform;
@@ -51,7 +51,7 @@ namespace MultiPLAY
 
 		effect_info_type last_param[256];
 
-		channel_MODULE(int channel_number, module_struct *module, int channel_volume, bool looping);
+		channel_MODULE(unsigned int channel_number, module_struct *module, int channel_volume, bool looping);
 		virtual ~channel_MODULE();
 
 		virtual void note_off(bool calc_fade_per_tick = true, bool all_notes_off = true);

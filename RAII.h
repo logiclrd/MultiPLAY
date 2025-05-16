@@ -9,7 +9,7 @@ namespace RAII
 		int &refs;
 		T *array;
 	public:
-		ArrayAllocator(int numEls)
+		ArrayAllocator(unsigned int numEls)
 			: refs(*new int(1)),
 				array(new T[numEls])
 		{

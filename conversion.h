@@ -1,6 +1,8 @@
 #ifndef CONVERSION_H
 #define CONVERSION_H
 
+#include <string>
+
 namespace MultiPLAY
 {
 	extern int from_lsb2(unsigned char in[2]);
@@ -11,6 +13,9 @@ namespace MultiPLAY
 	extern int from_msb2(unsigned char in[2]);
 	extern unsigned int from_msb2_u(unsigned char in[2]);
 	extern int from_msb4(unsigned char in[4]);
+
+	extern std::string &make_lowercase(std::string &s);
+	extern std::string trim(std::string in);
 }
 
 #endif // CONVERSION_H

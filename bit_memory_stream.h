@@ -1,14 +1,16 @@
 #ifndef __BIT_MEMORY_STREAM_H__
 #define __BIT_MEMORY_STREAM_H__
 
+#include <iostream>
+
 namespace MultiPLAY
 {
 	struct bit_memory_stream
 	{
 	#ifdef _HAS
-		typedef ios_base::seek_dir seek_dir;
+		typedef std::ios_base::seek_dir seek_dir;
 	#else
-		typedef ios_base::seekdir seek_dir;
+		typedef std::ios_base::seekdir seek_dir;
 	#endif
 
 		char *memory;

@@ -83,6 +83,9 @@ namespace MultiPLAY
 			{
 				switch (duplicate_note_check)
 				{
+					case DuplicateCheck::Off:
+						// Do nothing
+						break;
 					case DuplicateCheck::Note:
 						is_duplicate = (c.inote == new_inote);
 						break;
@@ -286,7 +289,7 @@ namespace MultiPLAY
 		}
 	}
 
-	/*virtual*/ bool sample_instrument::past_end(int sample, double offset, sample_context *c/* = NULL*/)
+	/*virtual*/ bool sample_instrument::past_end(unsigned int sample, double offset, sample_context *c/* = NULL*/)
 	{
 		if (c == NULL)
 			throw "need context for instrument";
@@ -299,7 +302,7 @@ namespace MultiPLAY
 			return true;
 	}
 
-	/*virtual*/ one_sample sample_instrument::get_sample(int sample, double offset, sample_context *c/* = NULL*/)
+	/*virtual*/ one_sample sample_instrument::get_sample(unsigned int sample, double offset, sample_context *c/* = NULL*/)
 	{
 		if (c == NULL)
 			throw "need context for instrument";

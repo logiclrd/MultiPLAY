@@ -85,8 +85,8 @@ namespace MultiPLAY
 			}
 		}
 
-		int idx = 1;
-		int l = node.size() - 1;
+		auto l = node.size() - 1;
+		auto idx = decltype(l)(1);
 
 		while (tick > node[idx].tick)
 		{

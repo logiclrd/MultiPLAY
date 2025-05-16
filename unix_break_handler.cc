@@ -9,10 +9,13 @@ using namespace std;
 
 namespace MultiPLAY
 {
-	void unix_break_handler(int signal)
+	namespace
 	{
-		cerr << "Caught Break...shutting down." << endl;
-		start_shutdown();
+		void unix_break_handler(int signal)
+		{
+			cerr << "Caught Break...shutting down." << endl;
+			start_shutdown();
+		}
 	}
 
 	void register_break_handler()

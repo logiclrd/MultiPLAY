@@ -1,5 +1,9 @@
 #include "pattern.h"
 
+#include <cstring>
+
+using namespace std;
+
 namespace MultiPLAY
 {
 	// struct row
@@ -27,12 +31,7 @@ namespace MultiPLAY
 
 	pattern &pattern::operator =(const pattern &other)
 	{
-		this->index = other.index;
-
-		(bool &)this->is_skip_marker = other.is_skip_marker;
-		(bool &)this->is_end_marker = other.is_end_marker;
-
-		this->row_list = other.row_list;
+		memcpy((void *)this, (const void *)&other, sizeof(*this));
 
 		return *this;
 	}

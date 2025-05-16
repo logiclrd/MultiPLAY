@@ -27,7 +27,7 @@ namespace MultiPLAY
 	{
 		std::string identity;
 
-		bool finished, looping;
+		bool finished;
 		double offset, delta_offset_per_tick;
 		double note_frequency;
 		long offset_major;
@@ -38,8 +38,9 @@ namespace MultiPLAY
 		Waveform::Type current_waveform;
 		sample *current_sample;
 		sample_context *current_sample_context;
-		pan_value panning;
 		one_sample return_sample;
+		pan_value panning;
+		bool looping;
 		long samples_this_note;
 		playback_envelope *volume_envelope, *panning_envelope, *pitch_envelope;
 

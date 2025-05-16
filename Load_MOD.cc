@@ -21,16 +21,16 @@ namespace MultiPLAY
 		struct mod_sample_description
 		{
 			char name[23];
-			int byte_length;
+			unsigned int byte_length;
 			char finetune;
 			unsigned char volume;
-			int repeat_start, repeat_length;
+			unsigned int repeat_start, repeat_length;
 		} sample_description[32];
 	}
 
 	extern module_struct *load_mod(ifstream *file, bool mud/* = false*/)
 	{
-		int file_base_offset = file->tellg();
+		unsigned file_base_offset = file->tellg();
 
 		char songname[21];
 		songname[20] = 0;
@@ -45,18 +45,18 @@ namespace MultiPLAY
 			sample_description[i].name[22] = 0;
 
 			file->read((char *)msb_chars, 2);
-			sample_description[i].byte_length = 2 * from_msb2(msb_chars);
+			sample_description[i].byte_length = 2 * from_msb2_u(msb_chars);
 			
 			sample_description[i].finetune = file->get();
 			sample_description[i].volume = file->get();
 
 			file->read((char *)msb_chars, 2);
-			sample_description[i].repeat_start = 2 * from_msb2(msb_chars);
+			sample_description[i].repeat_start = 2 * from_msb2_u(msb_chars);
 
 			file->read((char *)msb_chars, 2);
-			sample_description[i].repeat_length = 2 * from_msb2(msb_chars);
+			sample_description[i].repeat_length = 2 * from_msb2_u(msb_chars);
 		}
-		int num_samples = 31, num_channels;
+		unsigned int num_samples = 31, num_channels;
 
 	reinterpret:
 		int order_list_length = file->get();
@@ -67,8 +67,8 @@ namespace MultiPLAY
 		if (song_auto_loop_target < 0)
 			song_auto_loop_target += 256;
 
-		char order_table[128];
-		file->read(&order_table[0], 128);
+		unsigned char order_table[128];
+		file->read((char *)&order_table[0], 128);
 
 		char magic_str[4];
 		file->read(magic_str, 4);
@@ -77,9 +77,9 @@ namespace MultiPLAY
 		bool weird_channel_format = false;
 
 		if (isdigit(magic[0]) && (magic.substr(1, 3) == "CHN"))
-			num_channels = magic[0] - '0';
+			num_channels = unsigned(magic[0] - '0');
 		else if (isdigit(magic[0]) && isdigit(magic[1]) && (magic.substr(2, 2) == "CH"))
-			num_channels = 10 * (magic[0] - '0') + (magic[1] - '0');
+			num_channels = unsigned(10 * (magic[0] - '0') + (magic[1] - '0'));
 		else if ((magic == "M.K.") || (magic == "M!K!") || (magic == "FLT4"))
 			num_channels = 4;
 		else if ((magic == "OCTA") || (magic == "CD81"))
@@ -87,39 +87,40 @@ namespace MultiPLAY
 		else if (magic == "FLT8")
 			num_channels = 8, weird_channel_format = true;
 		else if ((magic.substr(0, 3) == "TDZ") && isdigit(magic[3]))
-			num_channels = magic[3] - '0';
+			num_channels = unsigned(magic[3] - '0');
 		else if (num_samples == 31)
 		{
 			num_samples = 15;
-			file->seekg(file_base_offset + 470);
+			file->seekg(int(file_base_offset + 470));
 			goto reinterpret;
 		}
 		else
 			throw "unable to deduce MOD file format";
 
-		int max_pattern_index = 0;
+		unsigned max_pattern_index = 0;
 		for (int i=0; i<order_list_length; i++)
 			if (order_table[i] > max_pattern_index)
 				max_pattern_index = order_table[i];
 
-		int file_length;
+		unsigned file_length;
+
 		{
 			int tmp = file->tellg();
 			file->seekg(0, ios::end);
-			file_length = int(file->tellg()) - file_base_offset;
+			file_length = unsigned(file->tellg()) - file_base_offset;
 			file->seekg(tmp, ios::beg);
 		}
 
-		int header_bytes = 154 + num_samples * 30;
-		int pattern_bytes = 256 * num_channels;
-		int sample_bytes = 0;
+		unsigned header_bytes = 154 + num_samples * 30;
+		unsigned pattern_bytes = 256 * num_channels;
+		unsigned sample_bytes = 0;
 
-		for (int i=0; i<num_samples; i++)
+		for (unsigned i=0; i<num_samples; i++)
 			sample_bytes += sample_description[i].byte_length;
 
-		int bytes_left_over = (file_length - (header_bytes + sample_bytes));
+		unsigned bytes_left_over = (file_length - (header_bytes + sample_bytes));
 
-		int num_patterns = bytes_left_over / pattern_bytes;
+		unsigned num_patterns = bytes_left_over / pattern_bytes;
 
 		if ((bytes_left_over % pattern_bytes) == 0)
 		{
@@ -171,24 +172,24 @@ namespace MultiPLAY
 
 		vector<sample *> samps;
 
-		for (int i=0; i<num_samples; i++) // pre-create samples
-			samps.push_back(new sample_builtintype<signed char>(i, 1));
+		for (unsigned i=0; i<num_samples; i++) // pre-create samples
+			samps.push_back(new sample_builtintype<signed char>(int(i), 1));
 
-		for (int i=0; i<num_patterns; i++)
+		for (unsigned i=0; i<num_patterns; i++)
 		{
 			file->read((char *)&pattern_data_buffer[0], pattern_bytes);
 
-			pattern new_pattern(i);
+			pattern new_pattern((int)i);
 
 			if (!weird_channel_format)
 			{
-				for (int i=0, o=0; i<64; i++)
+				for (int j=0, o=0; j<64; j++)
 				{
 					vector<row> rowdata(num_channels);
 
-					for (int j=0; j<num_channels; j++,o+=4)
+					for (unsigned k=0; k<num_channels; k++,o+=4)
 					{
-						row &r = rowdata[j];
+						row &r = rowdata[k];
 
 						int period = ((pattern_data_buffer[o] & 15) << 8)
 											| pattern_data_buffer[o + 1];
@@ -201,9 +202,11 @@ namespace MultiPLAY
 							r.znote = znote_from_snote(r.snote);
 						}
 
-						int instrument = (pattern_data_buffer[o + 2] >> 4)
-													| (pattern_data_buffer[o] & 0xF0);
-						if ((instrument > 0) && (instrument <= int(samps.size())))
+						unsigned instrument =
+							(pattern_data_buffer[o + 2] >> 4) |
+							(pattern_data_buffer[o] & 0xF0);
+
+						if ((instrument > 0) && (instrument <= samps.size()))
 							r.instrument = samps[instrument - 1];
 						else
 							r.instrument = NULL;
@@ -217,14 +220,14 @@ namespace MultiPLAY
 			}
 			else
 			{
-				for (int i=0, o=0; i<64; i++)
+				for (int j=0, o=0; j<64; j++)
 				{
 					vector<row> rowdata(num_channels);
 
-					for (int j=0; j<4; j++,o+=4)
+					for (unsigned k=0; k<4; k++,o+=4)
 					{
 						{
-							row &r = rowdata[j];
+							row &r = rowdata[k];
 
 							int period = ((pattern_data_buffer[o] & 15) << 8)
 												| pattern_data_buffer[o + 1];
@@ -237,9 +240,11 @@ namespace MultiPLAY
 								r.znote = znote_from_snote(r.snote);
 							}
 
-							int instrument = (pattern_data_buffer[o + 2] >> 4)
-														| (pattern_data_buffer[o] & 0xF0);
-							if ((instrument > 0) && (instrument <= int(samps.size())))
+							unsigned instrument =
+								(pattern_data_buffer[o + 2] >> 4) |
+								(pattern_data_buffer[o] & 0xF0);
+
+							if ((instrument > 0) && (instrument <= samps.size()))
 								r.instrument = samps[instrument - 1];
 							else
 								r.instrument = NULL;
@@ -250,7 +255,7 @@ namespace MultiPLAY
 						}
 						o += 1024;
 						{
-							row &r = rowdata[j + 4];
+							row &r = rowdata[k + 4];
 
 							int period = ((pattern_data_buffer[o] & 15) << 8)
 												| pattern_data_buffer[o + 1];
@@ -263,9 +268,11 @@ namespace MultiPLAY
 								r.znote = znote_from_snote(r.snote);
 							}
 
-							int instrument = (pattern_data_buffer[o + 2] >> 4)
-														| (pattern_data_buffer[o] & 0xF0);
-							if ((instrument > 0) && (instrument <= int(samps.size())))
+							unsigned instrument =
+								(pattern_data_buffer[o + 2] >> 4) |
+								(pattern_data_buffer[o] & 0xF0);
+
+							if ((instrument > 0) && (instrument <= samps.size()))
 								r.instrument = samps[instrument - 1];
 							else
 								r.instrument = NULL;
@@ -283,7 +290,7 @@ namespace MultiPLAY
 			pats.push_back(new_pattern);
 		}
 
-		for (int i=0; i<num_samples; i++)
+		for (unsigned i=0; i<num_samples; i++)
 		{
 			sample_builtintype<signed char> *smp = (sample_builtintype<signed char> *)samps[i];
 
@@ -314,7 +321,7 @@ namespace MultiPLAY
 
 		ret->stereo = true;
 
-		for (int i=0; i<32; i++)
+		for (unsigned i=0; i<32; i++)
 		{
 			ret->channel_enabled[i] = (i < num_channels);
 			ret->channel_map[i] = i;

@@ -57,8 +57,8 @@ namespace MultiPLAY
 		virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **context = NULL, double effect_tick_length = 0, bool top_level = true, int *znote = NULL);
 		virtual void kill_note(sample_context *c = NULL);
 		virtual void exit_sustain_loop(sample_context *c = NULL);
-		virtual bool past_end(int sample, double offset, sample_context *c = NULL);
-		virtual one_sample get_sample(int sample, double offset, sample_context *c = NULL);
+		virtual bool past_end(unsigned int sample, double offset, sample_context *c = NULL);
+		virtual one_sample get_sample(unsigned int sample, double offset, sample_context *c = NULL);
 	};
 }
 

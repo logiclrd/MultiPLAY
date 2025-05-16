@@ -238,6 +238,7 @@
     <ClCompile Include="DSP.cc" />
     <ClCompile Include="effect.cc" />
     <ClCompile Include="envelope.cc" />
+    <ClCompile Include="formatting.cc" />
     <ClCompile Include="Load_IT.cc" />
     <ClCompile Include="Load_MOD.cc" />
     <ClCompile Include="Load_MTM.cc" />
@@ -277,6 +278,7 @@
     <ClInclude Include="DSP.h" />
     <ClInclude Include="effect.h" />
     <ClInclude Include="envelope.h" />
+    <ClInclude Include="formatting.h" />
     <ClInclude Include="Load_IT.h" />
     <ClInclude Include="Load_MOD.h" />
     <ClInclude Include="Load_MTM.h" />

@@ -6,7 +6,9 @@
 using namespace std;
 
 #include "Channel_DYNAMIC.h"
+#include "Load_MOD.h"
 
+#include "formatting.h"
 #include "mod_finetune.h"
 
 namespace MultiPLAY
@@ -762,37 +764,10 @@ namespace MultiPLAY
 
 				cerr << setfill(' ') << setw(3) << module->current_pattern << ":"
 						 << setfill('0') << setw(req_digits(int(module->pattern_list[module->current_pattern]->row_list.size()))) << module->current_row << " | ";
-			}                                      // .- escaped for trigraph avoidance
-			cerr << string("C-C#D-D#E-F-F#G-G#A-A#B-?\?==^^--").substr((row.snote & 15) * 2, 2)
-					 << char((row.snote >= 0) ? (48 + (row.snote >> 4)) : '-') << " ";
-			if (row.instrument == NULL)
-				cerr << "-- ";
-			else
-				cerr << setfill('0') << setw(2) << row.instrument->index << " ";
-			if (row.volume >= 0)
-			{
-				if (row.volume > 64)
-					cerr << "vXX";
-				else
-					cerr << "v" << setfill('0') << setw(2) << row.volume;
-				if (row.secondary_effect.present)
-					cerr << "*";
-				else
-					cerr << " ";
 			}
-			else if (row.secondary_effect.present)
-			{
-				cerr << char(row.secondary_effect.command)
-					<< hex << uppercase << setfill('0') << setw(2) << int(row.secondary_effect.info.data) << nouppercase << dec
-					<< " ";
-			}
-			else
-				cerr << "--- ";
-			if (row.effect.present)
-				cerr << char(row.effect.command)
-					<< hex << uppercase << setfill('0') << setw(2) << int(row.effect.info.data) << nouppercase << dec;
-			else
-				cerr << "---";
+
+			format_pattern_note(cerr, row);
+
 			cerr << "    ";
 		}
 

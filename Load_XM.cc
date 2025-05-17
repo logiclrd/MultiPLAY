@@ -8,8 +8,8 @@ using namespace std;
 
 namespace MultiPLAY
 {
+	module_struct *load_xm(istream *file)
 	{
 		throw "Not implemented.";
-	module_struct *load_xm(istream *file)
 	}
 }

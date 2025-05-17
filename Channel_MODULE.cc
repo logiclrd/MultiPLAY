@@ -659,11 +659,22 @@ namespace MultiPLAY
 						switch (row_list[i].effect.info.high_nybble)
 						{
 							case S3MExtendedEffect::FinePatternDelay: // 0x6, pattern delay in ticks
-								pattern_delay_by_frames = true;
-								pattern_delay_frames = row_list[i].effect.info.low_nybble;
+								// If multiple columns do this, they stack.
+								if (!pattern_delay_by_frames)
+								{
+									pattern_delay_by_frames = true;
+									pattern_delay_frames = row_list[i].effect.info.low_nybble;
+								}
+								else
+									pattern_delay_by_frames += row_list[i].effect.info.low_nybble;
 								module->speed += pattern_delay_frames;
 								break;
 							case S3MExtendedEffect::PatternDelay: // 0xE, pattern delay in frames
+								// If multiple columns do this, only the first one in the row takes effect
+								if (pattern_delay == 0)
+									pattern_delay = row_list[i].effect.info.low_nybble;
+								break;
+
 							case S3MExtendedEffect::PatternLoop: // 0xB
 								if (row_list[i].effect.info.low_nybble == 0)
 								{
@@ -919,16 +930,305 @@ namespace MultiPLAY
 		unsigned int target_offset;
 		double portamento_target, before_finetune;
 
-		bool fine = false;
-
 		if (p_vibrato && row.effect.isnt(Effect::Vibrato))
 			delta_offset_per_tick = note_frequency / ticks_per_second;
 
-		if (row.effect.present)
+		if (row.effect.present || row.secondary_effect.present)
 		{
+			effect_info_type secondary_info = row.secondary_effect.info;
+
+			// Effects that can be doubled up.
+			if (row.effect.is(Effect::ChannelVolume) || row.secondary_effect.is(Effect::ChannelVolume))
+			{
+				// When volume is doubled, effect wins over secondary effect.
+				auto data = row.effect.is(Effect::ChannelVolume)
+					? row.effect.info.data
+					: row.secondary_effect.info.data;
+
+				if (data > 64)
+					channel_volume = 1.0;
+				else
+					channel_volume = data / 64.0;
+			}
+
+			bool primary_is_volume_slide = row.effect.is(Effect::VolumeSlide) || row.effect.is(Effect::VibratoAndVolumeSlide) || row.effect.is(Effect::TonePortamentoAndVolumeSlide);
+			bool secondary_is_volume_slide = row.secondary_effect.is(Effect::VolumeSlide) || row.secondary_effect.is(Effect::VibratoAndVolumeSlide) || row.secondary_effect.is(Effect::TonePortamentoAndVolumeSlide);
+
+			if (primary_is_volume_slide || secondary_is_volume_slide)
+			{
+				// When doubled, this effect compounds.
+				if (primary_is_volume_slide)
+				{
+					if (info.data == 0) // repeat
+						info = last_param[Effect::VolumeSlide];
+					else
+						last_param[Effect::VolumeSlide] = info;
+				}
+
+				int frame_delta = 0;
+
+				if (secondary_is_volume_slide)
+				{
+					// Secondary needs to be processed first to satisfy XM, as it is used for the XM volume column.
+					if (secondary_info.low_nybble == 0) // slide up
+						frame_delta += (module->speed - 1) * secondary_info.high_nybble;
+					else if (secondary_info.high_nybble == 0) // slide down
+						frame_delta -= (module->speed - 1) * secondary_info.low_nybble;
+					else if (secondary_info.low_nybble == 0xF) // fine adjustment
+						volume = min(64, volume + int(secondary_info.high_nybble));
+					else if (secondary_info.high_nybble == 0xF) // fine adjustment
+						volume = max(0, volume - int(secondary_info.low_nybble));
+				}
+
+				if (primary_is_volume_slide)
+				{
+					if (info.low_nybble == 0) // slide up
+						frame_delta += (module->speed - 1) * info.high_nybble;
+					else if (info.high_nybble == 0) // slide down
+						frame_delta -= (module->speed - 1) * info.low_nybble;
+					else if (info.low_nybble == 0xF) // fine adjustment
+						volume = min(64, volume + int(info.high_nybble));
+					else if (info.high_nybble == 0xF) // fine adjustment
+						volume = max(0, volume - int(info.low_nybble));
+				}
+
+				if (frame_delta != 0)
+				{
+					if (target_volume < 0)
+						target_volume = 0;
+					if (target_volume > 64)
+						target_volume = 64;
+
+					if (target_volume != volume)
+					{
+						target_intensity = original_intensity * (target_volume / 64.0);
+						previous_intensity = intensity;
+						volume_slide = true;
+					}
+				}
+			}
+
+			bool primary_is_vibrato = row.effect.is(Effect::Vibrato) || row.effect.is(Effect::SetVibratoSpeed);
+			bool secondary_is_vibrato = row.secondary_effect.is(Effect::Vibrato) || row.secondary_effect.is(Effect::SetVibratoSpeed);
+
+			if (primary_is_vibrato || secondary_is_vibrato)
+			{
+				// When doubled, this effect compounds.
+				if (secondary_is_vibrato)
+				{
+					double new_vibrato_cycle_frequency = (module->speed * secondary_info.high_nybble) / 64.0;
+
+					if (p_vibrato && (new_vibrato_cycle_frequency != vibrato_cycle_frequency))
+						vibrato_cycle_offset *= (vibrato_cycle_frequency / new_vibrato_cycle_frequency);
+
+					vibrato_cycle_frequency = new_vibrato_cycle_frequency;
+				}
+
+				if (primary_is_vibrato)
+				{
+					double new_vibrato_cycle_frequency = (module->speed * info.high_nybble) / 64.0;
+
+					if (p_vibrato && (new_vibrato_cycle_frequency != vibrato_cycle_frequency))
+						vibrato_cycle_offset *= (vibrato_cycle_frequency / new_vibrato_cycle_frequency);
+
+					vibrato_cycle_frequency = new_vibrato_cycle_frequency;
+				}
+
+				bool restart_primary = primary_is_vibrato && row.effect.isnt(Effect::SetVibratoSpeed) && ((info.low_nybble != 0) && (info.high_nybble != 0));
+				bool restart_secondary = secondary_is_vibrato && row.secondary_effect.isnt(Effect::SetVibratoSpeed) && ((secondary_info.low_nybble != 0) && (secondary_info.high_nybble != 0));
+
+				auto depth_param = (primary_is_vibrato && (info.low_nybble != 0))
+					? info.low_nybble : (secondary_is_vibrato ? secondary_info.low_nybble : 0);
+
+				if (depth_param > 0)
+				{
+					if (it_linear_slides)
+						vibrato_depth = depth_param * (255.0 / 128.0) / -192.0;
+					else
+						vibrato_depth = depth_param * 4.0 * (255.0 / 128.0);
+
+					if (it_new_effects)
+						vibrato_depth *= 0.5;
+				}
+
+				if (!restart_primary && !restart_secondary)
+				{
+					if (!vibrato_retrig)
+						vibrato_cycle_offset += (1.0 - vibrato_start_t);
+				}
+				else
+				{
+					if (p_vibrato) // already vibratoing
+						vibrato_cycle_offset += (1.0 - vibrato_start_t);
+					else
+						vibrato_cycle_offset = 0.0;
+
+					if (it_new_effects)
+						vibrato_start_t = 0.0;
+					else
+						vibrato_start_t = 1.0 / module->speed;
+				}
+				vibrato = true;
+			}
+
+			if (row.effect.is(Effect::AmigaPanning) || row.secondary_effect.is(Effect::AmigaPanning)
+				|| row.effect.is(Effect::PanSlide) || row.secondary_effect.is(Effect::PanSlide))
+			{
+				// When doubled, the set goes to the primary, and slides compound.
+				if (module->stereo)
+				{
+					if (row.effect.is(Effect::AmigaPanning))
+					{
+						if (it_effects)
+							panning.from_mod_pan(info.data);
+						else
+							panning.from_amiga_pan(info.data);
+					}
+					else if (row.secondary_effect.is(Effect::AmigaPanning))
+					{
+						if (it_effects)
+							panning.from_mod_pan(secondary_info.data);
+						else
+							panning.from_amiga_pan(secondary_info.data);
+					}
+
+					if (info.data == 0) // repeat
+						info = last_param[Effect::PanSlide];
+					else
+						last_param[Effect::PanSlide] = info;
+
+					panning_slide_start = panning.to_linear_pan(-1.0, +1.0);
+
+					bool fine = false;
+
+					if (it_effects && ((info.high_nybble == 0xF) || (info.low_nybble == 0xF)))
+					{
+						if (info.low_nybble == 0xF) // fine pan left
+						{
+							panning.from_linear_pan(panning_slide_start - info.high_nybble / 32.0, -1.0, +1.0);
+							fine = true;
+						}
+						else if (info.high_nybble == 0xF) // fine pan right
+						{
+							panning.from_linear_pan(panning_slide_start + info.high_nybble / 32.0, -1.0, +1.0);
+							fine = true;
+						}
+					}
+					else
+					{
+						int delta = 0;
+
+						if (row.effect.is(Effect::PanSlide))
+						{
+							if (info.low_nybble != 0)
+								delta += info.low_nybble;
+							else
+								delta -= info.high_nybble;
+						}
+
+						if (row.secondary_effect.is(Effect::PanSlide))
+						{
+							if (secondary_info.low_nybble != 0)
+								delta += secondary_info.low_nybble;
+							else
+								delta -= secondary_info.high_nybble;
+						}
+
+						panning_slide_end = panning_slide_start + (module->speed - 1) * delta / 32.0;
+					}
+
+					if (!fine)
+					{
+						if (panning_slide_end != panning_slide_start)
+							panning_slide = true;
+					}
+				}
+			}
+
+			bool primary_is_tone_portamento = row.effect.is(Effect::TonePortamento) || row.effect.is(Effect::TonePortamentoAndVolumeSlide);
+			bool secondary_is_tone_portamento = row.secondary_effect.is(Effect::TonePortamento) || row.secondary_effect.is(Effect::TonePortamentoAndVolumeSlide);
+
+			if (primary_is_tone_portamento || secondary_is_tone_portamento)
+			{
+				portamento_speed = 0;
+
+				if (primary_is_tone_portamento)
+				{
+					if (info.data != 0)
+					{
+						portamento_speed += info.data * 4;
+						if (it_portamento_link)
+							last_param[Effect::PortamentoDown] = last_param[Effect::PortamentoUp] = info;
+						else
+							last_param[Effect::TonePortamento] = info;
+					}
+					else if (it_portamento_link)
+						portamento_speed += last_param[Effect::PortamentoDown].data * 4;
+					else
+						portamento_speed += last_param[Effect::TonePortamento].data * 4;
+				}
+
+				if (secondary_is_tone_portamento)
+					portamento_speed += secondary_info.data * 4;
+
+				if (row.snote >= 0)
+					portamento_target_znote = row.znote;
+
+				if (it_portamento_link && (row.instrument != NULL))
+				{
+					if (current_sample != row.instrument)
+					{
+						double ratio = row.instrument->samples_per_second / current_sample->samples_per_second;
+						note_frequency *= ratio;
+						delta_offset_per_tick /= ratio;
+						current_sample->kill_note(current_sample_context);
+					}
+
+					current_sample = row.instrument;
+					int ignored;
+					current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &ignored);
+				}
+
+				old_frequency = note_frequency;
+				old_delta_offset_per_tick = delta_offset_per_tick;
+				old_current_znote = current_znote;
+
+				recalc(portamento_target_znote, 1.0, false, false);
+
+				if (it_linear_slides)
+					portamento_target = lg(note_frequency);
+				else
+					portamento_target = 14317056.0 / note_frequency;
+
+				note_frequency = old_frequency;
+				delta_offset_per_tick = old_delta_offset_per_tick;
+				current_znote = old_current_znote;
+
+				if (it_linear_slides)
+				{
+					portamento_start = lg(note_frequency);
+					if (portamento_target > portamento_start)
+						portamento_end = portamento_start - portamento_speed * (module->speed - 1) / 768.0;
+					else
+						portamento_end = portamento_start + portamento_speed * (module->speed - 1) / 768.0;
+				}
+				else
+				{
+					portamento_start = 14317056.0 / note_frequency;
+					if (portamento_target > portamento_start)
+						portamento_end = portamento_start + portamento_speed * (module->speed - 1);
+					else
+						portamento_end = portamento_start - portamento_speed * (module->speed - 1);
+				}
+
+				portamento_end_t = (portamento_target - portamento_start) / (portamento_end - portamento_start);
+
+				portamento = true;
+			}
+
 			switch (row.effect.command)
 			{
-				case Effect::MODExtraEffects: // MOD extra effects
+				case Effect::MODExtraEffects: // 0xE
 					if (info.high_nybble == 0xF) // invert loop
 					{
 						// TODO
@@ -939,55 +1239,21 @@ namespace MultiPLAY
 				// Global effects, processed up-front; ignore when we get to them here during the per-channel processing.
 				case Effect::SetSpeed:          // 'A'
 				case Effect::OrderJump:         // 'B'
-				case Effect::PatternJump:       // 'C'
+				case Effect::PatternJump:       // 'C' -- jumps into next pattern, specified row
 				case Effect::Tempo:             // 'T'
 				case Effect::GlobalVolume:      // 'V'
 				case Effect::GlobalVolumeSlide: // 'W'
 					break;
 
-				case Effect::VolumeSlide: // 'D'
-				case_D:
-					if (info.data == 0) // repeat
-						info = last_param['D'];
-					else
-						last_param['D'] = info;
-
-					if (info.low_nybble == 0) // slide up
-						target_volume = volume + (module->speed - 1) * info.high_nybble;
-					else if (info.high_nybble == 0) // slide down
-						target_volume = volume - (module->speed - 1) * info.low_nybble;
-					else if (info.low_nybble == 0xF) // fine slide up
-					{
-						volume += int(info.high_nybble);
-						if (volume > 64)
-							volume = 64;
-						fine = true;
-					}
-					else if (info.high_nybble == 0xF) // fine slide down
-					{
-						volume -= int(info.low_nybble);
-						if (volume < 0)
-							volume = 0;
-						fine = true;
-					}
-
-					if (fine)
-						intensity = original_intensity * (volume / 64.0);
-					else
-					{
-						if (target_volume < 0)
-							target_volume = 0;
-						if (target_volume > 64)
-							target_volume = 64;
-
-						if (target_volume == volume)
-							break;
-
-						target_intensity = original_intensity * (target_volume / 64.0);
-						previous_intensity = intensity;
-						volume_slide = true;
-					}
+				// Effects that could be in secondary effect; processed up-front to handle the case where it's specified in both.
+				case Effect::VolumeSlide:    // 'D'
+				case Effect::TonePortamento: // 'G'
+				case Effect::Vibrato:        // 'H'
+				case Effect::ChannelVolume:  // 'M'
+				case Effect::PanSlide:       // 'P'
+				case Effect::AmigaPanning:   // 'X'
 					break;
+
 				case Effect::PortamentoDown: // 'E'
 					if (it_linear_slides)
 						portamento_start = lg(note_frequency);
@@ -995,9 +1261,9 @@ namespace MultiPLAY
 						portamento_start = 14317056.0 / note_frequency;
 
 					if (info.data == 0)
-						info = last_param['E'];
+						info = last_param[Effect::PortamentoDown];
 					else
-						last_param['E'] = last_param['F'] = info;
+						last_param[Effect::PortamentoDown] = last_param[Effect::PortamentoUp] = info;
 
 					if ((info.high_nybble == 0xF) || (info.high_nybble == 0xE))
 					{
@@ -1079,108 +1345,6 @@ namespace MultiPLAY
 						portamento = true;
 					}
 					break;
-				case Effect::TonePortamento: // 'G'
-					if (info.data != 0)
-					{
-						portamento_speed = info.data * 4;
-						if (it_portamento_link)
-							last_param['E'] = last_param['F'] = info;
-						else
-							last_param['G'] = info;
-					}
-					else if (it_portamento_link)
-						portamento_speed = last_param['E'].data * 4;
-					else
-						portamento_speed = last_param['G'].data * 4;
-
-					if (row.snote >= 0)
-						portamento_target_znote = row.znote;
-
-					if (it_portamento_link && (row.instrument != NULL))
-					{
-						if (current_sample != row.instrument)
-						{
-							double ratio = row.instrument->samples_per_second / current_sample->samples_per_second;
-							note_frequency *= ratio;
-							delta_offset_per_tick /= ratio;
-							current_sample->kill_note(current_sample_context);
-						}
-						current_sample = row.instrument;
-						int ignored;
-						current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &ignored);
-					}
-
-					old_frequency = note_frequency;
-					old_delta_offset_per_tick = delta_offset_per_tick;
-					old_current_znote = current_znote;
-
-					recalc(portamento_target_znote, 1.0, false, false);
-
-					if (it_linear_slides)
-						portamento_target = lg(note_frequency);
-					else
-						portamento_target = 14317056.0 / note_frequency;
-
-					note_frequency = old_frequency;
-					delta_offset_per_tick = old_delta_offset_per_tick;
-					current_znote = old_current_znote;
-
-					if (it_linear_slides)
-					{
-						portamento_start = lg(note_frequency);
-						if (portamento_target > portamento_start)
-							portamento_end = portamento_start - portamento_speed * (module->speed - 1) / 768.0;
-						else
-							portamento_end = portamento_start + portamento_speed * (module->speed - 1) / 768.0;
-					}
-					else
-					{
-						portamento_start = 14317056.0 / note_frequency;
-						if (portamento_target > portamento_start)
-							portamento_end = portamento_start + portamento_speed * (module->speed - 1);
-						else
-							portamento_end = portamento_start - portamento_speed * (module->speed - 1);
-					}
-
-					portamento_end_t = (portamento_target - portamento_start) / (portamento_end - portamento_start);
-
-					portamento = true;
-					break;
-				case Effect::Vibrato: // 'H'
-					if ((info.low_nybble == 0) || (info.high_nybble == 0))
-					{
-						if (!vibrato_retrig)
-							vibrato_cycle_offset += (1.0 - vibrato_start_t);
-					}
-					else
-					{
-						if (p_vibrato) // already vibratoing
-							vibrato_cycle_offset += (1.0 - vibrato_start_t);
-						else
-							vibrato_cycle_offset = 0.0;
-
-						if (it_linear_slides)
-							vibrato_depth = info.low_nybble * (255.0 / 128.0) / -192.0;
-						else
-							vibrato_depth = info.low_nybble * 4.0 * (255.0 / 128.0);
-
-						if (it_new_effects)
-							vibrato_depth *= 0.5;
-
-						double new_vibrato_cycle_frequency = (module->speed * info.high_nybble) / 64.0;
-
-						if (p_vibrato && (new_vibrato_cycle_frequency != vibrato_cycle_frequency))
-							vibrato_cycle_offset *= (vibrato_cycle_frequency / new_vibrato_cycle_frequency);
-
-						vibrato_cycle_frequency = new_vibrato_cycle_frequency;
-
-						if (it_new_effects)
-							vibrato_start_t = 0.0;
-						else
-							vibrato_start_t = 1.0 / module->speed;
-					}
-					vibrato = true;
-					break;
 				case Effect::Tremor: // 'I', high = ontime, low = offtime
 					if ((info.low_nybble == 0) || (info.high_nybble == 0)) // repeat
 						tremor_frame_offset += module->speed;
@@ -1245,8 +1409,7 @@ namespace MultiPLAY
 					if (!vibrato_retrig)
 						vibrato_cycle_offset += (1.0 - vibrato_start_t);
 					vibrato = true;
-
-					goto case_D;
+					break;
 				case Effect::TonePortamentoAndVolumeSlide: // 'L'
 					if (row.snote >= 0)
 						portamento_target_znote = row.znote;
@@ -1298,18 +1461,6 @@ namespace MultiPLAY
 
 					portamento = true;
 
-					goto case_D;
-				case Effect::ChannelVolume: // 'M'
-					if (it_effects)
-					{
-						if (info.data > 64)
-							channel_volume = 1.0;
-						else
-							channel_volume = info.data / 64.0;
-					}
-					else
-						cerr << "Ignoring pre-IT command: M"
-							<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
 					break;
 				case Effect::ChannelVolumeSlide: // channel volume slide
 					if (it_effects)
@@ -1320,6 +1471,8 @@ namespace MultiPLAY
 							last_param[Effect::ChannelVolumeSlide] = info;
 
 						channel_volume_slide_start = channel_volume;
+
+						bool fine = false;
 
 						if (info.low_nybble == 0) // slide up
 							channel_volume_slide_end = channel_volume_slide_start + (module->speed - 1) * info.high_nybble / 32.0;
@@ -1350,9 +1503,9 @@ namespace MultiPLAY
 					break;
 				case Effect::SampleOffset: // 'O'
 					if (info.data == 0)
-						info = last_param['O'];
+						info = last_param[Effect::SampleOffset];
 					else
-						last_param['O'] = info;
+						last_param[Effect::SampleOffset] = info;
 
 					target_offset = (info.data << 8) + set_offset_high;
 
@@ -1364,48 +1517,11 @@ namespace MultiPLAY
 
 					offset_major = target_offset;
 					break;
-				case Effect::PanSlide: // 'P'
-					if (it_effects)
-					{
-						if (info.data == 0) // repeat
-							info = last_param['P'];
-						else
-							last_param['P'] = info;
-
-						panning_slide_start = panning.to_linear_pan(-1.0, +1.0);
-
-						if (info.low_nybble == 0) // pan left
-							panning_slide_end = panning_slide_start - (module->speed - 1) * info.high_nybble / 32.0;
-						else if (info.high_nybble == 0) // pan right
-							panning_slide_end = panning_slide_start + (module->speed - 1) * info.low_nybble / 32.0;
-						else if (info.low_nybble == 0xF) // fine pan left
-						{
-							panning.from_linear_pan(panning_slide_start - info.high_nybble / 32.0, -1.0, +1.0);
-							fine = true;
-						}
-						else if (info.high_nybble == 0xF) // fine pan right
-						{
-							panning.from_linear_pan(panning_slide_start + info.high_nybble / 32.0, -1.0, +1.0);
-							fine = true;
-						}
-
-						if (!fine)
-						{
-							if (panning_slide_end == panning_slide_start)
-								break;
-
-							panning_slide = true;
-						}
-					}
-					else
-						cerr << "Ignoring pre-IT command: " << row.effect.command
-							<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
-					break;
 				case Effect::Retrigger: // 'Q'
 					if (info.data == 0)
-						info = last_param['Q'];
+						info = last_param[Effect::Retrigger];
 					else
-						last_param['Q'] = info;
+						last_param[Effect::Retrigger] = info;
 
 					if (info.low_nybble != 0)
 					{
@@ -1664,9 +1780,6 @@ namespace MultiPLAY
 								}
 							}
 							break;
-						case S3MExtendedEffect::PatternDelay: // pattern delay
-							pattern_delay = info.low_nybble;
-							break;
 						default:
 							cerr << "Unimplemented S3M/IT command: " << row.effect.command
 								<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
@@ -1701,15 +1814,6 @@ namespace MultiPLAY
 						vibrato_cycle_frequency = new_vibrato_cycle_frequency;
 					}
 					vibrato = true;
-					break;
-				case Effect::AmigaPanning: // 'X'
-					if (module->stereo)
-					{
-						if (it_effects)
-							panning.from_mod_pan(info.data);
-						else
-							panning.from_amiga_pan(info.data);
-					}
 					break;
 				case Effect::Panbrello: // 'Y', high = speed, low - depth
 					if (it_effects)

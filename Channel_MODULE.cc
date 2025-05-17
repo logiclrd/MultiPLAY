@@ -928,7 +928,7 @@ namespace MultiPLAY
 		{
 			switch (row.effect.command)
 			{
-				case 0xE: // MOD extra effects
+				case Effect::MODExtraEffects: // MOD extra effects
 					if (info.high_nybble == 0xF) // invert loop
 					{
 						// TODO
@@ -937,15 +937,15 @@ namespace MultiPLAY
 					break;
 
 				// Global effects, processed up-front; ignore when we get to them here during the per-channel processing.
-				case 'A': // S3M set speed
-				case 'B': // S3M order jump
-				case 'C': // S3M pattern/row jump (jumps into next pattern, specified row
-				case 'T': // tempo
-				case 'V': // global volume
-				case 'W': // global volume slide
+				case Effect::SetSpeed:          // 'A'
+				case Effect::OrderJump:         // 'B'
+				case Effect::PatternJump:       // 'C'
+				case Effect::Tempo:             // 'T'
+				case Effect::GlobalVolume:      // 'V'
+				case Effect::GlobalVolumeSlide: // 'W'
 					break;
 
-				case 'D': // S3M volume slide
+				case Effect::VolumeSlide: // 'D'
 				case_D:
 					if (info.data == 0) // repeat
 						info = last_param['D'];
@@ -988,7 +988,7 @@ namespace MultiPLAY
 						volume_slide = true;
 					}
 					break;
-				case 'E': // S3M portamento down
+				case Effect::PortamentoDown: // 'E'
 					if (it_linear_slides)
 						portamento_start = lg(note_frequency);
 					else
@@ -1079,7 +1079,7 @@ namespace MultiPLAY
 						portamento = true;
 					}
 					break;
-				case 'G': // S3M tone portamento
+				case Effect::TonePortamento: // 'G'
 					if (info.data != 0)
 					{
 						portamento_speed = info.data * 4;
@@ -1146,7 +1146,7 @@ namespace MultiPLAY
 
 					portamento = true;
 					break;
-				case 'H': // S3M vibrato, high = speed, low = depth
+				case Effect::Vibrato: // 'H'
 					if ((info.low_nybble == 0) || (info.high_nybble == 0))
 					{
 						if (!vibrato_retrig)
@@ -1299,7 +1299,7 @@ namespace MultiPLAY
 					portamento = true;
 
 					goto case_D;
-				case 'M': // set channel volume
+				case Effect::ChannelVolume: // 'M'
 					if (it_effects)
 					{
 						if (info.data > 64)
@@ -1364,7 +1364,7 @@ namespace MultiPLAY
 
 					offset_major = target_offset;
 					break;
-				case 'P': // pan slide
+				case Effect::PanSlide: // 'P'
 					if (it_effects)
 					{
 						if (info.data == 0) // repeat
@@ -1473,7 +1473,6 @@ namespace MultiPLAY
 						// ignore song-wide commands
 						case S3MExtendedEffect::FinePatternDelay: // 0x6
 						case S3MExtendedEffect::PatternLoop:      // 0xB
-						case S3MExtendedEffect::PatternDelay:     // 0xE
 							break;
 						case S3MExtendedEffect::GlissandoControl: // 0x1
 							if (info.low_nybble == 0)
@@ -1665,7 +1664,7 @@ namespace MultiPLAY
 								}
 							}
 							break;
-						case 0xE: // pattern delay
+						case S3MExtendedEffect::PatternDelay: // pattern delay
 							pattern_delay = info.low_nybble;
 							break;
 						default:
@@ -1703,7 +1702,7 @@ namespace MultiPLAY
 					}
 					vibrato = true;
 					break;
-				case 'X': // amiga panning
+				case Effect::AmigaPanning: // 'X'
 					if (module->stereo)
 					{
 						if (it_effects)

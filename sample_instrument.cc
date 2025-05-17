@@ -61,7 +61,7 @@ namespace MultiPLAY
 	{
 		NewNoteAction::Type effective_nna = new_note_action;
 
-		if (r->effect.present && (r->effect.is('S', 7)))
+		if (r->effect.present && (r->effect.is(Effect::S3MExtendedEffect, 7)))
 		{
 			switch (r->effect.info.low_nybble)
 			{
@@ -179,7 +179,7 @@ namespace MultiPLAY
 			bool volume_envelope_override_on = false;
 			bool volume_envelope_override_off = false;
 
-			if (r->effect.is('S', 7))
+			if (r->effect.is(Effect::S3MExtendedEffect, 7))
 			{
 				volume_envelope_override_off = (r->effect.info.low_nybble == 7);
 				volume_envelope_override_on = (r->effect.info.low_nybble == 8);

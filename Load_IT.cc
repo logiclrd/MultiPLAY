@@ -902,54 +902,54 @@ namespace MultiPLAY
 						else if (c.volume_panning <= 74)
 						{
 							int param = c.volume_panning - 64;
-							r.secondary_effect = effect_struct(EffectType::IT, 'D', (unsigned char)((param << 4) | 0xF));
+							r.secondary_effect = effect_struct(EffectType::IT, Effect::VolumeSlide, (unsigned char)((param << 4) | 0xF));
 						}
 						else if (c.volume_panning <= 84)
 						{
 							int param = c.volume_panning - 74;
-							r.secondary_effect = effect_struct(EffectType::IT, 'D', (unsigned char)(param | 0xF0));
+							r.secondary_effect = effect_struct(EffectType::IT, Effect::VolumeSlide, (unsigned char)(param | 0xF0));
 						}
 						else if (c.volume_panning <= 94)
 						{
 							int param = c.volume_panning - 84;
-							r.secondary_effect = effect_struct(EffectType::IT, 'D', (unsigned char)(param << 4));
+							r.secondary_effect = effect_struct(EffectType::IT, Effect::VolumeSlide, (unsigned char)(param << 4));
 						}
 						else if (c.volume_panning <= 104)
 						{
 							int param = c.volume_panning - 94;
-							r.secondary_effect = effect_struct(EffectType::IT, 'D', (unsigned char)param);
+							r.secondary_effect = effect_struct(EffectType::IT, Effect::VolumeSlide, (unsigned char)param);
 						}
 						else if (c.volume_panning <= 114)
 						{
 							int param = c.volume_panning - 104;
-							r.secondary_effect = effect_struct(EffectType::IT, 'E', it_pattern_slide_table[param]);
+							r.secondary_effect = effect_struct(EffectType::IT, Effect::PortamentoDown, it_pattern_slide_table[param]);
 						}
 						else if (c.volume_panning <= 124)
 						{
 							int param = c.volume_panning - 114;
-							r.secondary_effect = effect_struct(EffectType::IT, 'F', it_pattern_slide_table[param]);
+							r.secondary_effect = effect_struct(EffectType::IT, Effect::PortamentoUp, it_pattern_slide_table[param]);
 						}
 						else if (c.volume_panning >= 128)
 						{
 							if (c.volume_panning <= 192)
 							{
 								int param = c.volume_panning - 128;
-								r.secondary_effect = effect_struct(EffectType::IT, 'X', (unsigned char)param);
+								r.secondary_effect = effect_struct(EffectType::IT, Effect::AmigaPanning, (unsigned char)param);
 							}
 							else if (c.volume_panning <= 202)
 							{
 								int param = c.volume_panning - 192;
-								r.secondary_effect = effect_struct(EffectType::IT, 'G', (unsigned char)param);
+								r.secondary_effect = effect_struct(EffectType::IT, Effect::TonePortamento, (unsigned char)param);
 							}
 							else if (c.volume_panning <= 212)
 							{
 								int param = c.volume_panning - 202;
-								r.secondary_effect = effect_struct(EffectType::IT, 'H', (unsigned char)param); // TODO
+								r.secondary_effect = effect_struct(EffectType::IT, Effect::Vibrato, (unsigned char)param); // TODO
 							}
 						}
 					}
 
-					r.effect = effect_struct(EffectType::IT, char(c.effect_command), (unsigned char)(c.effect_data));
+					r.effect = effect_struct(EffectType::IT, Effect::Type(c.effect_command), (unsigned char)(c.effect_data));
 
 					if (r.effect.present)
 						has_note_events[channel] = true;

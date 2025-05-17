@@ -211,9 +211,10 @@ namespace MultiPLAY
 						else
 							r.instrument = NULL;
 
-						r.effect.init(EffectType::MOD,
-													pattern_data_buffer[o + 2] & 0xF,
-													pattern_data_buffer[o + 3], &r);
+						r.effect.init(
+							(MODEffect::Type)(pattern_data_buffer[o + 2] & 0xF),
+							pattern_data_buffer[o + 3],
+							&r);
 					}
 					new_pattern.row_list.push_back(rowdata);
 				}
@@ -249,9 +250,10 @@ namespace MultiPLAY
 							else
 								r.instrument = NULL;
 
-							r.effect.init(EffectType::MOD,
-														pattern_data_buffer[o + 2] & 0xF,
-														pattern_data_buffer[o + 3], &r);
+							r.effect.init(
+								(MODEffect::Type)(pattern_data_buffer[o + 2] & 0xF),
+								pattern_data_buffer[o + 3],
+								&r);
 						}
 						o += 1024;
 						{
@@ -277,9 +279,10 @@ namespace MultiPLAY
 							else
 								r.instrument = NULL;
 
-							r.effect.init(EffectType::MOD,
-														pattern_data_buffer[o + 2] & 0xF,
-														pattern_data_buffer[o + 3], &r);
+							r.effect.init(
+								(MODEffect::Type)(pattern_data_buffer[o + 2] & 0xF),
+								pattern_data_buffer[o + 3],
+								&r);
 						}
 						o -= 1024;
 					}

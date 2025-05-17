@@ -635,15 +635,15 @@ namespace MultiPLAY
 
 				switch (row_list[i].effect.command)
 				{
-					case 'A': // speed
+					case Effect::SetSpeed: // 'A'
 						if (row_list[i].effect.info.data)
 							module->speed = row_list[i].effect.info.data;
 						recalc = true;
 						break;
-					case 'B': // order jump
+					case Effect::OrderJump: // 'B'
 						pattern_jump_target = row_list[i].effect.info.data;
 						break;
-					case 'C': // pattern/row jump
+					case Effect::PatternJump: // 'C'
 						pattern_jump_target = int(module->current_pattern + 1);
 						if (it_effects)
 							row_jump_target = row_list[i].effect.info;
@@ -655,15 +655,16 @@ namespace MultiPLAY
 							row_jump_target -= 64;
 						}
 						break;
-					case 'S': // extended commands
+					case Effect::S3MExtendedEffect: // 'S'
 						switch (row_list[i].effect.info.high_nybble)
 						{
-							case 0x6: // pattern delay in ticks
+							case S3MExtendedEffect::FinePatternDelay: // 0x6, pattern delay in ticks
 								pattern_delay_by_frames = true;
 								pattern_delay_frames = row_list[i].effect.info.low_nybble;
 								module->speed += pattern_delay_frames;
 								break;
-							case 0xB: // pattern loop
+							case S3MExtendedEffect::PatternDelay: // 0xE, pattern delay in frames
+							case S3MExtendedEffect::PatternLoop: // 0xB
 								if (row_list[i].effect.info.low_nybble == 0)
 								{
 									if (!just_looped)
@@ -689,7 +690,7 @@ namespace MultiPLAY
 								break;
 						}
 						break;
-					case 'T': // tempo
+					case Effect::Tempo: // 'T'
 						if ((row_list[i].effect.info.data < 0x20) && it_effects)
 						{
 							tempo_slide = true;
@@ -703,13 +704,13 @@ namespace MultiPLAY
 							module->tempo = row_list[i].effect.info;
 						recalc = true;
 						break;
-					case 'V': // global volume
+					case Effect::GlobalVolume: // 'V'
 						if (row_list[i].effect.info > 64)
 							global_volume = 1.0;
 						else
 							global_volume = row_list[i].effect.info / 64.0;
 						break;
-					case 'W': // slide global volume
+					case Effect::GlobalVolumeSlide: // 'W'
 						if (it_effects)
 						{
 							effect_info_type info = row_list[i].effect.info;
@@ -920,7 +921,7 @@ namespace MultiPLAY
 
 		bool fine = false;
 
-		if (p_vibrato && row.effect.isnt('H'))
+		if (p_vibrato && row.effect.isnt(Effect::Vibrato))
 			delta_offset_per_tick = note_frequency / ticks_per_second;
 
 		if (row.effect.present)
@@ -1033,16 +1034,16 @@ namespace MultiPLAY
 						portamento = true;
 					}
 					break;
-				case 'F': // S3M portamento up
+				case Effect::PortamentoUp: // 'F'
 					if (it_linear_slides)
 						portamento_start = lg(note_frequency);
 					else
 						portamento_start = 14317056.0 / note_frequency;
 
 					if (info.data == 0)
-						info = last_param['F'];
+						info = last_param[Effect::PortamentoUp];
 					else
-						last_param['E'] = last_param['F'] = info;
+						last_param[Effect::PortamentoDown] = last_param[Effect::PortamentoUp] = info;
 
 					if ((info.high_nybble == 0xF) || (info.high_nybble == 0xE))
 					{
@@ -1180,7 +1181,7 @@ namespace MultiPLAY
 					}
 					vibrato = true;
 					break;
-				case 'I': // tremor, high = ontime, low = offtime
+				case Effect::Tremor: // 'I', high = ontime, low = offtime
 					if ((info.low_nybble == 0) || (info.high_nybble == 0)) // repeat
 						tremor_frame_offset += module->speed;
 					else
@@ -1194,7 +1195,7 @@ namespace MultiPLAY
 					}
 					tremor = true;
 					break;
-				case 'J': // S3M arpeggio, high = first addition, low = second addition
+				case Effect::Arpeggio: // 'J', high = first addition, low = second addition
 					old_frequency = note_frequency;
 					old_delta_offset_per_tick = delta_offset_per_tick;
 					old_current_znote = current_znote;
@@ -1240,13 +1241,13 @@ namespace MultiPLAY
 
 					arpeggio = true;
 					break;
-				case 'K': // S3M H00 and Dxy
+				case Effect::VibratoAndVolumeSlide: // 'K'
 					if (!vibrato_retrig)
 						vibrato_cycle_offset += (1.0 - vibrato_start_t);
 					vibrato = true;
 
 					goto case_D;
-				case 'L': // S3M G00 and Dxy
+				case Effect::TonePortamentoAndVolumeSlide: // 'L'
 					if (row.snote >= 0)
 						portamento_target_znote = row.znote;
 					
@@ -1310,13 +1311,13 @@ namespace MultiPLAY
 						cerr << "Ignoring pre-IT command: M"
 							<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
 					break;
-				case 'N': // channel volume slide
+				case Effect::ChannelVolumeSlide: // channel volume slide
 					if (it_effects)
 					{
 						if (info.data == 0) // repeat
-							info = last_param['N'];
+							info = last_param[Effect::ChannelVolumeSlide];
 						else
-							last_param['N'] = info;
+							last_param[Effect::ChannelVolumeSlide] = info;
 
 						channel_volume_slide_start = channel_volume;
 
@@ -1347,7 +1348,7 @@ namespace MultiPLAY
 						cerr << "Ignoring pre-IT command: " << row.effect.command
 							<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
 					break;
-				case 'O': // sample offset
+				case Effect::SampleOffset: // 'O'
 					if (info.data == 0)
 						info = last_param['O'];
 					else
@@ -1400,7 +1401,7 @@ namespace MultiPLAY
 						cerr << "Ignoring pre-IT command: " << row.effect.command
 							<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
 					break;
-				case 'Q': // retrigger
+				case Effect::Retrigger: // 'Q'
 					if (info.data == 0)
 						info = last_param['Q'];
 					else
@@ -1434,7 +1435,7 @@ namespace MultiPLAY
 						retrigger = true;
 					}
 					break;
-				case 'R': // S3M tremolo
+				case Effect::Tremolo: // 'R'
 					if ((info.low_nybble == 0) || (info.high_nybble == 0)) // repeat
 					{
 						if (row.snote >= 0)
@@ -1466,13 +1467,15 @@ namespace MultiPLAY
 					}
 					tremolo = true;
 					break;
-				case 'S': // S3M extended commands
+				case Effect::S3MExtendedEffect: // 'S'
 					switch (info.high_nybble)
 					{
-						case 0x6: // pattern delay in frames    ignore song-wide commands
-						case 0xB: // pattern loop
+						// ignore song-wide commands
+						case S3MExtendedEffect::FinePatternDelay: // 0x6
+						case S3MExtendedEffect::PatternLoop:      // 0xB
+						case S3MExtendedEffect::PatternDelay:     // 0xE
 							break;
-						case 0x1: // set glissando
+						case S3MExtendedEffect::GlissandoControl: // 0x1
 							if (info.low_nybble == 0)
 								portamento_glissando = false;
 							else if (info.low_nybble == 1)
@@ -1481,7 +1484,7 @@ namespace MultiPLAY
 								cerr << "Invalid parameter value: S3M command S1"
 									<< hex << uppercase << info.low_nybble << nouppercase << dec << ")" << endl;
 							break;
-						case 0x2: // set MOD finetune
+						case S3MExtendedEffect::SetFineTune: // 0x2
 							if (current_sample == NULL)
 								cerr << "No instrument for set finetune effect" << endl;
 							else
@@ -1494,7 +1497,7 @@ namespace MultiPLAY
 								delta_offset_per_tick = note_frequency / ticks_per_second;
 							}
 							break;
-						case 0x3: // set vibrato waveform
+						case S3MExtendedEffect::SetVibratoWaveform: // 0x3
 							switch (info.low_nybble & 0x3)
 							{
 								case 0x0: vibrato_waveform = Waveform::Sine;     break;
@@ -1517,7 +1520,7 @@ namespace MultiPLAY
 								cerr << "Warning: bit 3 ignored in effect S3"
 									<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
 							break;
-						case 0x4: // set tremolo waveform
+						case S3MExtendedEffect::SetTremoloWaveform: // 0x4
 							switch (info.low_nybble & 0x3)
 							{
 								case 0x3:
@@ -1535,7 +1538,7 @@ namespace MultiPLAY
 								cerr << "Warning: bit 3 ignored in effect S4"
 									<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
 							break;
-						case 0x5: // set panbrello waveform
+						case S3MExtendedEffect::SetPanbrelloWaveform: // 0x5
 							if (it_effects)
 							{
 								switch (info.low_nybble & 0x3)
@@ -1559,7 +1562,7 @@ namespace MultiPLAY
 								cerr << "Ignoring pre-IT command: S5"
 									<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
 							break;
-						case 0x7: // past note cut/off/fade, temporary new note action
+						case S3MExtendedEffect::OverrideNewNoteAction: // 0x7, past note cut/off/fade, temporary new note action
 							if (it_effects)
 							{
 								switch (info.low_nybble)
@@ -1585,15 +1588,11 @@ namespace MultiPLAY
 										}
 										break;
 									case 1: // note off
-										for (auto i = my_ancillary_channels.begin(), l = my_ancillary_channels.end();
-												 i != l;
-												 ++i)
+										for (auto i = my_ancillary_channels.begin(), l = my_ancillary_channels.end(); i != l; ++i)
 											(*i)->note_off();
 										break;
 									case 2: // fade
-										for (auto i = my_ancillary_channels.begin(), l = my_ancillary_channels.end();
-												 i != l;
-												 ++i)
+										for (auto i = my_ancillary_channels.begin(), l = my_ancillary_channels.end(); i != l; ++i)
 										{
 											channel &t = **i;
 											t.fading = true;
@@ -1614,11 +1613,11 @@ namespace MultiPLAY
 								cerr << "Ignoring pre-IT command: S7"
 									<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
 							break;
-						case 0x8: // set pan position
+						case S3MExtendedEffect::RoughPanning: // 0x8
 							if (module->stereo)
 								panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + info.low_nybble - 8);
 							break;
-						case 0x9: // extended IT effects
+						case S3MExtendedEffect::ExtendedITEffect:
 							if (it_effects)
 							{
 								switch (info.low_nybble)
@@ -1635,7 +1634,7 @@ namespace MultiPLAY
 								cerr << "Ignoring pre-IT command: S7"
 									<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
 							break;
-						case 0xA: // old ST panning, IT set high offset
+						case S3MExtendedEffect::Panning:
 							if (it_effects)
 								set_offset_high = info.low_nybble << 16;
 							else
@@ -1647,11 +1646,11 @@ namespace MultiPLAY
 										panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + info.low_nybble);
 								}
 							break;
-						case 0xC: // note cut
+						case S3MExtendedEffect::NoteCut: // 0xC
 							note_cut = true;
 							note_cut_frames = info.low_nybble;
 							break;
-						case 0xD: // note delay
+						case S3MExtendedEffect::NoteDelay: // 0xD
 							if (info.low_nybble <= static_cast<unsigned int>(module->speed))
 							{
 								note_delay = true;
@@ -1674,7 +1673,7 @@ namespace MultiPLAY
 								<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
 					}
 					break;
-				case 'U': // fine vibrato
+				case Effect::FineVibrato: // 'U'
 					if ((info.low_nybble == 0) || (info.high_nybble == 0))
 					{
 						if (!vibrato_retrig)
@@ -1713,7 +1712,7 @@ namespace MultiPLAY
 							panning.from_amiga_pan(info.data);
 					}
 					break;
-				case 'Y': // panbrello, high = speed, low - depth
+				case Effect::Panbrello: // 'Y', high = speed, low - depth
 					if (it_effects)
 					{
 						if ((info.low_nybble == 0) || (info.high_nybble == 0))

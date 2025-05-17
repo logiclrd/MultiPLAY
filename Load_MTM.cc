@@ -33,7 +33,7 @@ namespace MultiPLAY
 		{
 			unsigned char pitch;
 			unsigned char instrument;
-			char effect;
+			MODEffect::Type effect;
 			unsigned char effect_param;
 		};
 
@@ -157,9 +157,10 @@ namespace MultiPLAY
 				mtm_track_data row;
 
 				row.pitch = track_data[o] >> 2;
-				row.instrument = ((track_data[o] & 0x3) << 4)
-											| (track_data[o+1] >> 4);
-				row.effect = track_data[o+1] & 0xF;
+				row.instrument =
+					((track_data[o] & 0x3) << 4) |
+					(track_data[o+1] >> 4);
+				row.effect = (MODEffect::Type)(track_data[o+1] & 0xF);
 				row.effect_param = track_data[o+2];
 
 				track.push_back(row);
@@ -309,7 +310,7 @@ namespace MultiPLAY
 						else
 							r.instrument = NULL;
 
-						r.effect.init(EffectType::MOD, m.effect, m.effect_param, &r);
+						r.effect.init(m.effect, m.effect_param, &r);
 					}
 
 				new_pattern.row_list.push_back(rowdata);

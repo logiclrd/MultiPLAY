@@ -1,6 +1,6 @@
 #include "Load_MTM.h"
 
-#include <fstream>
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -56,7 +56,7 @@ namespace MultiPLAY
 		}
 	}
 
-	module_struct *load_mtm(ifstream *file)
+	module_struct *load_mtm(istream *file)
 	{
 		char magic[4];
 		file->read(magic, 3);

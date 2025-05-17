@@ -7,7 +7,7 @@
 
 namespace MultiPLAY
 {
-	module_struct *load_it(std::ifstream *file, bool modplug_style = false);
+	module_struct *load_it(std::istream *file, bool modplug_style = false);
 }
 
 #endif // LOAD_IT_H

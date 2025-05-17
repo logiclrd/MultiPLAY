@@ -1,7 +1,7 @@
 #include "Load_IT.h"
 
+#include <iostream>
 #include <cstring>
-#include <fstream>
 
 using namespace std;
 
@@ -115,7 +115,7 @@ namespace MultiPLAY
 			bool sustain_loop() { return (0 != (value & 4)); }
 		};
 
-		void load_it_old_instrument(ifstream *file, it_instrument_description &desc, int i)
+		void load_it_old_instrument(istream *file, it_instrument_description &desc, int i)
 		{
 			char magic[4];
 
@@ -227,7 +227,7 @@ namespace MultiPLAY
 			desc.pitch_envelope.enabled = false;
 		}
 
-		void load_it_new_instrument_envelope(ifstream *file, it_envelope_description &desc, bool signed_magnitude)
+		void load_it_new_instrument_envelope(istream *file, it_envelope_description &desc, bool signed_magnitude)
 		{
 			it_envelope_flags flags;
 			flags.value = char(file->get());
@@ -282,7 +282,7 @@ namespace MultiPLAY
 			desc.envelope = nodes;
 		}
 
-		void load_it_new_instrument(ifstream *file, it_instrument_description &desc, int i)
+		void load_it_new_instrument(istream *file, it_instrument_description &desc, int i)
 		{
 			char magic[4];
 
@@ -415,7 +415,7 @@ namespace MultiPLAY
 		};
 
 		template <class T>
-		T *load_it_sample_compressed(ifstream *file, unsigned int sample_length, bool double_delta, bool signed_samples)
+		T *load_it_sample_compressed(istream *file, unsigned int sample_length, bool double_delta, bool signed_samples)
 		{
 			int bits_per_sample = sizeof(T) * 8;
 
@@ -560,7 +560,7 @@ namespace MultiPLAY
 		}
 
 		template <class T>
-		void load_it_sample_uncompressed(ifstream *file, unsigned int channels, unsigned int sample_length, it_sample_conversion_flags &conversion, T *data[])
+		void load_it_sample_uncompressed(istream *file, unsigned int channels, unsigned int sample_length, it_sample_conversion_flags &conversion, T *data[])
 		{
 			for (unsigned i=0; i<channels; i++)
 				data[i] = new T[sample_length];
@@ -602,7 +602,7 @@ namespace MultiPLAY
 				}
 		}
 
-		sample *load_it_sample(ifstream *file, unsigned int file_base_offset, int i, it_created_with_tracker &cwt)
+		sample *load_it_sample(istream *file, unsigned int file_base_offset, int i, it_created_with_tracker &cwt)
 		{
 			bool new_format = cwt.compatible_exceeds(2.15);
 
@@ -809,7 +809,7 @@ namespace MultiPLAY
 		const unsigned char it_pattern_slide_table[10]
 			= { 0, 1, 4, 8, 16, 32, 64, 96, 128, 255 };
 
-		void load_it_pattern(ifstream *file, pattern &p, vector<sample *> &samps, bool has_note_events[MAX_MODULE_CHANNELS])
+		void load_it_pattern(istream *file, pattern &p, vector<sample *> &samps, bool has_note_events[MAX_MODULE_CHANNELS])
 		{
 			unsigned char lsb_data[2];
 
@@ -1002,7 +1002,7 @@ namespace MultiPLAY
 		}
 	}
 
-	module_struct *load_it(ifstream *file, bool /*modplug_style = false*/)
+	module_struct *load_it(istream *file, bool /*modplug_style = false*/)
 	{
 		unsigned int file_base_offset = (unsigned int)file->tellg();
 

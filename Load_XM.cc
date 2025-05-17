@@ -1,6 +1,6 @@
 #include "Load_XM.h"
 
-#include <fstream>
+#include <iostream>
 
 using namespace std;
 
@@ -8,8 +8,8 @@ using namespace std;
 
 namespace MultiPLAY
 {
-	module_struct *load_xm(std::ifstream *file)
 	{
 		throw "Not implemented.";
+	module_struct *load_xm(istream *file)
 	}
 }

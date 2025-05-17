@@ -1,13 +1,13 @@
 #ifndef LOAD_MTM_H
 #define LOAD_MTM_H
 
-#include <fstream>
+#include <iostream>
 
 #include "module.h"
 
 namespace MultiPLAY
 {
-  extern module_struct *load_mtm(std::ifstream *file);
+  extern module_struct *load_mtm(std::istream *file);
 }
 
 #endif // LOAD_MTM_H

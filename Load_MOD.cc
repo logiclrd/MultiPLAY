@@ -1,6 +1,6 @@
 #include "Load_MOD.h"
 
-#include <fstream>
+#include <iostream>
 
 using namespace std;
 
@@ -28,7 +28,7 @@ namespace MultiPLAY
 		} sample_description[32];
 	}
 
-	extern module_struct *load_mod(ifstream *file, bool mud/* = false*/)
+	extern module_struct *load_mod(istream *file, bool mud/* = false*/)
 	{
 		unsigned file_base_offset = (unsigned)file->tellg();
 

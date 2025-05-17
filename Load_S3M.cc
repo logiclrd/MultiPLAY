@@ -1,7 +1,7 @@
 #include "Load_S3M.h"
 
+#include <iostream>
 #include <cstring>
-#include <fstream>
 
 using namespace std;
 
@@ -117,7 +117,7 @@ namespace MultiPLAY
 		};
 	}
 
-	module_struct *load_s3m(ifstream *file)
+	module_struct *load_s3m(istream *file)
 	{
 		int file_base_offset = (int)file->tellg();
 

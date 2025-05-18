@@ -54,6 +54,7 @@ namespace MultiPLAY
             || (fading && (fade_value <= 0.0))
             || (current_sample == NULL)
             || current_sample->past_end(offset_major, offset, current_sample_context);
+
     return ChannelPlaybackState::Ongoing;
   }
 

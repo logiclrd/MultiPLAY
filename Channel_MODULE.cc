@@ -17,8 +17,9 @@ using namespace std;
 namespace MultiPLAY
 {
 	// struct channel_MODULE
-	channel_MODULE::channel_MODULE(unsigned int channel_number, module_struct *module, int channel_volume, bool looping, bool enabled)
+	channel_MODULE::channel_MODULE(vector<channel_MODULE *> *channel_group, unsigned int channel_number, module_struct *module, int channel_volume, bool looping, bool enabled)
 		: channel(module->initial_panning[channel_number], looping, enabled),
+		  channel_group(channel_group),
 		  unmapped_channel_number(channel_number),
 		  channel_number(module->channel_map[channel_number]),
 		  module(module)
@@ -849,6 +850,8 @@ namespace MultiPLAY
 						ancillary->fading = true;
 						ancillary->fade_value = 1.0;
 
+						add_ancillary_channel(ancillary);
+
 						volume_envelope = NULL;
 						panning_envelope = NULL;
 						pitch_envelope = NULL;
@@ -879,6 +882,8 @@ namespace MultiPLAY
 								ancillary->pitch_envelope = pitch_envelope;
 								ancillary->fading = true;
 								ancillary->fade_value = 1.0;
+
+								add_ancillary_channel(ancillary);
 
 								volume_envelope = NULL;
 								panning_envelope = NULL;
@@ -927,6 +932,8 @@ namespace MultiPLAY
 					ancillary->pitch_envelope = pitch_envelope;
 					ancillary->fading = true;
 					ancillary->fade_value = 1.0;
+
+					add_ancillary_channel(ancillary);
 
 					volume_envelope = NULL;
 					panning_envelope = NULL;

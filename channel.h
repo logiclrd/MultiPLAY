@@ -63,6 +63,9 @@ namespace MultiPLAY
 
 		virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile) = 0;
 
+		void add_ancillary_channel(channel *channel);
+		void remove_ancillary_channel(channel *channel);
+
 		void note_cut();
 		virtual void note_off(bool calc_fade_per_tick = true, bool all_notes_off = true);
 		void base_note_off(bool calc_fade_per_tick = true, bool exit_sustain_loop = true, bool exit_envelope_loops = true);

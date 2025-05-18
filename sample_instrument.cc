@@ -150,7 +150,7 @@ namespace MultiPLAY
 			}
 
 			ancillary_channels.push_back(ancillary);
-			p->my_ancillary_channels.push_back(ancillary);
+			p->add_ancillary_channel(ancillary);
 		}
 	}
 

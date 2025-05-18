@@ -154,11 +154,11 @@ struct channel_NIHONGOBANGOO : channel
 
 		delta_offset_per_tick = ticks_per_second / current_sample->samples_per_second;
 		
-		ticks_left = current_sample->num_samples;
+		ticks_left = current_sample_context->num_samples;
 		dropoff_start = ticks_left;
 		cutoff_ticks = ticks_left;
 
-		return ChannelPlaybackState::Ongoig;
+		return ChannelPlaybackState::Ongoing;
 	}
 
 	bool try_data_directory(string directory)

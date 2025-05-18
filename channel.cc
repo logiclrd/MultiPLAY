@@ -98,6 +98,23 @@ namespace MultiPLAY
 		}
 	}
 
+	void channel::add_ancillary_channel(channel *ancillary_channel)
+	{
+		my_ancillary_channels.push_back(ancillary_channel);
+
+		ancillary_channel->ticks_per_fade_out_frame = this->ticks_per_fade_out_frame;
+	}
+
+	void channel::remove_ancillary_channel(channel *ancillary_channel)
+	{
+		for (auto iter = my_ancillary_channels.begin(), l = my_ancillary_channels.end(); iter != l; iter++)
+			if (*iter == ancillary_channel)
+			{
+				my_ancillary_channels.erase(iter);
+				break;
+			}
+	}
+
 	void channel::note_cut()
 	{
 		current_sample = NULL;

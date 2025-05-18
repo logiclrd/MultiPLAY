@@ -12,6 +12,9 @@ namespace MultiPLAY
 	struct channel_MODULE : public channel
 	{
 		module_struct *module;
+
+		vector<channel_MODULE *> *channel_group;
+
 		unsigned int channel_number, unmapped_channel_number;
 		int pattern_jump_target, row_jump_target;
 		double original_intensity, previous_intensity, target_intensity;
@@ -52,7 +55,7 @@ namespace MultiPLAY
 
 		effect_info_type last_param[256];
 
-		channel_MODULE(unsigned int channel_number, module_struct *module, int channel_volume, bool looping, bool enabled);
+		channel_MODULE(std::vector<channel_MODULE *> *channel_group, unsigned int channel_number, module_struct *module, int channel_volume, bool looping, bool enabled);
 		virtual ~channel_MODULE();
 
 		virtual void note_off(bool calc_fade_per_tick = true, bool exit_envelope_loops = true);

@@ -494,8 +494,15 @@ int main(int argc, char *argv[])
 
 				cout << endl;
 
+				auto channel_group = new vector<channel_MODULE *>();
+
 				for (unsigned j=0; j<MAX_MODULE_CHANNELS; j++)
-					channels.push_back(new channel_MODULE(j, module, 64, looping, module->channel_enabled[j]));
+				{
+					auto channel = new channel_MODULE(channel_group, j, module, 64, looping, module->channel_enabled[j]);
+
+					channels.push_back(channel);
+					channel_group->push_back(channel);
+				}
 
 				modules.push_back(module);
 			}
@@ -692,6 +699,11 @@ int main(int argc, char *argv[])
 
 				if (chan->finished)
 				{
+					auto dynamic_chan = dynamic_cast<channel_DYNAMIC *>(chan);
+
+					if (dynamic_chan != NULL)
+						dynamic_chan->parent_channel.remove_ancillary_channel(chan);
+
 					delete chan;
 					ancillary_channels.erase(ancillary_channels.begin() + i);
 					continue;

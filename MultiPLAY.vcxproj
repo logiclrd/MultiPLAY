@@ -279,6 +279,7 @@
     <ClInclude Include="effect.h" />
     <ClInclude Include="envelope.h" />
     <ClInclude Include="formatting.h" />
+    <ClInclude Include="lint.h" />
     <ClInclude Include="Load_IT.h" />
     <ClInclude Include="Load_MOD.h" />
     <ClInclude Include="Load_MTM.h" />

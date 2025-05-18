@@ -161,6 +161,9 @@
     <ClInclude Include="formatting.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="lint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="math.h">
       <Filter>Header Files</Filter>
     </ClInclude>

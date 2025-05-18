@@ -58,6 +58,8 @@ namespace MultiPLAY
 		channel_MODULE(std::vector<channel_MODULE *> *channel_group, unsigned int channel_number, module_struct *module, int channel_volume, bool looping, bool enabled);
 		virtual ~channel_MODULE();
 
+		void ticks_per_frame_changed();
+
 		virtual void note_off(bool calc_fade_per_tick = true, bool exit_envelope_loops = true);
 		virtual void note_fade();
 		virtual void get_playback_position(PlaybackPosition &position);

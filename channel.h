@@ -48,6 +48,7 @@ namespace MultiPLAY
 		std::vector<channel *> my_ancillary_channels;
 
 		bool fading, have_fade_per_tick, finish_with_fade;
+		int ticks_per_fade_out_frame;
 		double fade_per_tick, fade_value;
 
 		int tempo;

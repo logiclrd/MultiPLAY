@@ -468,6 +468,8 @@ int main(int argc, char *argv[])
 
 			if (module)
 			{
+				module->initialize();
+
 				module->current_pattern = module_start_patterns[i];
 
 				if (module->current_pattern >= module->pattern_list.size())
@@ -607,13 +609,6 @@ int main(int argc, char *argv[])
 					return status;
 				break;
 	#endif
-		}
-
-		for (auto i = modules.begin(), l = modules.end(); i != l; ++i)
-		{
-			auto module = *i;
-
-			module->initialize();
 		}
 
 		if (max_time >= 0.0)

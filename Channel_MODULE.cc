@@ -30,6 +30,8 @@ namespace MultiPLAY
 
 		this->identity = ss.str();
 
+		ticks_per_fade_out_frame = module->ticks_per_frame;
+
 		panning.set_channels(output_channels);
 		offset = 0.0;
 		delta_offset_per_tick = 0.0;
@@ -77,6 +79,14 @@ namespace MultiPLAY
 
 	/*virtual*/ channel_MODULE::~channel_MODULE()
 	{
+	}
+
+	void channel_MODULE::ticks_per_frame_changed()
+	{
+		this->ticks_per_fade_out_frame = module->ticks_per_frame;
+
+		for (size_t i=0; i < my_ancillary_channels.size(); i++)
+			my_ancillary_channels[i]->ticks_per_fade_out_frame = module->ticks_per_frame;
 	}
 
 	/*virtual*/ void channel_MODULE::note_off(bool calc_fade_per_tick/* = true*/, bool exit_envelope_loops/* = true*/)
@@ -796,7 +806,12 @@ namespace MultiPLAY
 			}
 
 			if (recalc)
+			{
 				module->speed_change();
+
+				for (size_t i=0; i < channel_group->size(); i++)
+					channel_group->at(i)->ticks_per_frame_changed();
+			}
 		}
 
 		if (enabled)

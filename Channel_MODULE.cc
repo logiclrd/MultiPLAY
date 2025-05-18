@@ -99,6 +99,7 @@ namespace MultiPLAY
 		if (!fading)
 		{
 			fading = true;
+			fade_value = 1.0;
 
 			if (current_sample != NULL)
 				fade_per_tick = (current_sample->fade_out / 1024.0) / module->ticks_per_frame;

@@ -462,6 +462,7 @@ namespace MultiPLAY
 		pitch_envelope = NULL;
 		fading = false;
 		have_fade_per_tick = false;
+		fade_per_tick = 0;
 	}
 
 	channel::channel(pan_value &default_panning, bool looping, bool enabled)
@@ -493,6 +494,7 @@ namespace MultiPLAY
 		fading = false;
 		finish_with_fade = false;
 		have_fade_per_tick = false;
+		fade_per_tick = 0;
 	}
 
 	/*virtual*/ channel::~channel()

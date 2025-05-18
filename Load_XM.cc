@@ -53,13 +53,20 @@ namespace MultiPLAY
 			short packed_data_length; // can't be trusted, if it's not zero then don't actually use the value, just decode until end is reached
 		};
 
+		#define XM_NOTE_CUT 97
+
 		int snote_from_xnote(int xm_note)
 		{
-			// xm_note: 1 == C-1, 13 == C-2, 25 == C-3, 37 == C-4
-			// znote: 39 == middle C
-			int znote = xm_note - 10;
+			if (xm_note == XM_NOTE_CUT)
+				return SNOTE_NOTE_CUT;
+			else
+			{
+				// xm_note: 1 == C-1, 13 == C-2, 25 == C-3, 37 == C-4
+				// znote: 39 == middle C
+				int znote = xm_note - 10;
 
-			return snote_from_znote(znote);
+				return snote_from_znote(znote);
+			}
 		}
 
 		namespace XMNoteCommand
@@ -812,8 +819,14 @@ namespace MultiPLAY
 					unsigned loop_begin = xm_sample_header.sample_loop_start;
 					unsigned loop_end = loop_begin + xm_sample_header.sample_loop_length;
 
+					if ((xm_sample_header.flags & XMSampleFlags::SampleSizeMask) == XMSampleFlags::SampleSize16bit)
+					{
+						loop_begin >>= 1;
+						loop_end >>= 1;
+					}
+
 					if ((xm_sample_header.flags & XMSampleFlags::LoopMask) == XMSampleFlags::NoLooping)
-						loop_end = 0xFFFFFFFF; // special value to mean 'no loop'
+						loop_end = LOOP_END_NO_LOOP;
 
 					switch (xm_sample_header.flags & XMSampleFlags::SampleSizeMask)
 					{
@@ -872,8 +885,8 @@ namespace MultiPLAY
 					{
 						sample->use_vibrato = true;
 
-						sample->vibrato_depth = xm_header.vibrato_depth;
-						sample->vibrato_cycle_frequency = xm_header.vibrato_rate;
+						sample->vibrato_depth = xm_header.vibrato_depth / 600.0;
+						sample->vibrato_cycle_frequency = xm_header.vibrato_rate * 95;
 						sample->vibrato_sweep_frames = xm_header.vibrato_sweep;
 					}
 
@@ -889,8 +902,9 @@ namespace MultiPLAY
 
 				instrument->use_vibrato = (xm_header.vibrato_depth > 0);
 
-				instrument->vibrato_depth = xm_header.vibrato_depth;
-				instrument->vibrato_cycle_frequency = xm_header.vibrato_rate;
+				// These coefficients arrived at experimentally. *hangs head in shame*
+				instrument->vibrato_depth = xm_header.vibrato_depth / 600.0;
+				instrument->vibrato_cycle_frequency = xm_header.vibrato_rate * 95;
 				instrument->vibrato_sweep_frames = xm_header.vibrato_sweep;
 
 				instrument->fade_out = xm_header.fade_out;
@@ -1238,7 +1252,7 @@ namespace MultiPLAY
 
 		void dump_sample(const xm_sample &sample)
 		{
-			#define WAVEFORM_COLS 150
+			#define WAVEFORM_COLS 140
 			#define WAVEFORM_ROWS 25
 
 			char picture[WAVEFORM_ROWS * WAVEFORM_COLS];
@@ -1277,7 +1291,7 @@ namespace MultiPLAY
 				int start_sample = x * samples_per_col;
 				int end_sample = start_sample + samples_per_col - 1;
 
-				unsigned short min_sample = 65535, max_sample = 0;
+				short min_sample = 32767, max_sample = -32768;
 
 				if (start_sample >= sample_count)
 					break;
@@ -1287,7 +1301,7 @@ namespace MultiPLAY
 
 				for (int i=start_sample; i <= end_sample; i++)
 				{
-					unsigned short sample_value;
+					short sample_value;
 
 					if (is_16bit)
 						sample_value = sample_data_16bit[i];
@@ -1319,6 +1333,11 @@ namespace MultiPLAY
 			double exponent = (6.0 * 12.0 * 16.0 * 4.0 - period) / (12.0 * 16.0 * 4.0);
 
 			double frequency = 8363 * exp2(exponent);
+
+			// We've now calculated the frequency of the floor of the note range: C-0. It seems to be
+			// conventional to use C-4, so we need to go up 4 octivates. That means doubling the
+			// frequency 4 times.
+			frequency *= 16;
 
 			cerr << "number of samples: " << sample_count << " / frequency: " << fixed << setprecision(1) << frequency << defaultfloat << " Hz" << endl;
 			cerr << endl;

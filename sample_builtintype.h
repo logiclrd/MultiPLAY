@@ -13,6 +13,8 @@ using namespace std;
 
 namespace MultiPLAY
 {
+	#define LOOP_END_NO_LOOP 0xFFFFFFFF
+
 	struct sample_builtintype_context : sample_context
 	{
 		int last_looped_sample;
@@ -49,8 +51,8 @@ namespace MultiPLAY
 			T **data = NULL, unsigned int num_samples = 0,
 			LoopStyle::Type loop_style = LoopStyle::Forward,
 			LoopStyle::Type sustain_loop_style = LoopStyle::Forward,
-			unsigned loop_begin = 0, unsigned loop_end = 0xFFFFFFFF,
-			unsigned susloop_begin = 0, unsigned susloop_end = 0xFFFFFFFF)
+			unsigned loop_begin = 0, unsigned loop_end = LOOP_END_NO_LOOP,
+			unsigned susloop_begin = 0, unsigned susloop_end = LOOP_END_NO_LOOP)
 			: sample(index)
 		{
 			switch (sizeof(T))
@@ -82,7 +84,7 @@ namespace MultiPLAY
 			this->loop_style = loop_style;
 			this->sustain_loop_style = sustain_loop_style;
 
-			use_sustain_loop = (susloop_end != 0xFFFFFFFF);
+			use_sustain_loop = (susloop_end != LOOP_END_NO_LOOP);
 		}
 
 		virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0, bool top_level = true, int *znote = NULL)
@@ -107,7 +109,7 @@ namespace MultiPLAY
 
 			context.last_looped_sample = 0;
 			context.sustain_loop_exit_difference = 0;
-			context.sustain_loop_exit_sample = 0x7FFFFFFF;
+			context.sustain_loop_exit_sample = LOOP_END_NO_LOOP;
 			context.samples_per_second = samples_per_second;
 			context.default_volume = default_volume;
 			context.num_samples = num_samples;
@@ -148,7 +150,7 @@ namespace MultiPLAY
 			if (c == NULL)
 				throw "need context for instrument";
 
-			if (loop_end != 0xFFFFFFFF)
+			if (loop_end != LOOP_END_NO_LOOP)
 				return false;
 
 			sample_builtintype_context &context = *(sample_builtintype_context *)c;
@@ -175,7 +177,7 @@ namespace MultiPLAY
 			sample_builtintype_context &context = *(sample_builtintype_context *)c;
 
 			if ((unsigned(sample) >= num_samples)
-			 && (loop_end == 0xFFFFFFFF)
+			 && (loop_end == LOOP_END_NO_LOOP)
 			 && (!use_sustain_loop))
 				return one_sample(output_channels);
 
@@ -259,7 +261,7 @@ namespace MultiPLAY
 				case SustainLoopState::Finished:
 					sample -= context.sustain_loop_exit_difference; // intentionally fall through
 				case SustainLoopState::Off:
-					if ((sample > loop_end) && (loop_end != 0xFFFFFFFF))
+					if ((sample > loop_end) && (loop_end != LOOP_END_NO_LOOP))
 					{
 						unsigned loop_length = loop_end - loop_begin + 1;
 						double overrun = (sample + offset) - loop_end;

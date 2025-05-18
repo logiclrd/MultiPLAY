@@ -699,9 +699,9 @@ namespace MultiPLAY
 			unsigned channels_from_file = flags.stereo() ? 2 : 1;
 
 			if (flags.looping() == false)
-				loop_end = 0xFFFFFFFF; // special value to mean 'no loop'
+				loop_end = LOOP_END_NO_LOOP;
 			if (flags.sustain_loop() == false)
-				susloop_end = 0xFFFFFFFF; // special value to mean 'no loop'
+				susloop_end = LOOP_END_NO_LOOP;
 
 			file->seekg(streamoff(file_base_offset + sample_pointer));
 

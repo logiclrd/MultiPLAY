@@ -92,17 +92,20 @@ namespace MultiPLAY
 		}
 	}
 
-	/*virtual*/ void channel::note_off(bool calc_fade_per_tick/* = true*/, bool all_notes_off/* = true*/)
+	/*virtual*/ void channel::note_off(bool calc_fade_per_tick/* = true*/, bool exit_envelope_loops/* = true*/)
 	{
-		base_note_off(calc_fade_per_tick, all_notes_off);
+		base_note_off(calc_fade_per_tick, true, exit_envelope_loops);
 	}
 
-	void channel::base_note_off(bool calc_fade_per_tick/* = true*/, bool all_notes_off/* = true*/)
+	void channel::base_note_off(bool calc_fade_per_tick/* = true*/, bool exit_sustain_loop/* = true*/, bool exit_envelope_loops/* = true*/)
 	{
-		if (current_sample != NULL)
-			current_sample->exit_sustain_loop(current_sample_context);
+		if (exit_sustain_loop)
+		{
+			if (current_sample != NULL)
+				current_sample->exit_sustain_loop(current_sample_context);
+		}
 
-		if (all_notes_off)
+		if (exit_envelope_loops)
 		{
 			if (volume_envelope != NULL)
 				volume_envelope->note_off(offset_major, offset);
@@ -131,6 +134,11 @@ namespace MultiPLAY
 
 			fade_per_tick = 1.0 / fade_ticks;
 		}
+	}
+
+	/*virtual*/ void channel::note_fade()
+	{
+		base_note_off(true, false, false);
 	}
 
 	bool channel::is_on_final_zero_volume_from_volume_envelope()
@@ -376,6 +384,7 @@ namespace MultiPLAY
 		identity = "UNINITIALIZED";
 
 		finished = false;
+		note_frequency = 1;
 		ticks_left = 0;
 		octave = 4;
 		tempo = 120;
@@ -402,6 +411,7 @@ namespace MultiPLAY
 		identity = "UNINITIALIZED";
 
 		finished = false;
+		note_frequency = 1;
 		ticks_left = 0;
 		octave = 4;
 		tempo = 120;

@@ -35,6 +35,14 @@ namespace MultiPLAY
 		};
 	}
 
+	#define SNOTE_NOTE_FADE -4
+	#define SNOTE_NOTE_OFF  -3
+	#define SNOTE_NOTE_CUT  -2
+	#define SNOTE_EMPTY     -1
+
+	#define INOTE_NOTE_OFF 255
+	#define INOTE_NOTE_CUT 254
+
 	extern int znote_from_snote(int snote);
 	extern int snote_from_znote(int znote);
 	extern int snote_from_period(int period);

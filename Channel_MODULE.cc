@@ -8,8 +8,9 @@ using namespace std;
 #include "Channel_DYNAMIC.h"
 #include "Load_MOD.h"
 
-#include "formatting.h"
 #include "mod_finetune.h"
+#include "formatting.h"
+#include "notes.h"
 
 namespace MultiPLAY
 {
@@ -36,6 +37,10 @@ namespace MultiPLAY
 		volume_slide = false;
 		portamento = false;
 		vibrato = false;
+		vibrato_depth = 0;
+		vibrato_cycle_frequency = 0;
+		vibrato_cycle_offset = 0;
+		vibrato_start_t = 0;
 		tremor = false;
 		arpeggio = false;
 		note_delay = false;
@@ -71,11 +76,20 @@ namespace MultiPLAY
 	{
 	}
 
-	/*virtual*/ void channel_MODULE::note_off(bool calc_fade_per_tick/* = true*/, bool all_notes_off/* = true*/)
+	/*virtual*/ void channel_MODULE::note_off(bool calc_fade_per_tick/* = true*/, bool exit_envelope_loops/* = true*/)
 	{
-		this->channel::note_off(false, all_notes_off);
-		if (((fading && !have_fade_per_tick) || calc_fade_per_tick) && (current_sample != NULL))
-			fade_per_tick = (current_sample->fade_out / 1024.0) / module->ticks_per_frame;
+		this->channel::note_off(false, exit_envelope_loops);
+	}
+
+	/*virtual*/ void channel_MODULE::note_fade()
+	{
+		if (!fading)
+		{
+			fading = true;
+
+			if (current_sample != NULL)
+				fade_per_tick = (current_sample->fade_out / 1024.0) / module->ticks_per_frame;
+		}
 	}
 
 	/*virtual*/ void channel_MODULE::get_playback_position(PlaybackPosition &position)
@@ -241,6 +255,9 @@ namespace MultiPLAY
 						break;
 				}
 
+				if (value < 1)
+					value = 1;
+
 				double this_note_frequency;
 				
 				if (it_linear_slides)
@@ -338,9 +355,9 @@ namespace MultiPLAY
 					volume = delayed_note->volume;
 				}
 
-				if (delayed_note->snote != -1)
+				if (delayed_note->snote != SNOTE_EMPTY)
 				{
-					if (delayed_note->snote == -2)
+					if (delayed_note->snote == SNOTE_NOTE_CUT)
 					{
 						current_sample = NULL;
 
@@ -350,12 +367,10 @@ namespace MultiPLAY
 							current_sample_context = NULL;
 						}
 					}
-					else if (delayed_note->snote == -3)
-					{
-						profile.push_back("note_delay: call note_off");
+					else if (delayed_note->snote == SNOTE_NOTE_OFF)
 						note_off();
-						profile.push_back("note_delay: note_off returned");
-					}
+					else if (delayed_note->snote == SNOTE_NOTE_FADE)
+						note_fade();
 					else
 					{
 						if ((delayed_note->instrument != NULL) || module->it_module)
@@ -806,7 +821,7 @@ namespace MultiPLAY
 
 		if (row.snote != -1)
 		{
-			if (row.snote == -2)
+			if (row.snote == SNOTE_NOTE_CUT)
 			{
 				if (anticlick && current_sample)
 				{
@@ -835,8 +850,10 @@ namespace MultiPLAY
 					current_sample_context = NULL;
 				}
 			}
-			else if (row.snote == -3)
+			else if (row.snote == SNOTE_NOTE_OFF)
 				note_off();
+			else if (row.snote == SNOTE_NOTE_FADE)
+				note_fade();
 			else
 			{
 				if ((row.instrument != NULL) || module->it_module)
@@ -1028,26 +1045,51 @@ namespace MultiPLAY
 				// When doubled, this effect compounds.
 				if (secondary_is_vibrato)
 				{
-					double new_vibrato_cycle_frequency = (module->speed * secondary_info.high_nybble) / 64.0;
+					if (secondary_info.high_nybble != 0)
+					{
+						double new_vibrato_cycle_frequency = (module->speed * secondary_info.high_nybble) / 64.0;
 
-					if (p_vibrato && (new_vibrato_cycle_frequency != vibrato_cycle_frequency))
-						vibrato_cycle_offset *= (vibrato_cycle_frequency / new_vibrato_cycle_frequency);
+						if (p_vibrato && (new_vibrato_cycle_frequency != vibrato_cycle_frequency))
+							vibrato_cycle_offset *= (vibrato_cycle_frequency / new_vibrato_cycle_frequency);
 
-					vibrato_cycle_frequency = new_vibrato_cycle_frequency;
+						if (iscrazy(vibrato_cycle_offset))
+							raise(SIGTRAP);
+
+						vibrato_cycle_frequency = new_vibrato_cycle_frequency;
+
+						if (iscrazy(vibrato_cycle_frequency))
+							raise(SIGTRAP);
+					}
 				}
 
 				if (primary_is_vibrato)
 				{
-					auto parameter = primary_is_full_vibrato
-						? info.high_nybble
-						: (last_param[Effect::Vibrato] >> 4);
+					auto last = last_param[Effect::Vibrato];
+					auto next = last;
 
-					double new_vibrato_cycle_frequency = (module->speed * parameter) / 64.0;
+					if (info.high_nybble != 0)
+						next = (next & 0x0F) | (info.high_nybble << 4);
+					else
+						info.high_nybble = next >> 4;
 
-					if (p_vibrato && (new_vibrato_cycle_frequency != vibrato_cycle_frequency))
-						vibrato_cycle_offset *= (vibrato_cycle_frequency / new_vibrato_cycle_frequency);
+					if (info.low_nybble != 0)
+						next = (next & 0xF0) | info.low_nybble;
+					else
+						info.low_nybble = next & 0xF;
 
-					vibrato_cycle_frequency = new_vibrato_cycle_frequency;
+					last_param[Effect::Vibrato] = next;
+
+					int new_frequency_index = next >> 4;
+
+					if (new_frequency_index != 0)
+					{
+						double new_vibrato_cycle_frequency = (module->speed * new_frequency_index) / 64.0;
+
+						if (p_vibrato && (new_vibrato_cycle_frequency != vibrato_cycle_frequency))
+							vibrato_cycle_offset *= (vibrato_cycle_frequency / new_vibrato_cycle_frequency);
+
+						vibrato_cycle_frequency = new_vibrato_cycle_frequency;
+					}
 				}
 
 				bool restart_primary = primary_is_full_vibrato && ((info.low_nybble != 0) && (info.high_nybble != 0));

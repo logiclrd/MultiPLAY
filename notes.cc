@@ -41,12 +41,12 @@ namespace MultiPLAY
 			return (octave << 4) | note;
 		}
 
-		if (inote == 254)
-			return -2;
+		if (inote == INOTE_NOTE_CUT)
+			return SNOTE_NOTE_CUT;
 
-		if (inote == 255)
-			return -3;
+		if (inote == INOTE_NOTE_OFF)
+			return SNOTE_NOTE_OFF;
 
-		return -1; // oh well, just ignore it, I guess
+		return SNOTE_NOTE_FADE;
 	}
 }

@@ -55,7 +55,8 @@ namespace MultiPLAY
 		channel_MODULE(unsigned int channel_number, module_struct *module, int channel_volume, bool looping);
 		virtual ~channel_MODULE();
 
-		virtual void note_off(bool calc_fade_per_tick = true, bool all_notes_off = true);
+		virtual void note_off(bool calc_fade_per_tick = true, bool exit_envelope_loops = true);
+		virtual void note_fade();
 		virtual void get_playback_position(PlaybackPosition &position);
 		virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile);
 	};

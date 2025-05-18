@@ -87,6 +87,9 @@ namespace MultiPLAY
 		ifstream input(filename.c_str(), ios::binary);
 		module_struct *module;
 
+		if (!input.is_open())
+			throw "Failed to open file";
+
 		size_t offset = filename.find_last_of('.');
 		string extension(filename.substr(offset + 1));
 

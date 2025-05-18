@@ -101,6 +101,10 @@ namespace MultiPLAY
 				break;
 		}
 
+		// Hold end value
+		if (tick > node[idx].tick)
+			tick = node[idx].tick;
+
 		tick -= node[idx - 1].tick;
 
 		double t = tick / (node[idx].tick - node[idx - 1].tick);

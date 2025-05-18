@@ -38,7 +38,8 @@ namespace MultiPLAY
 
 		sample_context::copy_to(target);
 
-		target->cur_sample = this->cur_sample;;
+		target->cur_sample = this->cur_sample;
+		target->num_samples = this->num_samples;
 		if (this->cur_sample_context != NULL)
 			target->cur_sample_context = this->cur_sample_context->clone();
 		else
@@ -58,6 +59,8 @@ namespace MultiPLAY
 
 		memset(&note_sample[0], 0, sizeof(note_sample));
 		memset(&tone_offset[0], 0, sizeof(tone_offset));
+
+		num_samples = 0;
 	}
 
 	/*virtual*/ void sample_instrument::occlude_note(
@@ -179,6 +182,7 @@ namespace MultiPLAY
 			int inote = (r->snote >> 4) * 12 + (r->snote & 15);
 			c->inote = inote;
 			c->cur_sample = note_sample[inote];
+			c->num_samples = c->cur_sample->num_samples;
 			c->cur_sample_context = NULL;
 			c->effect_tick_length = effect_tick_length;
 			(*znote) += tone_offset[inote];

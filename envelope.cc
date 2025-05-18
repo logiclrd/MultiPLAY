@@ -138,14 +138,14 @@ namespace MultiPLAY
 	playback_envelope::playback_envelope(instrument_envelope &e, double ticks)
 		: wrap(NULL), env(e), sample_ticks_per_envelope_tick(ticks),
 			envelope_ticks_per_sample_tick(1.0 / ticks),
-			looping(e.looping)
+			looping(e.looping || e.sustain_loop)
 	{
 	}
 
 	playback_envelope::playback_envelope(playback_envelope *w, instrument_envelope &e, double ticks, bool scale_envelope)
 		: wrap(w), env(e), sample_ticks_per_envelope_tick(ticks),
 			envelope_ticks_per_sample_tick(1.0 / ticks), scale(scale_envelope),
-			looping(e.looping || w->looping)
+			looping(e.looping || e.sustain_loop || w->looping)
 	{
 	}
 

@@ -67,7 +67,7 @@ namespace MultiPLAY
 		if (calculate_length)
 		{
 			if (this_note_length_denominator == 0)
-				seconds = current_sample->num_samples / current_sample->samples_per_second;
+				seconds = current_sample_context->num_samples / current_sample_context->samples_per_second;
 
 			ticks_left = (int)(seconds * ticks_per_second * duration_scale);
 			if (play_full_sample)
@@ -151,8 +151,11 @@ namespace MultiPLAY
 
 		if ((volume_envelope == NULL) || volume_envelope->looping)
 		{
-			fading = true;
-			fade_value = 1.0;
+			if (!fading)
+			{
+				fading = true;
+				fade_value = 1.0;
+			}
 
 			if (fade_per_tick == 0)
 				have_fade_per_tick = false;
@@ -160,7 +163,12 @@ namespace MultiPLAY
 
 		if (calc_fade_per_tick)
 		{
-			double fade_duration = dropoff_proportion * ticks_left;
+			double fade_duration;
+
+			if ((current_sample != NULL) && (current_sample->fade_out > 0) && (ticks_per_fade_out_frame > 0))
+				fade_duration = current_sample->fade_out * ticks_per_fade_out_frame;
+			else
+				fade_duration = dropoff_proportion * ticks_left;
 
 			if (fade_duration < dropoff_min_length)
 				fade_duration = dropoff_min_length;
@@ -180,13 +188,18 @@ namespace MultiPLAY
 		base_note_off(true, false, false);
 	}
 
-	bool channel::is_on_final_zero_volume_from_volume_envelope()
+	bool channel::is_at_end_of_volume_envelope()
 	{
 		if (volume_envelope == NULL)
 			return false;
 
+		return volume_envelope->past_end(envelope_offset);
+	}
+
+	bool channel::is_on_final_zero_volume_from_volume_envelope()
+	{
 		return
-			volume_envelope->past_end(samples_this_note) &&
+			is_at_end_of_volume_envelope() &&
 			(volume_envelope->env.node.size() > 0) &&
 			(volume_envelope->env.node.back().value < 0.0000001);
 	}
@@ -310,8 +323,16 @@ namespace MultiPLAY
 
 					return_sample *= volume_envelope->get_value_at(envelope_offset);
 
-					if (is_on_final_zero_volume_from_volume_envelope())
-						note_cut();
+					if (!fading)
+					{
+						if (is_at_end_of_volume_envelope())
+						{
+							if (is_on_final_zero_volume_from_volume_envelope())
+								note_cut();
+							else
+								note_off();
+						}
+					}
 				}
 
 				if (panning_envelope != NULL)

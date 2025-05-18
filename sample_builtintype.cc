@@ -19,6 +19,7 @@ namespace MultiPLAY
 
 		sample_context::copy_to(target);
 
+		target->num_samples = this->num_samples;
 		target->last_looped_sample = this->last_looped_sample;
 		target->sustain_loop_exit_difference = this->sustain_loop_exit_difference;
 		target->sustain_loop_exit_sample = this->sustain_loop_exit_sample;

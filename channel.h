@@ -72,6 +72,7 @@ namespace MultiPLAY
 		void base_note_off(bool calc_fade_per_tick = true, bool exit_sustain_loop = true, bool exit_envelope_loops = true);
 		virtual void note_fade();
 
+		bool is_at_end_of_volume_envelope();
 		bool is_on_final_zero_volume_from_volume_envelope();
 
 		virtual void get_playback_position(PlaybackPosition &position);

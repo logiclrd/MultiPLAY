@@ -1208,7 +1208,7 @@ namespace MultiPLAY
 		{
 			if (order_table[i] == 254) //  ++ (skip)
 			{
-				ret->pattern_list.push_back(NULL);
+				ret->pattern_list.push_back(&pattern::skip_marker);
 				continue;
 			}
 			if (order_table[i] == 255) //  -- (end of tune)

@@ -49,6 +49,7 @@ using namespace Telephony;
 #include "Load_MTM.h"
 #include "Load_S3M.h"
 #include "Load_IT.h"
+#include "Load_XM.h"
 #include "Load_UMX.h"
 
 #include "Channel_DYNAMIC.h"
@@ -105,6 +106,8 @@ namespace MultiPLAY
 				module = load_it(&input);
 			else if (extension == "shit")
 				module = load_it(&input, true);
+			else if (extension == "xm")
+				module = load_xm(&input);
 			else if (extension == "umx")
 				module = load_umx(&input);
 			else

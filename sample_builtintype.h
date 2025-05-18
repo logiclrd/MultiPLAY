@@ -46,6 +46,8 @@ namespace MultiPLAY
 
 		bool use_sustain_loop;
 
+		int include_loop_end_sample;
+
 		sample_builtintype(
 			int index, int sample_channels, double default_volume,
 			T **data = NULL, unsigned int num_samples = 0,
@@ -55,6 +57,8 @@ namespace MultiPLAY
 			unsigned susloop_begin = 0, unsigned susloop_end = LOOP_END_NO_LOOP)
 			: sample(index)
 		{
+			include_loop_end_sample = 1;
+
 			switch (sizeof(T))
 			{
 				case 1: sample_scale = 1.0 / 127.5;        break;
@@ -200,7 +204,7 @@ namespace MultiPLAY
 					}
 					else if (sample > sustain_loop_end)
 					{
-						unsigned sustain_loop_length = sustain_loop_end - sustain_loop_begin + 1;
+						unsigned sustain_loop_length = sustain_loop_end - sustain_loop_begin + include_loop_end_sample;
 						double overrun = (sample + offset) - sustain_loop_end;
 						int direction = -1;
 
@@ -274,7 +278,7 @@ namespace MultiPLAY
 				case SustainLoopState::Off:
 					if ((sample > loop_end) && (loop_end != LOOP_END_NO_LOOP))
 					{
-						unsigned loop_length = loop_end - loop_begin + 1;
+						unsigned loop_length = loop_end - loop_begin + include_loop_end_sample;
 						double overrun = (sample + offset) - loop_end;
 						int direction = -1;
 

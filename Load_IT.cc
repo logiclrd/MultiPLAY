@@ -728,6 +728,8 @@ namespace MultiPLAY
 
 					auto new_sample = new sample_builtintype<signed short>(i, 1, default_volume, &data, sample_length, loop_style, susloop_style, loop_begin, loop_end, susloop_begin, susloop_end);
 
+					new_sample->include_loop_end_sample = 0;
+
 					ret = new_sample;
 				}
 				else
@@ -745,6 +747,8 @@ namespace MultiPLAY
 
 					auto new_sample = new sample_builtintype<signed char>(i, 1, default_volume, &data, sample_length, loop_style, susloop_style, loop_begin, loop_end, susloop_begin, susloop_end);
 
+					new_sample->include_loop_end_sample = 0;
+
 					ret = new_sample;
 				}
 			}
@@ -754,13 +758,17 @@ namespace MultiPLAY
 				{
 					signed short *data[MAX_CHANNELS];
 					load_it_sample_uncompressed<signed short>(file, channels_from_file, sample_length, conversion, data);
-					ret = new sample_builtintype<signed short>(i, int(channels_from_file), default_volume, data, sample_length, loop_style, susloop_style, loop_begin, loop_end, susloop_begin, susloop_end);
+					auto new_sample = new sample_builtintype<signed short>(i, int(channels_from_file), default_volume, data, sample_length, loop_style, susloop_style, loop_begin, loop_end, susloop_begin, susloop_end);
+					new_sample->include_loop_end_sample = 0;
+					ret = new_sample;
 				}
 				else
 				{
 					signed char *data[MAX_CHANNELS];
 					load_it_sample_uncompressed<signed char>(file, channels_from_file, sample_length, conversion, data);
-					ret = new sample_builtintype<signed char>(i, int(channels_from_file), default_volume, data, sample_length, loop_style, susloop_style, loop_begin, loop_end, susloop_begin, susloop_end);
+					auto new_sample = new sample_builtintype<signed char>(i, int(channels_from_file), default_volume, data, sample_length, loop_style, susloop_style, loop_begin, loop_end, susloop_begin, susloop_end);
+					new_sample->include_loop_end_sample = 0;
+					ret = new_sample;
 				}
 			}
 

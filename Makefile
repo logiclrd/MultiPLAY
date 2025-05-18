@@ -1,4 +1,4 @@
-default: release removegeneratedmakefile
+default: release
 
 GENERATEDMAKEFILE := $(shell mktemp)
 
@@ -24,7 +24,7 @@ SDL_LD := -lSDL2
 common-vars: FORCE
 	@echo OBJECT_DIR=obj/\$$\(CONFIGURATION\) >> $(GENERATEDMAKEFILE)
 	@echo OUTPUT_DIR=bin/\$$\(CONFIGURATION\) >> $(GENERATEDMAKEFILE)
-	@echo OUTPUT_FILE=MultiPLAY-\$$\(CONFIGURATION\) >> $(GENERATEDMAKEFILE)
+	@echo OUTPUT_FILE=\$$\(OUTPUT_DIR\)/MultiPLAY-\$$\(CONFIGURATION\) >> $(GENERATEDMAKEFILE)
 	@echo SOURCES=$(SOURCES) >> $(GENERATEDMAKEFILE)
 	@echo OBJECTS="\$$(patsubst %.cc,\$$(OBJECT_DIR)/%.o,\$$(SOURCES))" >> $(GENERATEDMAKEFILE)
 	@echo DEPS="\$$(patsubst %.o,%.d,\$$(OBJECTS))" >> $(GENERATEDMAKEFILE)
@@ -32,49 +32,47 @@ common-vars: FORCE
 	@echo -include \$$\(DEPS\) >> $(GENERATEDMAKEFILE)
 	@echo >> $(GENERATEDMAKEFILE)
 
-release: release-vars common-vars build
+release: release-vars common-vars build removegeneratedmakefile
 
 release-vars: FORCE
 	@echo CXXFLAGS=$(SDL_CXX) $(OPTIMIZE) >> $(GENERATEDMAKEFILE)
 	@echo LDFLAGS=$(SDL_LD) >> $(GENERATEDMAKEFILE)
 	@echo CONFIGURATION=release >> $(GENERATEDMAKEFILE)
 
-debug: debug-vars common-vars build
+debug: debug-vars common-vars build removegeneratedmakefile
 
 debug-vars: FORCE
 	@echo CXXFLAGS=$(SDL_CXX) $(DEBUG) >> $(GENERATEDMAKEFILE)
 	@echo LDFLAGS=$(SDL_LD) >> $(GENERATEDMAKEFILE)
 	@echo CONFIGURATION=debug >> $(GENERATEDMAKEFILE)
-	@echo common-vars >> $(GENERATEDMAKEFILE)
 
-lint: lint-vars common-vars build
+lint: lint-vars common-vars build removegeneratedmakefile
 
 lint-vars: FORCE
 	@echo CXXFLAGS=$(SDL_CXX) $(DEBUG) $(WARNINGS) >> $(GENERATEDMAKEFILE)
 	@echo LDFLAGS=$(SDL_LD) >> $(GENERATEDMAKEFILE)
 	@echo CONFIGURATION=lint >> $(GENERATEDMAKEFILE)
-	@echo common-vars >> $(GENERATEDMAKEFILE)
 
-bare: bare-vars common-vars build
+bare: bare-vars common-vars build removegeneratedmakefile
 
 bare-vars: FORCE
 	@echo CXXFLAGS= >> $(GENERATEDMAKEFILE)
 	@echo LDFLAGS= >> $(GENERATEDMAKEFILE)
 	@echo CONFIGURATION=bare >> $(GENERATEDMAKEFILE)
-	@echo common-vars >> $(GENERATEDMAKEFILE)
 
 build: FORCE
 	@echo build: \$$\(OUTPUT_FILE\) >> $(GENERATEDMAKEFILE)
 	@echo >> $(GENERATEDMAKEFILE)
 	@echo \$$\(OUTPUT_FILE\): \$$\(OBJECTS\) >> $(GENERATEDMAKEFILE)
 	@/usr/bin/echo -en \\t >> $(GENERATEDMAKEFILE) ; echo @mkdir -p \$$\(OUTPUT_DIR\) >> $(GENERATEDMAKEFILE)
-	@/usr/bin/echo -en \\t >> $(GENERATEDMAKEFILE) ; echo g++ -o \$$\(\OUTPUT_DIR\)/\$$@ \$$^ \$$\(LDFLAGS\) >> $(GENERATEDMAKEFILE)
+	@/usr/bin/echo -en \\t >> $(GENERATEDMAKEFILE) ; echo g++ -o \$$@ \$$^ \$$\(LDFLAGS\) >> $(GENERATEDMAKEFILE)
 	@echo >> $(GENERATEDMAKEFILE)
 	@echo obj/\$$\(CONFIGURATION\)/%.o: %.cc >> $(GENERATEDMAKEFILE)
 	@/usr/bin/echo -en \\t >> $(GENERATEDMAKEFILE) ; echo @mkdir -p \$$\(dir \$$@\) >> $(GENERATEDMAKEFILE)
 	@/usr/bin/echo -en \\t >> $(GENERATEDMAKEFILE) ; echo g++ -o \$$@ \$$\< -c -MMD \$$\(CXXFLAGS\) >> $(GENERATEDMAKEFILE)
 	@echo >> $(GENERATEDMAKEFILE)
 	@echo FORCE: >> $(GENERATEDMAKEFILE)
+	@echo >> $(GENERATEDMAKEFILE)
 	@echo .PHONY: FORCE >> $(GENERATEDMAKEFILE)
 	@make -f $(GENERATEDMAKEFILE) build
 

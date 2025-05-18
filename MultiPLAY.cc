@@ -445,14 +445,17 @@ int main(int argc, char *argv[])
 					cout.put('=');
 				cout << endl;
 
-				auto last_specified_sample_name_index = module->samples.size() - 1;
+				if (module->samples.size() > 0)
+				{
+					auto last_specified_sample_name_index = module->samples.size() - 1;
 
-				while ((last_specified_sample_name_index > 0)
-						&& (trim(module->samples[last_specified_sample_name_index]->name) == ""))
-					last_specified_sample_name_index--;
+					while ((last_specified_sample_name_index > 0)
+							&& (trim(module->samples[last_specified_sample_name_index]->name) == ""))
+						last_specified_sample_name_index--;
 
-				for (vector<string>::size_type j=0; j <= last_specified_sample_name_index; j++)
-					cout << module->samples[j]->name << endl;
+					for (vector<string>::size_type j=0; j <= last_specified_sample_name_index; j++)
+						cout << module->samples[j]->name << endl;
+				}
 
 				cout << endl;
 

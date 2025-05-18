@@ -198,13 +198,13 @@ namespace MultiPLAY
 		{
 			if (sample_description[i].byte_length == 0)
 			{
-				samps.push_back(new sample_builtintype<signed char>(int(i), 1));
+				samps.push_back(new sample_builtintype<signed char>(int(i), 1, 1.0));
 				continue;
 			}
 
 			if (sample_description[i].sixteen_bit)
 			{
-				sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), 1);
+				sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), 1, 1.0);
 
 				smp->name = sample_description[i].sample_name;
 
@@ -244,7 +244,7 @@ namespace MultiPLAY
 			}
 			else
 			{
-				sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), 1);
+				sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), 1, 1.0);
 
 				smp->num_samples = sample_description[i].byte_length;
 

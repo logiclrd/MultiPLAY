@@ -44,12 +44,13 @@ namespace MultiPLAY
 
 		bool use_sustain_loop;
 
-		sample_builtintype(int index, int sample_channels,
-											T **data = NULL, unsigned int num_samples = 0,
-											unsigned loop_begin = 0, unsigned loop_end = 0xFFFFFFFF,
-											unsigned susloop_begin = 0, unsigned susloop_end = 0xFFFFFFFF,
-											LoopStyle::Type loop_style = LoopStyle::Forward,
-											LoopStyle::Type sustain_loop_style = LoopStyle::Forward)
+		sample_builtintype(
+			int index, int sample_channels, double default_volume,
+			T **data = NULL, unsigned int num_samples = 0,
+			LoopStyle::Type loop_style = LoopStyle::Forward,
+			LoopStyle::Type sustain_loop_style = LoopStyle::Forward,
+			unsigned loop_begin = 0, unsigned loop_end = 0xFFFFFFFF,
+			unsigned susloop_begin = 0, unsigned susloop_end = 0xFFFFFFFF)
 			: sample(index)
 		{
 			switch (sizeof(T))
@@ -70,6 +71,7 @@ namespace MultiPLAY
 					this->sample_data[i] = NULL;
 
 			this->num_samples = num_samples;
+			this->default_volume = default_volume;
 
 			this->loop_begin = loop_begin;
 			this->loop_end = loop_end;

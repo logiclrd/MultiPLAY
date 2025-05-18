@@ -117,7 +117,7 @@ namespace MultiPLAY
 						{
 							sample_builtintype<signed char> *smp;
 
-							smp = new sample_builtintype<signed char>(0, format_chunk.wChannels);
+							smp = new sample_builtintype<signed char>(0, format_chunk.wChannels, 1.0);
 
 							smp->num_samples = chunk.raw.chunkSize / format_chunk.wBlockAlign;
 							smp->samples_per_second = format_chunk.dwSamplesPerSec;
@@ -145,7 +145,7 @@ namespace MultiPLAY
 						{
 							sample_builtintype<signed short> *smp;
 
-							smp = new sample_builtintype<signed short>(0, format_chunk.wChannels);
+							smp = new sample_builtintype<signed short>(0, format_chunk.wChannels, 1.0);
 
 							smp->num_samples = chunk.raw.chunkSize / format_chunk.wBlockAlign;
 							smp->samples_per_second = format_chunk.dwSamplesPerSec;
@@ -172,7 +172,7 @@ namespace MultiPLAY
 						{
 							sample_builtintype<signed long> *smp;
 
-							smp = new sample_builtintype<signed long>(0, format_chunk.wChannels);
+							smp = new sample_builtintype<signed long>(0, format_chunk.wChannels, 1.0);
 
 							smp->num_samples = chunk.raw.chunkSize / format_chunk.wBlockAlign;
 							smp->samples_per_second = format_chunk.dwSamplesPerSec;
@@ -200,7 +200,7 @@ namespace MultiPLAY
 						{
 							sample_builtintype<signed long> *smp;
 
-							smp = new sample_builtintype<signed long>(0, format_chunk.wChannels);
+							smp = new sample_builtintype<signed long>(0, format_chunk.wChannels, 1.0);
 
 							smp->num_samples = chunk.raw.chunkSize / format_chunk.wBlockAlign;
 							smp->samples_per_second = format_chunk.dwSamplesPerSec;
@@ -227,7 +227,7 @@ namespace MultiPLAY
 						{
 							sample_builtintype<signed long> *smp;
 
-							smp = new sample_builtintype<signed long>(0, format_chunk.wChannels);
+							smp = new sample_builtintype<signed long>(0, format_chunk.wChannels, 1.0);
 
 							smp->num_samples = chunk.raw.chunkSize / format_chunk.wBlockAlign;
 							smp->samples_per_second = format_chunk.dwSamplesPerSec;
@@ -325,7 +325,7 @@ namespace MultiPLAY
 						{
 							sample_builtintype<signed char> *smp;
 
-							smp = new sample_builtintype<signed char>(0, common_chunk.numChannels);
+							smp = new sample_builtintype<signed char>(0, common_chunk.numChannels, 1.0);
 
 							smp->num_samples = common_chunk.numSampleFrames;
 							smp->samples_per_second = common_chunk.sampleRate.toDouble();
@@ -357,7 +357,7 @@ namespace MultiPLAY
 						{
 							sample_builtintype<signed short> *smp;
 
-							smp = new sample_builtintype<signed short>(0, common_chunk.numChannels);
+							smp = new sample_builtintype<signed short>(0, common_chunk.numChannels, 1.0);
 
 							smp->num_samples = common_chunk.numSampleFrames;
 							smp->samples_per_second = common_chunk.sampleRate.toDouble();
@@ -389,7 +389,7 @@ namespace MultiPLAY
 						{
 							sample_builtintype<signed long> *smp;
 
-							smp = new sample_builtintype<signed long>(0, common_chunk.numChannels);
+							smp = new sample_builtintype<signed long>(0, common_chunk.numChannels, 1.0);
 
 							smp->num_samples = common_chunk.numSampleFrames;
 							smp->samples_per_second = common_chunk.sampleRate.toDouble();
@@ -422,7 +422,7 @@ namespace MultiPLAY
 						{
 							sample_builtintype<signed long> *smp;
 
-							smp = new sample_builtintype<signed long>(0, common_chunk.numChannels);
+							smp = new sample_builtintype<signed long>(0, common_chunk.numChannels, 1.0);
 
 							smp->num_samples = common_chunk.numSampleFrames;
 							smp->samples_per_second = common_chunk.sampleRate.toDouble();
@@ -456,7 +456,7 @@ namespace MultiPLAY
 
 							sample_builtintype<signed long> *smp;
 
-							smp = new sample_builtintype<signed long>(0, common_chunk.numChannels);
+							smp = new sample_builtintype<signed long>(0, common_chunk.numChannels, 1.0);
 
 							smp->num_samples = common_chunk.numSampleFrames;
 							smp->samples_per_second = common_chunk.sampleRate.toDouble();
@@ -544,7 +544,7 @@ namespace MultiPLAY
 					for (int i=0; i<length; i++)
 						data_sgn[i] = (signed char)(int(data[i]) - 128);
 
-				sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(0, 1);
+				sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(0, 1, 1.0);
 
 				smp->num_samples = length;
 				smp->sample_data[0] = data_sgn;
@@ -593,7 +593,7 @@ namespace MultiPLAY
 					for (int i=0; i<length; i++)
 						data_sgn[i] = (signed short)(int(data[i]) - 32768);
 
-				sample_builtintype<signed short > *smp = new sample_builtintype<signed short >(0, 1);
+				sample_builtintype<signed short > *smp = new sample_builtintype<signed short >(0, 1, 1.0);
 
 				smp->num_samples = length >> 1;
 				smp->sample_data[0] = data_sgn;
@@ -648,7 +648,7 @@ namespace MultiPLAY
 					for (int i=0; i<length; i++)
 						data_sgn[i] = (signed short)(int(data[i]) - 32768);
 
-				sample_builtintype<signed short > *smp = new sample_builtintype<signed short >(0, 1);
+				sample_builtintype<signed short > *smp = new sample_builtintype<signed short >(0, 1, 1.0);
 
 				smp->num_samples = length >> 1;
 				smp->sample_data[0] = data_sgn;

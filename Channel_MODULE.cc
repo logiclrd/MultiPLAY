@@ -994,6 +994,8 @@ namespace MultiPLAY
 
 				if (frame_delta != 0)
 				{
+					target_volume = volume + frame_delta;
+
 					if (target_volume < 0)
 						target_volume = 0;
 					if (target_volume > 64)

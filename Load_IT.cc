@@ -612,7 +612,7 @@ namespace MultiPLAY
 			if (string(magic, 4) != "IMPS")
 			{
 				cerr << "Warning: sample #" << i << " does not have a valid header" << endl;
-				return new sample_builtintype<signed char>(i, 1);
+				return new sample_builtintype<signed char>(i, 1, 1.0);
 			}
 
 			char dos_filename[13];
@@ -630,9 +630,9 @@ namespace MultiPLAY
 			flags.value = char(file->get());
 
 			if (flags.sample_present() == false)
-				return new sample_builtintype<signed char>(i, 1);
-				
-			int default_volume = file->get();
+				return new sample_builtintype<signed char>(i, 1, 1.0);
+
+			double default_volume = file->get();
 
 			char sample_name[27];
 			file->read(sample_name, 26);
@@ -692,6 +692,8 @@ namespace MultiPLAY
 				//case 3: auto_vibrato_waveform = Waveform::Random;   break;
 			}
 
+			default_volume /= 64.0;
+
 			sample *ret;
 
 			unsigned channels_from_file = flags.stereo() ? 2 : 1;
@@ -708,7 +710,7 @@ namespace MultiPLAY
 				if (flags.stereo())
 				{
 					cerr << "Unable to load sample #" << i << ": compression on stereo samples is not defined" << endl;
-					return new sample_builtintype<signed char>(i, 1);
+					return new sample_builtintype<signed char>(i, 1, 1.0);
 				}
 
 				if (flags.sixteen_bit())
@@ -721,11 +723,12 @@ namespace MultiPLAY
 					catch (const char *msg)
 					{
 						cerr << "Unable to load sample #" << i << ": cannot decode compressed format (" << msg << ")" << endl;
-						return new sample_builtintype<signed char>(i, 1);
+						return new sample_builtintype<signed char>(i, 1, 1.0);
 					}
 
-					ret = new sample_builtintype<signed short>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end, loop_style, susloop_style);
-					((sample_builtintype<signed short> *)ret)->default_volume = default_volume / 64.0;
+					auto new_sample = new sample_builtintype<signed short>(i, 1, default_volume, &data, sample_length, loop_style, susloop_style, loop_begin, loop_end, susloop_begin, susloop_end);
+
+					ret = new_sample;
 				}
 				else
 				{
@@ -737,11 +740,12 @@ namespace MultiPLAY
 					catch (const char *msg)
 					{
 						cerr << "Unable to load sample #" << i << ": cannot decode compressed format (" << msg << ")" << endl;
-						return new sample_builtintype<signed char>(i, 1);
+						return new sample_builtintype<signed char>(i, 1, 1.0);
 					}
 
-					ret = new sample_builtintype<signed char>(i, 1, &data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end, loop_style, susloop_style);
-					((sample_builtintype<signed char> *)ret)->default_volume = default_volume / 64.0;
+					auto new_sample = new sample_builtintype<signed char>(i, 1, default_volume, &data, sample_length, loop_style, susloop_style, loop_begin, loop_end, susloop_begin, susloop_end);
+
+					ret = new_sample;
 				}
 			}
 			else
@@ -750,15 +754,13 @@ namespace MultiPLAY
 				{
 					signed short *data[MAX_CHANNELS];
 					load_it_sample_uncompressed<signed short>(file, channels_from_file, sample_length, conversion, data);
-					ret = new sample_builtintype<signed short>(i, int(channels_from_file), data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end, loop_style, susloop_style);
-					((sample_builtintype<signed short> *)ret)->default_volume = default_volume / 64.0;
+					ret = new sample_builtintype<signed short>(i, int(channels_from_file), default_volume, data, sample_length, loop_style, susloop_style, loop_begin, loop_end, susloop_begin, susloop_end);
 				}
 				else
 				{
 					signed char *data[MAX_CHANNELS];
 					load_it_sample_uncompressed<signed char>(file, channels_from_file, sample_length, conversion, data);
-					ret = new sample_builtintype<signed char>(i, int(channels_from_file), data, sample_length, loop_begin, loop_end, susloop_begin, susloop_end, loop_style, susloop_style);
-					((sample_builtintype<signed char> *)ret)->default_volume = default_volume / 64.0;
+					ret = new sample_builtintype<signed char>(i, int(channels_from_file), default_volume, data, sample_length, loop_style, susloop_style, loop_begin, loop_end, susloop_begin, susloop_end);
 				}
 			}
 

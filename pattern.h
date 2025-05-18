@@ -10,7 +10,8 @@ namespace MultiPLAY
 {
 	struct row
 	{
-		int znote, snote;
+		int znote; // linear representation, difference of 1 is always a semitone, 12 is always an octavie, 39 == middle C
+		int snote; // packed representation with the octave in the top 4 bits, and the index into the octave (starting with C) in the lower 4 bits
 		int volume;
 		sample *instrument;
 		effect_struct effect, secondary_effect;

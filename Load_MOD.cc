@@ -173,7 +173,7 @@ namespace MultiPLAY
 		vector<sample *> samps;
 
 		for (unsigned i=0; i<num_samples; i++) // pre-create samples
-			samps.push_back(new sample_builtintype<signed char>(int(i), 1));
+			samps.push_back(new sample_builtintype<signed char>(int(i), 1, 1.0));
 
 		for (unsigned i=0; i<num_patterns; i++)
 		{

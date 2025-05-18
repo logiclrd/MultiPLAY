@@ -234,7 +234,7 @@ namespace MultiPLAY
 
 			if (sample_type != 1)
 			{
-				samps.push_back(new sample_builtintype<char>(int(i), 1));
+				samps.push_back(new sample_builtintype<char>(int(i), 1, 1.0));
 				continue;
 			}
 
@@ -338,7 +338,7 @@ namespace MultiPLAY
 						for (unsigned int sample_offset=0; sample_offset<length; sample_offset++)
 							data_sgn[sample_offset] = (short)(int(data[sample_offset]) - 32768);
 
-					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), sample_flags.stereo() ? 2 : 1);
+					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), sample_flags.stereo() ? 2 : 1, volume / 64.0);
 
 					smp->name = sample_name;
 
@@ -352,7 +352,6 @@ namespace MultiPLAY
 						smp->loop_begin = loop_begin;
 						smp->loop_end = loop_end - 1;
 					}
-					smp->default_volume = volume / 64.0;
 
 					samps.push_back(smp);
 				}
@@ -386,7 +385,7 @@ namespace MultiPLAY
 							data_right[j] = from_lsb2(uc_data_right + 2*j);
 					}
 
-					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), sample_flags.stereo() ? 2 : 1);
+					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), sample_flags.stereo() ? 2 : 1, volume / 64.0);
 
 					smp->name = sample_name;
 
@@ -400,7 +399,6 @@ namespace MultiPLAY
 						smp->loop_begin = loop_begin;
 						smp->loop_end = loop_end - 1;
 					}
-					smp->default_volume = volume / 64.0;
 
 					samps.push_back(smp);
 				}
@@ -438,7 +436,7 @@ namespace MultiPLAY
 						for (unsigned int sample_offset=0; sample_offset<length; sample_offset++)
 							data_sgn[sample_offset] = (char)(int(data[sample_offset]) - 128);
 
-					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), sample_flags.stereo() ? 2 : 1);
+					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), sample_flags.stereo() ? 2 : 1, volume / 64.0);
 
 					smp->name = sample_name;
 
@@ -452,7 +450,6 @@ namespace MultiPLAY
 						smp->loop_begin = loop_begin;
 						smp->loop_end = loop_end - 1;
 					}
-					smp->default_volume = volume / 64.0;
 
 					samps.push_back(smp);
 				}
@@ -474,7 +471,7 @@ namespace MultiPLAY
 					else
 						file->read((char *)data, streamsize(length));
 
-					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), sample_flags.stereo() ? 2 : 1);
+					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), sample_flags.stereo() ? 2 : 1, volume / 64.0);
 
 					smp->name = sample_name;
 
@@ -488,7 +485,6 @@ namespace MultiPLAY
 						smp->loop_begin = loop_begin;
 						smp->loop_end = loop_end - 1;
 					}
-					smp->default_volume = volume / 64.0;
 
 					samps.push_back(smp);
 				}

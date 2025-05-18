@@ -237,10 +237,21 @@ namespace MultiPLAY
 
 						new_subsequent_sample = unsigned(int(new_sample) + direction);
 
-						if (new_subsequent_sample < sustain_loop_begin)
-							new_subsequent_sample = sustain_loop_begin + 1;
-						if (new_subsequent_sample > sustain_loop_end)
-							new_subsequent_sample = sustain_loop_begin + unsigned((int(sustain_loop_length) - direction) % int(sustain_loop_length));
+						switch (sustain_loop_style)
+						{
+							case LoopStyle::Forward:
+								if (new_subsequent_sample < sustain_loop_begin)
+									new_subsequent_sample = sustain_loop_end;
+								if (new_subsequent_sample > sustain_loop_end)
+									new_subsequent_sample = sustain_loop_begin;
+								break;
+							case LoopStyle::PingPong:
+								if (new_subsequent_sample < sustain_loop_begin)
+									new_subsequent_sample = sustain_loop_begin + 1;
+								if (new_subsequent_sample > sustain_loop_end)
+									new_subsequent_sample = sustain_loop_begin + unsigned((int(sustain_loop_length) - direction) % int(sustain_loop_length));
+								break;
+						}
 
 						if (context.sustain_loop_state < SustainLoopState::Finishing)
 						{
@@ -294,10 +305,21 @@ namespace MultiPLAY
 
 						new_subsequent_sample = unsigned(int(new_sample) + direction);
 
-						if (new_subsequent_sample < loop_begin)
-							new_subsequent_sample = loop_begin + 1;
-						if (new_subsequent_sample > loop_end)
-							new_subsequent_sample = loop_begin + unsigned(int(loop_length) - direction) % loop_length;
+						switch (loop_style)
+						{
+							case LoopStyle::Forward:
+								if (new_subsequent_sample < loop_begin)
+									new_subsequent_sample = loop_end;
+								if (new_subsequent_sample > loop_end)
+									new_subsequent_sample = loop_begin;
+								break;
+							case LoopStyle::PingPong:
+								if (new_subsequent_sample < loop_begin)
+									new_subsequent_sample = loop_begin + 1;
+								if (new_subsequent_sample > loop_end)
+									new_subsequent_sample = loop_begin + unsigned(int(loop_length) - direction) % loop_length;
+								break;
+						}
 
 						sample = new_sample;
 						subsequent_sample = new_subsequent_sample;

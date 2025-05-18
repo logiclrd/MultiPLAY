@@ -6,6 +6,7 @@
 using namespace std;
 
 #include "Channel_DYNAMIC.h"
+#include "MultiPLAY.h"
 #include "Load_MOD.h"
 
 #include "mod_finetune.h"
@@ -620,6 +621,12 @@ namespace MultiPLAY
 						module->finished = true;
 				}
 			}
+
+			stringstream ss;
+
+			ss << module->current_pattern << ':' << setw(3) << setfill('0') << module->current_row;
+
+			notify_new_pattern_row_started(ss.str().c_str());
 		}
 
 		if (module->finished)

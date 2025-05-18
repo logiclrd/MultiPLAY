@@ -35,6 +35,7 @@ namespace MultiPLAY
 		other->samples_per_second = this->samples_per_second;
 		other->default_volume = this->default_volume;
 		other->num_samples = this->num_samples;
+		other->vibrato_sweep_ticks = this->vibrato_sweep_ticks;
 	}
 
 	// struct sample

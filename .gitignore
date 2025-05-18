@@ -3,5 +3,6 @@ output.*
 Artefacts/
 x64/
 Debug/
+bin/
 obj/
 *.user

@@ -41,6 +41,7 @@ namespace MultiPLAY
     this->offset_major = spawner.offset_major;
     this->offset = spawner.offset;
     this->samples_this_note = spawner.samples_this_note;
+    this->envelope_offset = spawner.envelope_offset;
     this->finish_with_fade = true;
   }
 

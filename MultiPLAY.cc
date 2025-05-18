@@ -159,8 +159,9 @@ namespace MultiPLAY
 		cerr << "usage: " << cmd_name << " [-play_overlap -play_no_overlap -play <PLAY files>] [-samples <sample files>]" << endl
 				<< "       " << indentws << " [-module_start_pattern <pattern order number>] [-module <S3M filenames>]" << endl
 				<< "       " << indentws << " [-frame-based_portamento] [-anticlick] [-max_time <seconds>]" << endl
-				<< "       " << indentws << " [-max_ticks <ticks>] [-output <output_file>] [-amplify <factor>] [-compress]" << endl
-				<< "       " << indentws << " {-stereo | -mono} {-lsb | -msb | -system_byte_order}" << endl
+				<< "       " << indentws << " [-max_ticks <ticks>] [-output <output_file>] [-output_per_pattern_row]" << endl
+				<< "       " << indentws << " [-amplify <factor>] [-compress] {-stereo | -mono} " << endl
+				<< "       " << indentws << " {-lsb | -msb | -system_byte_order}" << endl
 				<< "       " << indentws << " { {-8 | -16} [-unsigned] | {-32 | -64} | [-ulaw] | [-alaw] }" << endl
 				<< "       " << indentws << " [-sample_rate <samples_per_sec>] [-looping]" << endl
 				<< "       " << indentws
@@ -230,6 +231,31 @@ namespace MultiPLAY
 			}
 			index--;
 		}
+
+		ofstream output;
+		int output_file_number = 0;
+		bool output_per_pattern_row = false;
+
+		void start_new_output_file(const char *name)
+		{
+			if (output_per_pattern_row)
+			{
+				if (output.is_open())
+				{
+					stringstream ss;
+
+					ss << "dump_" << setw(4) << setfill('0') << output_file_number++ << '_' << name << ".raw";
+
+					output.close();
+					output.open(ss.str(), ios::binary | ios::trunc);
+				}
+			}
+		}
+	}
+
+	extern void notify_new_pattern_row_started(const char *name)
+	{
+		start_new_output_file(name);
 	}
 }
 
@@ -358,6 +384,8 @@ int main(int argc, char *argv[])
 				output_filename = argv[i];
 			}
 		}
+		else if (arg == "-output_per_pattern_row")
+			output_per_pattern_row = true;
 		else if (arg == "-looping")
 			looping = true;
 		else if (arg == "-msb")
@@ -526,8 +554,6 @@ int main(int argc, char *argv[])
 		}
 
 		int status;
-
-		ofstream output;
 
 #if (defined(SDL) && defined(SDL_DEFAULT)) || (defined(DIRECTX) && defined(DIRECTX_DEFAULT))
 	retry_output:

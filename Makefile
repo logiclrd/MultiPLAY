@@ -2,9 +2,6 @@ default: release removegeneratedmakefile
 
 GENERATEDMAKEFILE := $(shell mktemp)
 
-removegeneratedmakefile: FORCE
-	@[ ! -z $(GENERATEDMAKEFILE) -a -f $(GENERATEDMAKEFILE) ] && rm -r $(GENERATEDMAKEFILE)
-
 OUTPUT_BASE = MultiPLAY
 
 SOURCES = MultiPLAY.cc bit_memory_stream.cc bit_value.cc unix_break_handler.cc channel.cc conversion.cc
@@ -81,19 +78,12 @@ build: FORCE
 	@echo .PHONY: FORCE >> $(GENERATEDMAKEFILE)
 	@make -f $(GENERATEDMAKEFILE) build
 
-release: $(OUTPUT)
-
-debug: $(OUTPUT)
-
-lint: $(OUTPUT)
-
-bare: $(OUTPUT)
-
 clean: FORCE
 	rm -rf obj/ bin/
 
-setvars: FORCE
-
 FORCE:
 
-.phony: default removegeneratedmakefile release debug lint bare clean setvars FORCE
+removegeneratedmakefile: FORCE
+	@[ ! -z $(GENERATEDMAKEFILE) -a -f $(GENERATEDMAKEFILE) ] && rm -r $(GENERATEDMAKEFILE)
+
+.PHONY: default common-vars release release-vars debug debug-vars lint lint-vars bare bare-vars clean bare-bars build removegeneratedmakefile FORCE

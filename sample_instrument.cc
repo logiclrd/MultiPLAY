@@ -1,5 +1,9 @@
 #include "sample_instrument.h"
 
+#include <cstring>
+
+using namespace std;
+
 #include "DSP.h"
 
 #include "Channel_DYNAMIC.h"
@@ -51,6 +55,9 @@ namespace MultiPLAY
 		: sample(idx)
 	{
 		use_dsp = false;
+
+		memset(&note_sample[0], 0, sizeof(note_sample));
+		memset(&tone_offset[0], 0, sizeof(tone_offset));
 	}
 
 	/*virtual*/ void sample_instrument::occlude_note(

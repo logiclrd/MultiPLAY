@@ -1,4 +1,4 @@
-OUTPUT = MultiPLAY
+OUTPUT := MultiPLAY
 
 SOURCES = MultiPLAY.cc bit_memory_stream.cc bit_value.cc unix_break_handler.cc channel.cc conversion.cc
 HEADERS = MultiPLAY.h  bit_memory_stream.h  bit_value.h       break_handler.h  channel.h  conversion.h
@@ -29,21 +29,43 @@ HEADERS += Profile.h
 
 HEADERS += RAII.h
 
-WARNINGS = -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Woverloaded-virtual -Wredundant-decls -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wundef -Werror -Wno-unused -Wno-reorder -Wno-comment -Wno-missing-field-initializers
+OBJECT_DIR := obj
+OBJECTS := $(patsubst %.cc,$(OBJECT_DIR)/%.o,$(SOURCES))
 
-OPTIMIZE = -Ofast -march=native -frename-registers -funroll-loops -fno-signed-zeros -fno-trapping-math
+WARNINGS := -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Woverloaded-virtual -Wredundant-decls -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wundef -Werror -Wno-unused -Wno-reorder -Wno-comment -Wno-missing-field-initializers
 
-MultiPLAY: $(SOURCES) $(HEADERS)
-	g++ -o $(OUTPUT) $(SOURCES) -DSDL -DSDL_DEFAULT -lSDL2 $(OPTIMIZE)
+OPTIMIZE := -Ofast -march=native -frename-registers -funroll-loops -fno-signed-zeros -fno-trapping-math
+DEBUG := -g
+SDL_CXX := -DSDL -DSDL_DEFAULT
+SDL_LD := -lSDL2
 
-debug: $(SOURCES) $(HEADERS)
-	g++ -o $(OUTPUT) $(SOURCES) -DSDL -DSDL_DEFAULT -lSDL2 -g
+default: release
 
-lint: $(SOURCES) $(HEADERS)
-	g++ -o $(OUTPUT) $(SOURCES) -DSDL -DSDL_DEFAULT -lSDL2 -g $(WARNINGS)
+$(OUTPUT): $(OBJECTS)
+	g++ -o $@ $^ $(LDFLAGS)
 
-bare: $(SOURCES) $(HEADERS)
-	g++ -o $(OUTPUT) $(SOURCES) $(WARNINGS)
+obj/%.o: %.cc
+	@mkdir -p $(dir $@)
+	g++ -o $@ $< -c $(CXXFLAGS)
+
+release: CXXFLAGS=$(SDL_CXX) $(OPTIMIZE)
+release: LDFLAGS=$(SDL_LD)
+release: $(OUTPUT)
+
+debug: CXXFLAGS=$(SDL_CXX) $(DEBUG)
+debug: LDFLAGS=$(SDL_LD)
+debug: $(OUTPUT)
+
+lint: CXXFLAGS=$(SDL_CXX) $(DEBUG) $(WARNINGS)
+lint: LDFLAGS=$(SDL_LD)
+lint: $(OUTPUT)
+
+bare: CXXFLAGS=
+bare: LDFLAGS=
+bare: $(OUTPUT)
 
 clean:
-	rm MultiPLAY
+	rm -f $(OUTPUT)
+	rm -f $(OBJECTS)
+	[ -d $(OBJECT_DIR) ] && rmdir --ignore-fail-on-non-empty $(OBJECT_DIR) || true
+

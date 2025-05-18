@@ -61,7 +61,7 @@ bare-vars: FORCE
 	@echo CONFIGURATION=bare >> $(GENERATEDMAKEFILE)
 
 build: FORCE
-	@echo build: \$$\(OUTPUT_FILE\) >> $(GENERATEDMAKEFILE)
+	@echo build: FORCE \$$\(OUTPUT_FILE) >> $(GENERATEDMAKEFILE)
 	@echo >> $(GENERATEDMAKEFILE)
 	@echo \$$\(OUTPUT_FILE\): \$$\(OBJECTS\) >> $(GENERATEDMAKEFILE)
 	@/usr/bin/echo -en \\t >> $(GENERATEDMAKEFILE) ; echo @mkdir -p \$$\(OUTPUT_DIR\) >> $(GENERATEDMAKEFILE)
@@ -73,7 +73,7 @@ build: FORCE
 	@echo >> $(GENERATEDMAKEFILE)
 	@echo FORCE: >> $(GENERATEDMAKEFILE)
 	@echo >> $(GENERATEDMAKEFILE)
-	@echo .PHONY: FORCE >> $(GENERATEDMAKEFILE)
+	@echo .PHONY: FORCE build >> $(GENERATEDMAKEFILE)
 	@make -f $(GENERATEDMAKEFILE) build
 
 clean: FORCE
@@ -82,6 +82,6 @@ clean: FORCE
 FORCE:
 
 removegeneratedmakefile: FORCE
-	@[ ! -z $(GENERATEDMAKEFILE) -a -f $(GENERATEDMAKEFILE) ] && rm -r $(GENERATEDMAKEFILE)
+	@[ ! -z $(GENERATEDMAKEFILE) ] && rm -f $(GENERATEDMAKEFILE)
 
-.PHONY: default common-vars release release-vars debug debug-vars lint lint-vars bare bare-vars clean bare-bars build removegeneratedmakefile FORCE
+.PHONY: default common-vars release release-vars debug debug-vars lint lint-vars bare bare-vars clean build removegeneratedmakefile FORCE

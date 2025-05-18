@@ -14,10 +14,10 @@ SOURCES += Output-DirectX.cc Output-SDL.cc
 SOURCES += uLaw-aLaw.cc
 SOURCES += Profile.cc
 
-WARNINGS := -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Woverloaded-virtual -Wredundant-decls -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wundef -Werror -Wno-unused -Wno-reorder -Wno-comment -Wno-missing-field-initializers
+WARNINGS := -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Woverloaded-virtual -Wredundant-decls -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wundef -Werror -Wno-unused -Wno-reorder -Wno-comment -Wno-missing-field-initializers -Wno-warn=switch -Wno-error=switch -Wno-switch
 
 OPTIMIZE := -Ofast -march=native -frename-registers -funroll-loops -fno-signed-zeros -fno-trapping-math
-DEBUG := -g
+DEBUG := -g -DDEBUG
 SDL_CXX := -DSDL -DSDL_DEFAULT
 SDL_LD := -lSDL2
 

@@ -1202,17 +1202,17 @@ namespace MultiPLAY
 							if (row.effect.is(Effect::PanSlide))
 							{
 								if (info.low_nybble != 0)
-									delta += info.low_nybble;
+									delta += int(info.low_nybble);
 								else
-									delta -= info.high_nybble;
+									delta -= int(info.high_nybble);
 							}
 
 							if (row.secondary_effect.is(Effect::PanSlide))
 							{
 								if (secondary_info.low_nybble != 0)
-									delta += secondary_info.low_nybble;
+									delta += int(secondary_info.low_nybble);
 								else
-									delta -= secondary_info.high_nybble;
+									delta -= int(secondary_info.high_nybble);
 							}
 
 							panning_slide_end = panning_slide_start + (module->speed - 1) * delta / 32.0;

@@ -105,7 +105,7 @@ namespace MultiPLAY
 			}
 
 			d << "pattern list: " << mod->pattern_list_length << endl;
-			for (unsigned i = 0, l  = mod->pattern_list_length; i < l; i++)
+			for (unsigned i = 0, l  = unsigned(mod->pattern_list_length); i < l; i++)
 			{
 				d << "[" << i << "]: ";
 

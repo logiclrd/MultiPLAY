@@ -24,7 +24,7 @@ namespace
 #define LINT_DOUBLE(x) do{if (LINT_DOUBLE_CHECK(x)) std::raise(SIGTRAP); }while(0)
 #else
 #define LINT_DOUBLE_CHECK(x) false
-#define LINT_DOUBLE(x) do;while(0)
+#define LINT_DOUBLE(x) do{}while(0)
 #endif
 
 #endif // LINT_H

@@ -34,11 +34,11 @@ namespace MultiPLAY
 		struct xm_header
 		{
 			int header_length;
-			short pattern_list_length; // order table size in bytes
+			unsigned short pattern_list_length; // order table size in bytes
 			short restart_position; // zero-based index into the pattern list for looping
-			short num_channels;
-			short num_patterns;
-			short num_instruments;
+			unsigned short num_channels;
+			unsigned short num_patterns;
+			unsigned short num_instruments;
 			short frequency_table; // 0 == amiga, 1 == linear
 			short initial_speed;
 			short initial_tempo;
@@ -49,7 +49,7 @@ namespace MultiPLAY
 		{
 			int header_length;
 			char packing_type; // not actually used
-			short pattern_rows;
+			unsigned short pattern_rows;
 			short packed_data_length; // can't be trusted, if it's not zero then don't actually use the value, just decode until end is reached
 		};
 
@@ -133,7 +133,7 @@ namespace MultiPLAY
 			char note;
 			unsigned char instrument;
 			XMNoteCommand::Type command;
-			char command_parameter;
+			unsigned char command_parameter;
 			XMNoteEffect::Type effect_type;
 			unsigned char effect_parameter;
 
@@ -236,7 +236,7 @@ namespace MultiPLAY
 
 			xm_pattern_row(int num_channels)
 			{
-				channel_notes.resize(num_channels);
+				channel_notes.resize(unsigned(num_channels));
 			}
 		};
 
@@ -289,9 +289,9 @@ namespace MultiPLAY
 
 		struct xm_sample_header
 		{
-			int sample_length;
-			int sample_loop_start;
-			int sample_loop_length; // 0 here is a hard off signal for looping
+			unsigned int sample_length;
+			unsigned int sample_loop_start;
+			unsigned int sample_loop_length; // 0 here is a hard off signal for looping
 			char volume;
 			char fine_tune;
 			XMSampleFlags::Type flags;
@@ -338,28 +338,28 @@ namespace MultiPLAY
 				{
 					if (header.flags & XMSampleFlags::SampleSize16bit)
 					{
-						int sample_count = header.sample_length >> 1;
+						unsigned sample_count = header.sample_length >> 1;
 
 						short *encoded = (short *)&encoded_sample_data[0];
-						unsigned short *decoded = new unsigned short[sample_count];
+						short *decoded = new short[sample_count];
 
 						decoded[0] = encoded[0];
 
-						for (int i=1; i < sample_count; i++)
+						for (unsigned i=1; i < sample_count; i++)
 							decoded[i] = decoded[i - 1] + encoded[i];
 
 						channels.push_back((SampleType *)decoded);
 					}
 					else
 					{
-						int sample_count = header.sample_length;
+						unsigned sample_count = header.sample_length;
 
 						char *encoded = (char *)&encoded_sample_data[0];
-						unsigned char *decoded = new unsigned char[sample_count];
+						char *decoded = new char[sample_count];
 
 						decoded[0] = encoded[0];
 
-						for (int i=1; i < sample_count; i++)
+						for (unsigned i=1; i < sample_count; i++)
 							decoded[i] = decoded[i - 1] + encoded[i];
 
 						channels.push_back((SampleType *)decoded);
@@ -369,22 +369,22 @@ namespace MultiPLAY
 				{
 					if (header.flags & XMSampleFlags::SampleSize16bit)
 					{
-						int sample_count = header.sample_length >> 1;
+						unsigned sample_count = header.sample_length >> 1;
 
 						short *encoded = (short *)&encoded_sample_data[0];
-						unsigned short *decoded_left = new unsigned short[sample_count];
-						unsigned short *decoded_right = new unsigned short[sample_count];
+						short *decoded_left = new short[sample_count];
+						short *decoded_right = new short[sample_count];
 
 						// Left channel
 						decoded_left[0] = encoded[0];
 
-						for (int i=1; i < sample_count; i++)
+						for (unsigned i=1; i < sample_count; i++)
 							decoded_left[i] = decoded_left[i - 1] + encoded[i];
 
 						// Right channel
 						decoded_right[0] = encoded[sample_count] + decoded_left[sample_count - 1];
 
-						for (int i=1, p=sample_count+1; i < sample_count; i++, p++)
+						for (unsigned i=1, p=sample_count+1; i < sample_count; i++, p++)
 							decoded_right[i] = decoded_right[i - 1] + encoded[p];
 
 						channels.push_back((SampleType *)decoded_left);
@@ -392,22 +392,22 @@ namespace MultiPLAY
 					}
 					else
 					{
-						int sample_count = header.sample_length;
+						unsigned sample_count = header.sample_length;
 
 						char *encoded = (char *)&encoded_sample_data[0];
-						unsigned char *decoded_left = new unsigned char[sample_count];
-						unsigned char *decoded_right = new unsigned char[sample_count];
+						char *decoded_left = new char[sample_count];
+						char *decoded_right = new char[sample_count];
 
 						// Left channel
 						decoded_left[0] = encoded[0];
 
-						for (int i=1; i < sample_count; i++)
+						for (unsigned i=1; i < sample_count; i++)
 							decoded_left[i] = decoded_left[i - 1] + encoded[i];
 
 						// Right channel
 						decoded_right[0] = encoded[sample_count] + decoded_left[sample_count - 1];
 
-						for (int i=1, p=sample_count+1; i < sample_count; i++, p++)
+						for (unsigned i=1, p=sample_count+1; i < sample_count; i++, p++)
 							decoded_right[i] = decoded_right[i - 1] + encoded[p];
 
 						channels.push_back((SampleType *)decoded_left);
@@ -474,7 +474,7 @@ namespace MultiPLAY
 			char vibrato_sweep;
 			char vibrato_depth;
 			char vibrato_rate;
-			short fade_out;
+			unsigned short fade_out;
 			short reserved[22];
 		};
 
@@ -520,16 +520,19 @@ namespace MultiPLAY
 
 			file->read((char *)&pattern.header, sizeof(pattern.header));
 
+			if (pattern.header.pattern_rows > 1000)
+				throw "Does not appear to be an XM file";
+
 			for (int i=0; i < pattern.header.pattern_rows; i++)
 				pattern.rows.push_back(xm_pattern_row(module_header.num_channels));
 
 			if (pattern.header.packed_data_length != 0)
 			{
-				for (int i=0; i < pattern.header.pattern_rows; i++)
+				for (unsigned i=0; i < pattern.header.pattern_rows; i++)
 				{
 					xm_pattern_row &row = pattern.rows[i];
 
-					for (int j = 0; j < module_header.num_channels; j++)
+					for (unsigned j = 0; j < unsigned(module_header.num_channels); j++)
 						row.channel_notes[j].decode_and_fill(file);
 				}
 			}
@@ -542,6 +545,9 @@ namespace MultiPLAY
 			xm_instrument instrument;
 
 			memset((void *)&instrument.header, 0, sizeof(instrument.header));
+
+			if (instrument.header.total_instrument_header_length > 10000)
+				throw "Does not appear to be an XM file";
 
 			auto instrument_start = file->tellg();
 
@@ -564,7 +570,7 @@ namespace MultiPLAY
 
 				auto sample_set_header_start = file->tellg();
 
-				int sample_set_header_length = instrument.header.total_instrument_header_length - sizeof(instrument.header);
+				int sample_set_header_length = instrument.header.total_instrument_header_length - int(sizeof(instrument.header));
 
 				file->read((char *)&instrument.sample_set_header.sample_set_header_length, 4);
 				file->seekg(sample_set_header_start);
@@ -580,10 +586,14 @@ namespace MultiPLAY
 
 					file->read((char *)&sample_header, sizeof(sample_header));
 
+					if ((sample_header.sample_loop_start > sample_header.sample_length)
+					 || (sample_header.sample_loop_length > sample_header.sample_length - sample_header.sample_loop_start))
+						throw "Does not appear to be an XM file";
+
 					instrument.samples.push_back(xm_sample(sample_header));
 				}
 
-				for (int i=0; i < instrument.header.number_of_samples; i++)
+				for (unsigned i=0; i < instrument.header.number_of_samples; i++)
 				{
 					xm_sample &sample = instrument.samples[i];
 
@@ -639,9 +649,9 @@ namespace MultiPLAY
 		{
 			vector<pattern> ret;
 
-			for (int i=0; i < header.num_patterns; i++)
+			for (unsigned i=0; i < header.num_patterns; i++)
 			{
-				ret.push_back(pattern(i));
+				ret.push_back(pattern(int(i)));
 
 				xm_pattern &xm_pattern = this->patterns[i];
 				pattern &pattern = ret.back();
@@ -929,7 +939,7 @@ namespace MultiPLAY
 
 				for (int i=0; i < 96; i++)
 				{
-					int mapped_sample_index = xm_header.keymap[i];
+					unsigned mapped_sample_index = xm_header.keymap[i];
 
 					if (mapped_sample_index < samples.size())
 						instrument->note_sample[i] = samples[mapped_sample_index];
@@ -960,10 +970,10 @@ namespace MultiPLAY
 
 			for (unsigned i=0; i<header.pattern_list_length; i++)
 			{
-				int pattern_number = header.pattern_list[i];
+				unsigned pattern_number = header.pattern_list[i];
 
 				if (pattern_number >= ret->patterns.size())
-					pattern_number = ret->patterns.size() - 1;
+					throw "Does not appear to be an XM file";
 
 				ret->pattern_list.push_back(&ret->patterns[pattern_number]);
 			}
@@ -1162,13 +1172,13 @@ namespace MultiPLAY
 			char effect_type;
 			unsigned char effect_parameter;
 
-			for (int row_number=0; row_number < pattern.header.pattern_rows; row_number++)
+			for (unsigned row_number=0; row_number < pattern.header.pattern_rows; row_number++)
 			{
 				const xm_pattern_row &row = pattern.rows[row_number];
 
 				cerr << setw(4) << row_number << setw(0) << " | ";
 
-				for (int channel=0; channel < row.channel_notes.size(); channel++)
+				for (unsigned channel=0; channel < row.channel_notes.size(); channel++)
 				{
 					if (channel > 0)
 						cerr << "    ";
@@ -1261,35 +1271,35 @@ namespace MultiPLAY
 
 			char *buf = &picture[0];
 
-			auto draw_dot = [buf](int x, int y) { if ((x >= 0) && (x < WAVEFORM_COLS) && (y >= 0) && (y < WAVEFORM_ROWS)) buf[y * WAVEFORM_COLS + x] = '*'; };
+			auto draw_dot = [buf](unsigned x, unsigned y) { if ((x < WAVEFORM_COLS) && (y < WAVEFORM_ROWS)) buf[y * WAVEFORM_COLS + x] = '*'; };
 
-			int samples_in_view = sample.header.sample_length + sample.header.sample_length / 10;
+			unsigned samples_in_view = sample.header.sample_length + sample.header.sample_length / 10;
 
 			if (samples_in_view < 2000)
 				samples_in_view = 2000;
 
-			int samples_per_col = samples_in_view / WAVEFORM_COLS;
+			unsigned samples_per_col = samples_in_view / WAVEFORM_COLS;
 
 			// If the sample is stereo, only the left channel is rendered presently.
-			unsigned char *sample_data_8bit = NULL;
-			unsigned short *sample_data_16bit = NULL;
+			char *sample_data_8bit = NULL;
+			short *sample_data_16bit = NULL;
 
 			bool is_16bit = (sample.header.flags & XMSampleFlags::SampleSize16bit) != 0;
 
 			if (!is_16bit)
-				sample_data_8bit = sample.decode_sample_data<unsigned char>().front();
+				sample_data_8bit = sample.decode_sample_data<char>().front();
 			else
-				sample_data_16bit = sample.decode_sample_data<unsigned short>().front();
+				sample_data_16bit = sample.decode_sample_data<short>().front();
 
-			int sample_count = sample.header.sample_length;
+			unsigned sample_count = sample.header.sample_length;
 
 			if (is_16bit)
 				sample_count >>= 1;
 
-			for (int x = 0; x < WAVEFORM_COLS; x++)
+			for (unsigned x = 0; x < WAVEFORM_COLS; x++)
 			{
-				int start_sample = x * samples_per_col;
-				int end_sample = start_sample + samples_per_col - 1;
+				unsigned start_sample = x * samples_per_col;
+				unsigned end_sample = start_sample + samples_per_col - 1;
 
 				short min_sample = 32767, max_sample = -32768;
 
@@ -1299,7 +1309,7 @@ namespace MultiPLAY
 				if (end_sample >= sample_count)
 					end_sample = sample_count - 1;
 
-				for (int i=start_sample; i <= end_sample; i++)
+				for (unsigned i=start_sample; i <= end_sample; i++)
 				{
 					short sample_value;
 
@@ -1319,7 +1329,10 @@ namespace MultiPLAY
 					int min_sample_y = WAVEFORM_ROWS - (min_sample + 32768) * WAVEFORM_ROWS / 65536;
 					int max_sample_y = WAVEFORM_ROWS - (max_sample + 32768) * WAVEFORM_ROWS / 65536;
 
-					for (int y = max_sample_y; y <= min_sample_y; y++)
+					if (max_sample_y < 0)
+						max_sample_y = 0;
+
+					for (unsigned y = unsigned(max_sample_y); y <= unsigned(min_sample_y); y++)
 						draw_dot(x, y);
 				}
 			}

@@ -470,7 +470,7 @@ int main(int argc, char *argv[])
 			{
 				module->current_pattern = module_start_patterns[i];
 
-				if (module->current_pattern >= int(module->pattern_list.size()))
+				if (module->current_pattern >= module->pattern_list.size())
 					module->finished = true;
 
 				string header_line = string("\"") + module->name + "\" (" + module->filename + ")";

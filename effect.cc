@@ -62,6 +62,10 @@ namespace MultiPLAY
 		// special coding.
 		switch (mod_command)
 		{
+			case MODEffect::None:
+				present = false;
+				return;
+
 			case MODEffect::Arpeggio: // 0x0
 				if (info)
 					command = Effect::Arpeggio;

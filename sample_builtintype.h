@@ -46,7 +46,7 @@ namespace MultiPLAY
 
 		bool use_sustain_loop;
 
-		int include_loop_end_sample;
+		unsigned int include_loop_end_sample;
 
 		sample_builtintype(
 			int index, int sample_channels, double default_volume,
@@ -243,6 +243,9 @@ namespace MultiPLAY
 
 						switch (sustain_loop_style)
 						{
+							case LoopStyle::Undefined:
+								throw "sustain_loop_style has not been initialized";
+
 							case LoopStyle::Forward:
 								if (new_subsequent_sample < sustain_loop_begin)
 									new_subsequent_sample = sustain_loop_end;
@@ -311,6 +314,9 @@ namespace MultiPLAY
 
 						switch (loop_style)
 						{
+							case LoopStyle::Undefined:
+								throw "loop_style has not been initialized";
+
 							case LoopStyle::Forward:
 								if (new_subsequent_sample < loop_begin)
 									new_subsequent_sample = loop_end;

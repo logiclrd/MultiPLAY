@@ -166,7 +166,7 @@ namespace MultiPLAY
 			double fade_duration;
 
 			if ((current_sample != NULL) && (current_sample->fade_out > 0) && (ticks_per_fade_out_frame > 0))
-				fade_duration = current_sample->fade_out * ticks_per_fade_out_frame;
+				fade_duration = current_sample->fade_out * unsigned(ticks_per_fade_out_frame);
 			else
 				fade_duration = dropoff_proportion * ticks_left;
 

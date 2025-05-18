@@ -47,6 +47,7 @@ namespace MultiPLAY
 		Waveform::Type vibrato_waveform, tremolo_waveform, panbrello_waveform;
 		bool vibrato_retrig, tremolo_retrig, panbrello_retrig;
 
+		bool amiga_panning;
 		bool it_effects, it_new_effects, it_portamento_link, it_linear_slides;
 
 		effect_info_type last_param[256];

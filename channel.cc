@@ -46,7 +46,7 @@ namespace MultiPLAY
 				note_frequency = current_sample_context->samples_per_second * 2;
 			else
 				note_frequency = 987.766603;
-			
+
 			note_frequency *= pow(inter_note, znote - 49);
 
 			if (reset_sample_offset)
@@ -265,7 +265,7 @@ namespace MultiPLAY
 			{
 				profile.push_back("perform volume_envelope calculations");
 
-				return_sample *= volume_envelope->get_value_at(sample_offset);
+				return_sample *= volume_envelope->get_value_at(envelope_offset);
 
 				if (is_on_final_zero_volume_from_volume_envelope())
 				{
@@ -287,19 +287,23 @@ namespace MultiPLAY
 			if (panning_envelope != NULL)
 			{
 				profile.push_back("perform panning_envelope calculations");
-				return_sample *= pan_value(panning_envelope->get_value_at(sample_offset));
+				return_sample *= pan_value(panning_envelope->get_value_at(envelope_offset));
 			}
 
 			if (pitch_envelope != NULL)
 			{
 				profile.push_back("perform pitch_envelope calculations");
 
+				double sweep = 1.0;
 				double frequency = delta_offset_per_tick * ticks_per_second;
 				double exponent = lg(frequency);
 
-				exponent += pitch_envelope->get_value_at(sample_offset) * (16.0 / 12.0);
+				if (samples_this_note < current_sample_context->vibrato_sweep_ticks)
+					sweep = samples_this_note / (double)current_sample_context->vibrato_sweep_ticks;
+
+				exponent += pitch_envelope->get_value_at(envelope_offset) * (16.0 / 12.0);
 				if ((current_waveform == Waveform::Sample) && (current_sample->use_vibrato))
-					exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
+					exponent += sweep * current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
 
 				frequency = p2(exponent);
 				offset += (frequency / ticks_per_second);
@@ -323,6 +327,7 @@ namespace MultiPLAY
 			}
 
 			samples_this_note++;
+			envelope_offset++;
 
 			profile.push_back("move unitary part of offset into offset_major");
 
@@ -405,6 +410,8 @@ namespace MultiPLAY
 		play_full_sample = false;
 		intensity = 5000.0 / 32767.0;
 		channel_volume = 1.0;
+		offset_major = 0;
+		offset = 0;
 		current_waveform = default_waveform;
 		current_sample = NULL;
 		current_sample_context = NULL;

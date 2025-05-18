@@ -11,7 +11,8 @@ namespace MultiPLAY
 		{
 			MOD,
 			S3M,
-			IT
+			XM,
+			IT,
 		};
 	}
 
@@ -50,8 +51,9 @@ namespace MultiPLAY
 			Tremolo = 'R',
 			S3MExtendedEffect = 'S',
 			FineVibrato = 'U',
-			AmigaPanning = 'X',
+			Panning = 'X',
 			Panbrello = 'Y',
+			SetEnvelopePosition = 'Z', // XM
 		};
 	}
 
@@ -96,6 +98,8 @@ namespace MultiPLAY
 			PatternJump                  = 0xD,
 			Extended                     = 0xE,
 			SetSpeed                     = 0xF,
+
+			None = 0xFF,
 		};
 	}
 
@@ -145,8 +149,10 @@ namespace MultiPLAY
 
 		effect_struct();
 		effect_struct(EffectType::Type type, Effect::Type command, unsigned char info);
+		effect_struct(EffectType::Type type, Effect::Type command, unsigned char high_nybble, unsigned char low_nybble);
 
 		void init(EffectType::Type type, Effect::Type command, unsigned char info, row *r = NULL);
+		void init(EffectType::Type type, Effect::Type command, unsigned char high_nybble, unsigned char low_nybble, row *r = NULL);
 		void init(MODEffect::Type command, unsigned char info, row *r = NULL);
 
 		bool keepNote();

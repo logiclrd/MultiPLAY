@@ -38,7 +38,9 @@ namespace MultiPLAY
 		unsigned int num_channels;
 		int auto_loop_target;
 		bool stereo, use_instruments;
+		bool amiga_panning;
 		bool it_module, it_module_new_effects, it_module_portamento_link, it_module_linear_slides;
+		bool xm_module;
 		bool finished;
 
 		module_struct();

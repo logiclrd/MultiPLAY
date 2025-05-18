@@ -42,6 +42,7 @@ namespace MultiPLAY
 		pan_value panning;
 		bool looping;
 		long samples_this_note;
+		long envelope_offset;
 		playback_envelope *volume_envelope, *panning_envelope, *pitch_envelope;
 
 		std::vector<channel *> my_ancillary_channels;

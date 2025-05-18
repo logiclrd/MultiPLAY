@@ -36,6 +36,7 @@ namespace MultiPLAY
 	}
 
 	extern int znote_from_snote(int snote);
+	extern int snote_from_znote(int znote);
 	extern int snote_from_period(int period);
 	extern int snote_from_inote(int inote);
 }

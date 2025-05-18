@@ -254,7 +254,10 @@ namespace MultiPLAY
 		}
 
 		if (p != NULL)
+		{
 			p->samples_this_note = 0;
+			p->envelope_offset = 0;
+		}
 	}
 
 	/*virtual*/ void sample_instrument::kill_note(sample_context *c/* = NULL*/)
@@ -307,7 +310,7 @@ namespace MultiPLAY
 		sample_instrument_context &context = *(sample_instrument_context *)c;
 
 		one_sample ret(output_channels);
-		
+
 		if (context.cur_sample != NULL)
 			ret = global_volume * context.cur_sample->get_sample(sample, offset, context.cur_sample_context);
 

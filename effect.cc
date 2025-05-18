@@ -45,6 +45,11 @@ namespace MultiPLAY
 		return *this;
 	}
 
+	effect_struct::effect_struct(EffectType::Type type, Effect::Type command, unsigned char high_nybble, unsigned char low_nybble)
+	{
+		init(type, command, high_nybble, low_nybble);
+	}
+
 	effect_struct::effect_struct(EffectType::Type type, Effect::Type command, unsigned char info)
 	{
 		init(type, command, info);
@@ -92,7 +97,7 @@ namespace MultiPLAY
 				command = Effect::Tremolo;
 				break;
 			case MODEffect::FinePanning: // 0x8, fine panning (0-255; converted here to 0-128 for Xxx)
-				command = Effect::AmigaPanning;
+				command = Effect::Panning;
 				info = info * 128 / 255;
 				break;
 			case MODEffect::SampleOffset: // 0x9
@@ -223,6 +228,11 @@ namespace MultiPLAY
 		this->info = (Effect::Type)info;
 
 		present = true;
+	}
+
+	void effect_struct::init(EffectType::Type type, Effect::Type command, unsigned char high_nybble, unsigned char low_nybble, row *r)
+	{
+		init(type, command, (high_nybble << 4) | (low_nybble & 0xF), r);
 	}
 
 	void effect_struct::init(EffectType::Type type, Effect::Type command, unsigned char info, row *r)

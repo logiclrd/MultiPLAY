@@ -347,6 +347,8 @@ namespace MultiPLAY
 		for (int i=0; i<=last_order; i++)
 			ret->pattern_list.push_back(&ret->patterns[order_table[i]]);
 
+		ret->amiga_panning = true;
+
 		return ret;
 	}
 }

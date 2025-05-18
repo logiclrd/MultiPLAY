@@ -60,6 +60,7 @@ namespace MultiPLAY
 		target_volume = -1;
 		volume = channel_volume;
 		it_effects = module->it_module;
+		amiga_panning = module->amiga_panning;
 		it_new_effects = module->it_module_new_effects;
 		it_portamento_link = module->it_module_portamento_link;
 		it_linear_slides = module->it_module_linear_slides;
@@ -720,44 +721,50 @@ namespace MultiPLAY
 							global_volume = 1.0;
 						else
 							global_volume = row_list[i].effect.info / 64.0;
+
 						break;
 					case Effect::GlobalVolumeSlide: // 'W'
-						if (it_effects)
-						{
-							effect_info_type info = row_list[i].effect.info;
-							bool fine;
+					{
+						effect_info_type info = row_list[i].effect.info;
 
-							if (info.data == 0) // repeat
-								info = last_param['W'];
-							else
-								last_param['W'] = info;
-
-							global_volume_slide_start = global_volume;
-
-							if (info.low_nybble == 0) // slide up
-								global_volume_slide_end = global_volume_slide_start + (module->speed - 1) * info.high_nybble / 32.0;
-							else if (info.high_nybble == 0) // slide down
-								global_volume_slide_end = global_volume_slide_start - (module->speed - 1) * info.low_nybble / 32.0;
-							else if (info.low_nybble == 0xF) // fine slide up
-							{
-								global_volume_slide_end = global_volume_slide_start + info.high_nybble / 2000.0;
-								fine = true;
-							}
-							else if (info.high_nybble == 0xF) // fine slide down
-							{
-								global_volume_slide_end = global_volume_slide_start - info.high_nybble / 2000.0;
-								fine = true;
-							}
-
-							if (global_volume_slide_end == global_volume_slide_start)
-								break;
-
-							global_volume_slide = true;
-						}
+						if (info.data == 0) // repeat
+							info = last_param['W'];
 						else
-							cerr << "Ignoring pre-IT command: W"
-								<< setfill('0') << setw(2) << hex << uppercase << int(row_list[i].effect.info.data) << nouppercase << dec << endl;
-				}                      
+							last_param['W'] = info;
+
+						global_volume_slide_start = global_volume;
+
+						if (info.low_nybble == 0) // slide up
+							global_volume_slide_end = global_volume_slide_start + (module->speed - 1) * info.high_nybble / 32.0;
+						else if (info.high_nybble == 0) // slide down
+							global_volume_slide_end = global_volume_slide_start - (module->speed - 1) * info.low_nybble / 32.0;
+						else if (it_effects)
+						{
+							if (info.low_nybble == 0xF) // fine slide up
+								global_volume_slide_end = global_volume_slide_start + info.high_nybble / 2000.0;
+							else if (info.high_nybble == 0xF) // fine slide down
+								global_volume_slide_end = global_volume_slide_start - info.high_nybble / 2000.0;
+						}
+
+						if (global_volume_slide_end == global_volume_slide_start)
+							break;
+
+						global_volume_slide = true;
+
+						break;
+					}
+					case Effect::SetEnvelopePosition:
+					{
+						effect_info_type info = row_list[i].effect.info;
+
+						if (module->xm_module)
+							envelope_offset = info.data * module->ticks_per_frame;
+						else
+							cerr << "Ignoring XM-specific effect Effect::SetEnvelopePosition in non-XM module" << endl;
+
+						break;
+					}
+				}
 			}
 			
 			if (recalc)
@@ -1010,11 +1017,14 @@ namespace MultiPLAY
 				}
 			}
 
-			bool primary_is_vibrato = row.effect.is(Effect::Vibrato) || row.effect.is(Effect::SetVibratoSpeed);
+			bool primary_is_vibrato = row.effect.is(Effect::Vibrato) || row.effect.is(Effect::SetVibratoSpeed) || row.effect.is(Effect::VibratoAndVolumeSlide);
 			bool secondary_is_vibrato = row.secondary_effect.is(Effect::Vibrato) || row.secondary_effect.is(Effect::SetVibratoSpeed);
 
 			if (primary_is_vibrato || secondary_is_vibrato)
 			{
+				bool primary_is_full_vibrato = primary_is_vibrato && row.effect.isnt(Effect::SetVibratoSpeed);
+				bool secondary_is_full_vibrato = secondary_is_vibrato && row.secondary_effect.isnt(Effect::SetVibratoSpeed);
+
 				// When doubled, this effect compounds.
 				if (secondary_is_vibrato)
 				{
@@ -1028,7 +1038,11 @@ namespace MultiPLAY
 
 				if (primary_is_vibrato)
 				{
-					double new_vibrato_cycle_frequency = (module->speed * info.high_nybble) / 64.0;
+					auto parameter = primary_is_full_vibrato
+						? info.high_nybble
+						: (last_param[Effect::Vibrato] >> 4);
+
+					double new_vibrato_cycle_frequency = (module->speed * parameter) / 64.0;
 
 					if (p_vibrato && (new_vibrato_cycle_frequency != vibrato_cycle_frequency))
 						vibrato_cycle_offset *= (vibrato_cycle_frequency / new_vibrato_cycle_frequency);
@@ -1036,11 +1050,11 @@ namespace MultiPLAY
 					vibrato_cycle_frequency = new_vibrato_cycle_frequency;
 				}
 
-				bool restart_primary = primary_is_vibrato && row.effect.isnt(Effect::SetVibratoSpeed) && ((info.low_nybble != 0) && (info.high_nybble != 0));
-				bool restart_secondary = secondary_is_vibrato && row.secondary_effect.isnt(Effect::SetVibratoSpeed) && ((secondary_info.low_nybble != 0) && (secondary_info.high_nybble != 0));
+				bool restart_primary = primary_is_full_vibrato && ((info.low_nybble != 0) && (info.high_nybble != 0));
+				bool restart_secondary = secondary_is_full_vibrato && ((secondary_info.low_nybble != 0) && (secondary_info.high_nybble != 0));
 
-				auto depth_param = (primary_is_vibrato && (info.low_nybble != 0))
-					? info.low_nybble : (secondary_is_vibrato ? secondary_info.low_nybble : 0);
+				auto depth_param = (primary_is_full_vibrato && (info.low_nybble != 0))
+					? info.low_nybble : (secondary_is_full_vibrato ? secondary_info.low_nybble : 0);
 
 				if (depth_param > 0)
 				{
@@ -1073,25 +1087,25 @@ namespace MultiPLAY
 				vibrato = true;
 			}
 
-			if (row.effect.is(Effect::AmigaPanning) || row.secondary_effect.is(Effect::AmigaPanning)
-				|| row.effect.is(Effect::PanSlide) || row.secondary_effect.is(Effect::PanSlide))
+			if (row.effect.is(Effect::Panning) || row.secondary_effect.is(Effect::Panning)
+			 || row.effect.is(Effect::PanSlide) || row.secondary_effect.is(Effect::PanSlide))
 			{
 				// When doubled, the set goes to the primary, and slides compound.
 				if (module->stereo)
 				{
-					if (row.effect.is(Effect::AmigaPanning))
+					if (row.effect.is(Effect::Panning))
 					{
-						if (it_effects)
-							panning.from_mod_pan(info.data);
-						else
+						if (amiga_panning)
 							panning.from_amiga_pan(info.data);
-					}
-					else if (row.secondary_effect.is(Effect::AmigaPanning))
-					{
-						if (it_effects)
-							panning.from_mod_pan(secondary_info.data);
 						else
+							panning.from_mod_pan(info.data);
+					}
+					else if (row.secondary_effect.is(Effect::Panning))
+					{
+						if (amiga_panning)
 							panning.from_amiga_pan(secondary_info.data);
+						else
+							panning.from_mod_pan(secondary_info.data);
 					}
 
 					if (info.data == 0) // repeat
@@ -1253,7 +1267,7 @@ namespace MultiPLAY
 				case Effect::Vibrato:        // 'H'
 				case Effect::ChannelVolume:  // 'M'
 				case Effect::PanSlide:       // 'P'
-				case Effect::AmigaPanning:   // 'X'
+				case Effect::Panning:        // 'X'
 					break;
 
 				case Effect::PortamentoDown: // 'E'
@@ -1853,6 +1867,7 @@ namespace MultiPLAY
 						cerr << "Ignoring pre-IT command: " << row.effect.command
 							<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
 					break;
+
 				default:
 					cerr << "Unimplemented S3M/IT command: " << row.effect.command
 						<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;

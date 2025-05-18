@@ -936,7 +936,7 @@ namespace MultiPLAY
 							if (c.volume_panning <= 192)
 							{
 								int param = c.volume_panning - 128;
-								r.secondary_effect = effect_struct(EffectType::IT, Effect::AmigaPanning, (unsigned char)param);
+								r.secondary_effect = effect_struct(EffectType::IT, Effect::Panning, (unsigned char)param);
 							}
 							else if (c.volume_panning <= 202)
 							{

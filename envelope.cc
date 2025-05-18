@@ -37,13 +37,18 @@ namespace MultiPLAY
 			{
 				double new_tick;
 
-				if (sustain_loop_length)
-				{
-					double repetitions = floor((tick - sustain_loop_begin_tick) / sustain_loop_length);
-					new_tick = tick - repetitions * sustain_loop_length;
-				}
-				else
+				if (sustain_loop_end_tick == sustain_loop_begin_tick)
 					new_tick = sustain_loop_begin_tick;
+				else
+				{
+					if (sustain_loop_length)
+					{
+						double repetitions = floor((tick - sustain_loop_begin_tick) / sustain_loop_length);
+						new_tick = tick - repetitions * sustain_loop_length;
+					}
+					else
+						new_tick = sustain_loop_begin_tick;
+				}
 
 				susloop.exit_diff = tick - new_tick;
 			}

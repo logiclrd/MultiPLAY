@@ -111,6 +111,7 @@ namespace MultiPLAY
 			context.samples_per_second = samples_per_second;
 			context.default_volume = default_volume;
 			context.num_samples = num_samples;
+			context.vibrato_sweep_ticks = vibrato_sweep_frames * effect_tick_length;
 
 			if (p)
 			{
@@ -120,7 +121,9 @@ namespace MultiPLAY
 					p->panning_envelope = NULL;
 					p->pitch_envelope = NULL;
 				}
+
 				p->samples_this_note = 0;
+				p->envelope_offset = 0;
 			}
 		}
 

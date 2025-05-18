@@ -352,6 +352,8 @@ namespace MultiPLAY
 
 		ret->auto_loop_target = song_auto_loop_target;
 
+		ret->amiga_panning = true;
+
 		return ret;
 	}
 }

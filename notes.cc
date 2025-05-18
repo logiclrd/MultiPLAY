@@ -15,6 +15,14 @@ namespace MultiPLAY
 		return (12 * (snote >> 4)) + (snote & 15) - 11;
 	}
 
+	extern int snote_from_znote(int znote)
+	{
+		int octave = (znote + 9) / 12;
+		int note = (znote + 9) - 12 * octave;
+
+		return (octave << 4) | note;
+	}
+
 	extern int snote_from_period(int period)
 	{
 		double frequency = 3579264.0 / period;

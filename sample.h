@@ -19,6 +19,8 @@ namespace MultiPLAY
 	{
 		enum Type
 		{
+			Undefined,
+
 			Forward,
 			PingPong,
 		};
@@ -32,6 +34,10 @@ namespace MultiPLAY
 		double samples_per_second;
 		double default_volume;
 		unsigned int num_samples;
+
+		// "fade" the vibrato in over this many ticks, calculated at
+		// note start from sample.vibrato_sweep_frames and speed
+		long vibrato_sweep_ticks;
 
 		sample_context(sample *cw);
 		virtual ~sample_context();
@@ -53,7 +59,9 @@ namespace MultiPLAY
 		double samples_per_second;
 
 		bool use_vibrato;
-		double vibrato_depth, vibrato_cycle_frequency; // frequency relative to samples with samples_per_second per second
+		double vibrato_depth;
+		double vibrato_cycle_frequency; // frequency relative to samples with samples_per_second per second
+		int vibrato_sweep_frames;
 
 		virtual one_sample get_sample(unsigned int sample, double offset, sample_context *c = NULL) = 0;
 		virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0.0, bool top_level = true, int *znote = NULL) = 0;

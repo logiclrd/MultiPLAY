@@ -1,0 +1,23 @@
+OBJECT_DIR=obj/$(CONFIGURATION)
+OUTPUT_DIR=bin/$(CONFIGURATION)
+OUTPUT_FILE=$(OUTPUT_DIR)/MultiPLAY-$(CONFIGURATION)
+
+OBJECTS=$(patsubst %.cc,$(OBJECT_DIR)/%.o,$(SOURCES))
+DEPS=$(patsubst %.o,%.d,$(OBJECTS))
+
+$(CONFIGURATION): $(OUTPUT_FILE)
+
+-include $(DEPS)
+
+$(OUTPUT_FILE): $(OBJECTS)
+	@mkdir -p $(OUTPUT_DIR)
+	g++ -o $@ $^ $(LDFLAGS)
+
+obj/$(CONFIGURATION)/%.o: %.cc
+	@mkdir -p $(dir $@)
+	g++ -o $@ $< -c -MMD $(CXXFLAGS)
+
+FORCE:
+
+.PHONY: FORCE $(CONFIGURATION)
+

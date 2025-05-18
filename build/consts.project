@@ -1,0 +1,16 @@
+OUTPUT_BASE = MultiPLAY
+
+SOURCES = MultiPLAY.cc bit_memory_stream.cc bit_value.cc unix_break_handler.cc channel.cc conversion.cc
+SOURCES += effect.cc envelope.cc formatting.cc math.cc module.cc mod_finetune.cc notes.cc one_sample.cc
+SOURCES += pattern.cc progress.cc sample.cc sample_builtintype.cc sample_instrument.cc wave_file.cc
+SOURCES += Load_Sample.cc Load_MOD.cc Load_MTM.cc Load_S3M.cc Load_IT.cc Load_XM.cc Load_UMX.cc
+SOURCES += Channel_DYNAMIC.cc Channel_PLAY.cc Channel_MODULE.cc
+
+SOURCES += DSP.cc
+
+SOURCES += Output-DirectX.cc Output-SDL.cc
+
+SOURCES += uLaw-aLaw.cc
+
+SOURCES += Profile.cc
+

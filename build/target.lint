@@ -1,0 +1,9 @@
+include build/consts.project
+include build/consts.flags
+
+CXXFLAGS=$(SDL_CXX) $(DEBUG) $(WARNINGS)
+LDFLAGS=$(SDL_LD)
+CONFIGURATION=lint
+
+include build/make.build
+

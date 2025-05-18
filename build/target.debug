@@ -1,0 +1,8 @@
+include build/consts.project
+include build/consts.flags
+
+CXXFLAGS=$(SDL_CXX) $(DEBUG)
+LDFLAGS=$(SDL_LD)
+CONFIGURATION=debug
+
+include build/make.build

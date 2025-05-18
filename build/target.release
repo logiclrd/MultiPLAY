@@ -1,0 +1,9 @@
+include build/consts.project
+include build/consts.flags
+
+CXXFLAGS=$(SDL_CXX) $(OPTIMIZE)
+LDFLAGS=$(SDL_LD)
+CONFIGURATION=release
+
+include build/make.build
+

@@ -21,7 +21,7 @@ namespace MultiPLAY
 
 	// struct channel_DYNAMIC
   channel_DYNAMIC::channel_DYNAMIC(channel &spawner, sample *sample, sample_context *context, double fade_per_tick)
-    : channel(spawner.panning, false),
+    : channel(spawner.panning, false, true),
       parent_channel(spawner)
   {
     stringstream ss;

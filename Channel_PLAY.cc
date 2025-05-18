@@ -24,7 +24,7 @@ namespace MultiPLAY
 
 	// struct channel_PLAY
 	channel_PLAY::channel_PLAY(istream *input, bool looping, bool overlap/* = false*/)
-		: channel(looping),
+		: channel(looping, true),
 			in(input)
 	{
 		stringstream ss;

@@ -35,9 +35,9 @@ namespace MultiPLAY
 		int original_tempo, tempo_change_per_frame;
 		int pattern_delay_frames;
 		bool volume_slide, portamento, vibrato, tremor, arpeggio, note_delay, retrigger, tremolo;
-		bool note_cut, panning_slide, panbrello, channel_volume_slide, tempo_slide, global_volume_slide;
+		bool note_cut_at_frame, panning_slide, panbrello, channel_volume_slide, tempo_slide, global_volume_slide;
 		bool pattern_delay_by_frames, p_volume_slide, p_portamento, p_vibrato, p_tremor, p_arpeggio;
-		bool p_note_delay, p_retrigger, p_tremolo, p_note_cut, p_panning_slide, p_panbrello;
+		bool p_note_delay, p_retrigger, p_tremolo, p_note_cut_at_frame, p_panning_slide, p_panbrello;
 		bool p_channel_volume_slide, p_tempo_slide, p_global_volume_slide, p_pattern_delay_by_frames;
 		int pattern_delay;
 		double base_note_frequency;
@@ -52,7 +52,7 @@ namespace MultiPLAY
 
 		effect_info_type last_param[256];
 
-		channel_MODULE(unsigned int channel_number, module_struct *module, int channel_volume, bool looping);
+		channel_MODULE(unsigned int channel_number, module_struct *module, int channel_volume, bool looping, bool enabled);
 		virtual ~channel_MODULE();
 
 		virtual void note_off(bool calc_fade_per_tick = true, bool exit_envelope_loops = true);

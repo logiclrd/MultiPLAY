@@ -27,7 +27,7 @@ namespace MultiPLAY
 	{
 		std::string identity;
 
-		bool finished;
+		bool enabled, finished;
 		double offset, delta_offset_per_tick;
 		double note_frequency;
 		long offset_major;
@@ -55,14 +55,15 @@ namespace MultiPLAY
 		int note_length_denominator, this_note_length_denominator;
 		double rest_ticks_proportion;
 
-		channel(bool looping);
-		channel(pan_value &default_panning, bool looping);
+		channel(bool looping, bool enabled);
+		channel(pan_value &default_panning, bool looping, bool enabled);
 		virtual ~channel();
 
 		void recalc(int znote, double duration_scale, bool calculate_length = true, bool reset_sample_offset = true, bool zero_means_no_note = true);
 
 		virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile) = 0;
 
+		void note_cut();
 		virtual void note_off(bool calc_fade_per_tick = true, bool all_notes_off = true);
 		void base_note_off(bool calc_fade_per_tick = true, bool exit_sustain_loop = true, bool exit_envelope_loops = true);
 		virtual void note_fade();

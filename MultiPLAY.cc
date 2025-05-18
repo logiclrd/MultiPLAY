@@ -1,10 +1,10 @@
+#include <csignal>
 #include <cstring>
 #include <sstream>
-
-using namespace std;
-
 #include <cctype>
 #include <cmath>
+
+using namespace std;
 
 #include "RAII.h"
 
@@ -484,7 +484,7 @@ int main(int argc, char *argv[])
 					auto last_specified_sample_name_index = module->samples.size() - 1;
 
 					while ((last_specified_sample_name_index > 0)
-							&& (trim(module->samples[last_specified_sample_name_index]->name) == ""))
+					    && (trim(module->samples[last_specified_sample_name_index]->name) == ""))
 						last_specified_sample_name_index--;
 
 					for (vector<string>::size_type j=0; j <= last_specified_sample_name_index; j++)
@@ -494,8 +494,7 @@ int main(int argc, char *argv[])
 				cout << endl;
 
 				for (unsigned j=0; j<MAX_MODULE_CHANNELS; j++)
-					if (module->channel_enabled[j])
-						channels.push_back(new channel_MODULE(j, module, 64, looping));
+					channels.push_back(new channel_MODULE(j, module, 64, looping, module->channel_enabled[j]));
 
 				modules.push_back(module);
 			}

@@ -10,7 +10,7 @@
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/bin/debug/MultiPLAY-debug",
-			"args": ["-module", "/code/MultiPLAY/Samples/mods/tight to me dbg.it"],
+			"args": ["-module", "/code/MultiPLAY/Samples/mods/tight to me.it"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],

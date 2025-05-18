@@ -1225,13 +1225,17 @@ namespace MultiPLAY
 			if (has_note_events[i])
 			{
 				count++;
-				ret->channel_enabled[i] = true;
+				ret->channel_enabled[i] = ((initial_channel_pan[i] & 128) == 0);
 				ret->channel_map[i] = i;
 				if (ret->stereo)
 				{
 					ret->initial_panning[i].set_channels(2);
 
-					ret->base_pan[i] = initial_channel_pan[i];
+					int initial_pan = initial_channel_pan[i] & 127;
+
+					if (initial_pan <= 64)
+						ret->base_pan[i] = initial_pan;
+
 					ret->initial_panning[i].from_amiga_pan(ret->base_pan[i]);
 				}
 			}

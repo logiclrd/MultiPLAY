@@ -2,6 +2,8 @@
 
 using namespace std;
 
+#include <signal.h>
+
 #include "channel.h"
 
 #include "MultiPLAY.h"
@@ -9,8 +11,9 @@ using namespace std;
 #include "Profile.h"
 
 #include "one_sample.h"
-#include "math.h"
 #include "progress.h"
+#include "lint.h"
+#include "math.h"
 
 namespace MultiPLAY
 {
@@ -49,6 +52,8 @@ namespace MultiPLAY
 
 			note_frequency *= pow(inter_note, znote - 49);
 
+			LINT_DOUBLE(note_frequency);
+
 			if (reset_sample_offset)
 			{
 				offset = 0;
@@ -56,6 +61,7 @@ namespace MultiPLAY
 			}
 
 			delta_offset_per_tick = note_frequency / ticks_per_second;
+			LINT_DOUBLE(delta_offset_per_tick);
 		}
 
 		if (calculate_length)
@@ -92,6 +98,17 @@ namespace MultiPLAY
 		}
 	}
 
+	void channel::note_cut()
+	{
+		current_sample = NULL;
+
+		if (current_sample_context != NULL)
+		{
+			delete current_sample_context;
+			current_sample_context = NULL;
+		}
+	}
+
 	/*virtual*/ void channel::note_off(bool calc_fade_per_tick/* = true*/, bool exit_envelope_loops/* = true*/)
 	{
 		base_note_off(calc_fade_per_tick, true, exit_envelope_loops);
@@ -108,17 +125,20 @@ namespace MultiPLAY
 		if (exit_envelope_loops)
 		{
 			if (volume_envelope != NULL)
-				volume_envelope->note_off(offset_major, offset);
+				volume_envelope->note_off(envelope_offset);
 			if (panning_envelope != NULL)
-				panning_envelope->note_off(offset_major, offset);
+				panning_envelope->note_off(envelope_offset);
 			if (pitch_envelope != NULL)
-				pitch_envelope->note_off(offset_major, offset);
+				pitch_envelope->note_off(envelope_offset);
 		}
 
 		if ((volume_envelope == NULL) || volume_envelope->looping)
 		{
 			fading = true;
 			fade_value = 1.0;
+
+			if (fade_per_tick == 0)
+				have_fade_per_tick = false;
 		}
 
 		if (calc_fade_per_tick)
@@ -133,6 +153,8 @@ namespace MultiPLAY
 			double fade_ticks = fade_duration * ticks_per_second;
 
 			fade_per_tick = 1.0 / fade_ticks;
+
+			have_fade_per_tick = true;
 		}
 	}
 
@@ -189,186 +211,186 @@ namespace MultiPLAY
 		if (ticks_left)
 		{
 			ticks_left--;
+
 			if (ticks_left < rest_ticks)
 			{
 				return_sample.clear();
 				return return_sample;
 			}
 
-			profile.push_back("generate/calculate sample for current waveform");
-
-			switch (current_waveform)
+			if (enabled)
 			{
-				case Waveform::Sine:
-					return_sample = panning * (channel_volume * sin(6.283185 * offset));
-					break;
-				case Waveform::Square:
-					return_sample = panning * (channel_volume * ((offset > 0.5) * 2 - 1));
-					break;
-				case Waveform::Sawtooth:
-					if (offset < 0.5)
-						return_sample = panning * (channel_volume * (2.0 * offset));
-					else
-						return_sample = panning * (channel_volume * (2.0 * (offset - 1.5)));
-					break;
-				case Waveform::RampDown:
-					if (offset < 0.5)
-						return_sample = panning * (channel_volume * (-2.0 * offset));
-					else
-						return_sample = panning * (channel_volume * ((1.0 - offset) * 2.0));
-					break;
-				case Waveform::Triangle:
-					if (offset < 0.25)
-						return_sample = panning * (channel_volume * (4.0 * offset));
-					else if (offset < 0.75)
-						return_sample = panning * (channel_volume * (4.0 * (0.5 - offset)));
-					else
-						return_sample = panning * (channel_volume * (4.0 * (offset - 1.0)));
-					break;
-				case Waveform::Sample:
-					if (current_sample)
-					{
-						profile.push_back("interpolate sample from current_sample");
-						return_sample = current_sample->get_sample(offset_major, offset, current_sample_context);
-						profile.push_back("apply channel_volume");
-						return_sample = channel_volume * return_sample;
-						profile.push_back("apply panning");
-						return_sample = panning * return_sample;
-						profile.push_back("sample calculation complete");
-					}
-					else
-						return_sample.clear(output_channels);
-					break;
-			}
+				profile.push_back("generate/calculate sample for current waveform");
 
-			double sample_offset = samples_this_note;
-
-			if (fading)
-			{
-				profile.push_back("perform fading calculations");
-
-				if (fade_value <= 0)
+				switch (current_waveform)
 				{
-					fade_value = 0;
-					fade_per_tick = 0;
-
-					current_sample = NULL;
-
-					if (current_sample_context != NULL)
-					{
-						delete current_sample_context;
-						current_sample_context = NULL;
-					}
-
-					if (finish_with_fade)
-						finished = true;
+					case Waveform::Sine:
+						return_sample = panning * (channel_volume * sin(6.283185 * offset));
+						break;
+					case Waveform::Square:
+						return_sample = panning * (channel_volume * ((offset > 0.5) * 2 - 1));
+						break;
+					case Waveform::Sawtooth:
+						if (offset < 0.5)
+							return_sample = panning * (channel_volume * (2.0 * offset));
+						else
+							return_sample = panning * (channel_volume * (2.0 * (offset - 1.5)));
+						break;
+					case Waveform::RampDown:
+						if (offset < 0.5)
+							return_sample = panning * (channel_volume * (-2.0 * offset));
+						else
+							return_sample = panning * (channel_volume * ((1.0 - offset) * 2.0));
+						break;
+					case Waveform::Triangle:
+						if (offset < 0.25)
+							return_sample = panning * (channel_volume * (4.0 * offset));
+						else if (offset < 0.75)
+							return_sample = panning * (channel_volume * (4.0 * (0.5 - offset)));
+						else
+							return_sample = panning * (channel_volume * (4.0 * (offset - 1.0)));
+						break;
+					case Waveform::Sample:
+						if (current_sample)
+						{
+							profile.push_back("interpolate sample from current_sample");
+							return_sample = current_sample->get_sample(offset_major, offset, current_sample_context);
+							profile.push_back("apply channel_volume");
+							return_sample = channel_volume * return_sample;
+							profile.push_back("apply panning");
+							return_sample = panning * return_sample;
+							profile.push_back("sample calculation complete");
+						}
+						else
+							return_sample.clear(output_channels);
+						break;
 				}
 
-				return_sample *= fade_value;
-
-				fade_value -= fade_per_tick;
-			}
-
-			if (volume_envelope != NULL)
-			{
-				profile.push_back("perform volume_envelope calculations");
-
-				return_sample *= volume_envelope->get_value_at(envelope_offset);
-
-				if (is_on_final_zero_volume_from_volume_envelope())
+				if (fading)
 				{
-					delete volume_envelope;
+					profile.push_back("perform fading calculations");
 
-					volume_envelope = NULL;
-
-					fading = true;
-					fade_value = 1.0;
-
-					if (!have_fade_per_tick)
+					if (fade_value <= 0)
 					{
-						base_note_off(true, false);
-						have_fade_per_tick = true;
+						fade_value = 0;
+						fade_per_tick = 0;
+						have_fade_per_tick = false;
+
+						note_cut();
+
+						if (finish_with_fade)
+							finished = true;
 					}
+
+					return_sample *= fade_value;
+
+					fade_value -= fade_per_tick;
 				}
-			}
 
-			if (panning_envelope != NULL)
-			{
-				profile.push_back("perform panning_envelope calculations");
-				return_sample *= pan_value(panning_envelope->get_value_at(envelope_offset));
-			}
-
-			if (pitch_envelope != NULL)
-			{
-				profile.push_back("perform pitch_envelope calculations");
-
-				double sweep = 1.0;
-				double frequency = delta_offset_per_tick * ticks_per_second;
-				double exponent = lg(frequency);
-
-				if (samples_this_note < current_sample_context->vibrato_sweep_ticks)
-					sweep = samples_this_note / (double)current_sample_context->vibrato_sweep_ticks;
-
-				exponent += pitch_envelope->get_value_at(envelope_offset) * (16.0 / 12.0);
-				if ((current_waveform == Waveform::Sample) && (current_sample->use_vibrato))
-					exponent += sweep * current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
-
-				frequency = p2(exponent);
-				offset += (frequency / ticks_per_second);
-			}
-			else
-			{
-				if ((current_waveform == Waveform::Sample) && (current_sample && current_sample->use_vibrato))
+				if (volume_envelope != NULL)
 				{
-					profile.push_back("perform vibrato calculations");
+					profile.push_back("perform volume_envelope calculations");
 
+					return_sample *= volume_envelope->get_value_at(envelope_offset);
+
+					if (is_on_final_zero_volume_from_volume_envelope())
+						note_cut();
+				}
+
+				if (panning_envelope != NULL)
+				{
+					profile.push_back("perform panning_envelope calculations");
+					return_sample *= pan_value(panning_envelope->get_value_at(envelope_offset));
+				}
+
+				if (pitch_envelope != NULL)
+				{
+					profile.push_back("perform pitch_envelope calculations");
+
+					double sweep = 1.0;
 					double frequency = delta_offset_per_tick * ticks_per_second;
 					double exponent = lg(frequency);
-					
-					exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
+
+					if (samples_this_note < current_sample_context->vibrato_sweep_ticks)
+						sweep = samples_this_note / (double)current_sample_context->vibrato_sweep_ticks;
+
+					exponent += pitch_envelope->get_value_at(envelope_offset) * (16.0 / 12.0);
+					if ((current_waveform == Waveform::Sample) && (current_sample->use_vibrato))
+						exponent += sweep * current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
 
 					frequency = p2(exponent);
 					offset += (frequency / ticks_per_second);
 				}
 				else
-					offset += delta_offset_per_tick;
-			}
-
-			samples_this_note++;
-			envelope_offset++;
-
-			profile.push_back("move unitary part of offset into offset_major");
-
-			if ((offset > 1.0) || (offset < 0.0))
-			{
-				if (offset > 2.0)
 				{
-					double offset_floor = floor(offset);
+					if ((current_waveform == Waveform::Sample) && (current_sample && current_sample->use_vibrato))
+					{
+						profile.push_back("perform vibrato calculations");
 
-					offset_major += long(offset_floor);
-					offset -= offset_floor;
+						double frequency = delta_offset_per_tick * ticks_per_second;
+						double exponent = lg(frequency);
+
+						exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
+
+						frequency = p2(exponent);
+						offset += (frequency / ticks_per_second);
+
+						if (LINT_DOUBLE_CHECK(offset))
+						{
+							LINT_DOUBLE(offset);
+
+							// Repeat the calculation for use in a debug session.
+							frequency = delta_offset_per_tick * ticks_per_second;
+							exponent = lg(frequency);
+							
+							exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
+
+							frequency = p2(exponent);
+							offset += (frequency / ticks_per_second);
+						}
+					}
+					else
+						offset += delta_offset_per_tick;
+
+					LINT_DOUBLE(offset);
 				}
-				else
+
+				samples_this_note++;
+				envelope_offset++;
+
+				profile.push_back("move unitary part of offset into offset_major");
+
+				if ((offset > 1.0) || (offset < 0.0))
 				{
-					offset_major++;
-					offset -= 1.0;
+					if (offset > 2.0)
+					{
+						double offset_floor = floor(offset);
+
+						offset_major += long(offset_floor);
+						offset -= offset_floor;
+					}
+					else
+					{
+						offset_major++;
+						offset -= 1.0;
+					}
 				}
+
+				profile.push_back("apply dropoff");
+
+				if (ticks_left < dropoff_start)
+				{
+					double volume = double(ticks_left - rest_ticks) / (dropoff_start - rest_ticks);
+					return_sample *= volume;
+				}
+
+				if (ticks_left == cutoff_ticks)
+					ticks_left = 0;
+
+				profile.push_back("apply intensity");
+
+				return_sample *= intensity;
 			}
-
-			profile.push_back("apply dropoff");
-
-			if (ticks_left < dropoff_start)
-			{
-				double volume = double(ticks_left - rest_ticks) / (dropoff_start - rest_ticks);
-				return_sample *= volume;
-			}
-
-			if (ticks_left == cutoff_ticks)
-				ticks_left = 0;
-
-			profile.push_back("apply intensity");
-
-			return_sample *= intensity;
 		}
 
 		profile.push_back("return");
@@ -376,10 +398,11 @@ namespace MultiPLAY
 		return return_sample;
 	}
 
-	channel::channel(bool looping)
+	channel::channel(bool looping, bool enabled)
 		: return_sample(output_channels),
 			panning(output_channels),
-			looping(looping)
+			looping(looping),
+			enabled(enabled)
 	{
 		identity = "UNINITIALIZED";
 
@@ -403,10 +426,11 @@ namespace MultiPLAY
 		have_fade_per_tick = false;
 	}
 
-	channel::channel(pan_value &default_panning, bool looping)
+	channel::channel(pan_value &default_panning, bool looping, bool enabled)
 		: return_sample(output_channels),
 			panning(default_panning),
-			looping(looping)
+			looping(looping),
+			enabled(enabled)
 	{
 		identity = "UNINITIALIZED";
 

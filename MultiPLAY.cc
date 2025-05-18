@@ -129,10 +129,8 @@ namespace MultiPLAY
 			module->filename = filename;
 
 			// Cap the pattern order, in case the loader hasn't already done it.
+			module->pattern_list_length = module->pattern_list.size();
 			module->pattern_list.push_back(&pattern::end_marker);
-
-			if (module->auto_loop_target >= (int)module->pattern_list.size())
-				module->auto_loop_target = int(module->pattern_list.size() - 1);
 		}
 
 		return module;
@@ -471,6 +469,9 @@ int main(int argc, char *argv[])
 			if (module)
 			{
 				module->current_pattern = module_start_patterns[i];
+
+				if (module->current_pattern >= int(module->pattern_list.size()))
+					module->finished = true;
 
 				string header_line = string("\"") + module->name + "\" (" + module->filename + ")";
 

@@ -21,6 +21,7 @@ namespace MultiPLAY
 	{
 		std::string filename, name;
 		std::vector<pattern> patterns;
+		int pattern_list_length; // Populated after load by the main driver.
 		std::vector<pattern *> pattern_list;
 		std::vector<sample *> samples;
 		std::vector<module_sample_info> sample_info;

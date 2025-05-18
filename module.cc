@@ -34,6 +34,7 @@ namespace MultiPLAY
 		it_module_linear_slides = false;
 		auto_loop_target = -1;
 		override_next_row = -1;
+		pattern_list_length = 0;
 
 		memset(&channel_enabled, 0, sizeof(channel_enabled));
 		memset(&channel_map, 0, sizeof(channel_map));

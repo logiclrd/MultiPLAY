@@ -104,8 +104,8 @@ namespace MultiPLAY
 				format_pattern(d, &mod->patterns[i]);
 			}
 
-			d << "pattern list: " << mod->pattern_list.size() << endl;
-			for (unsigned i = 0, l  = mod->pattern_list.size(); i < l; i++)
+			d << "pattern list: " << mod->pattern_list_length << endl;
+			for (unsigned i = 0, l  = mod->pattern_list_length; i < l; i++)
 			{
 				d << "[" << i << "]: ";
 

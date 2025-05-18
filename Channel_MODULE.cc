@@ -97,7 +97,7 @@ namespace MultiPLAY
 	/*virtual*/ void channel_MODULE::get_playback_position(PlaybackPosition &position)
 	{
 		position.Order = int(module->current_pattern);
-		position.OrderCount = int(module->pattern_list.size());
+		position.OrderCount = int(module->pattern_list_length);
 		position.Pattern = module->pattern_list[module->current_pattern]->index;
 		position.PatternCount = int(module->patterns.size());
 		position.Row = module->current_row;
@@ -543,7 +543,7 @@ namespace MultiPLAY
 		{
 			profile.push_back("check for pattern jump");
 
-			if (pattern_jump_target >= int(module->pattern_list.size()))
+			if (pattern_jump_target >= int(module->pattern_list_length))
 			{
 				if (module->auto_loop_target >= 0)
 				{
@@ -551,6 +551,9 @@ namespace MultiPLAY
 					module->current_row = -1;
 					pattern_jump_target = -1;
 					row_jump_target = 0;
+
+					if (module->current_pattern >= module->pattern_list_length)
+						module->finished = true;
 				}
 				else if (looping)
 				{

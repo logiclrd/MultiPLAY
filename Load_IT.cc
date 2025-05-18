@@ -1219,8 +1219,10 @@ namespace MultiPLAY
 				ret->pattern_list.push_back(&pattern::skip_marker);
 				continue;
 			}
+
 			if (order_table[i] == 255) //  -- (end of tune)
 				break;
+
 			ret->pattern_list.push_back(&ret->patterns[order_table[i]]);
 		}
 

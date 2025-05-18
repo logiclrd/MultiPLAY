@@ -1,3 +1,5 @@
+default: release
+
 OUTPUT := MultiPLAY
 
 SOURCES = MultiPLAY.cc bit_memory_stream.cc bit_value.cc unix_break_handler.cc channel.cc conversion.cc
@@ -32,6 +34,10 @@ HEADERS += RAII.h
 OBJECT_DIR := obj
 OBJECTS := $(patsubst %.cc,$(OBJECT_DIR)/%.o,$(SOURCES))
 
+DEPS := $(patsubst %.o,%.d,$(OBJECTS))
+
+-include $(DEPS)
+
 WARNINGS := -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Woverloaded-virtual -Wredundant-decls -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wundef -Werror -Wno-unused -Wno-reorder -Wno-comment -Wno-missing-field-initializers
 
 OPTIMIZE := -Ofast -march=native -frename-registers -funroll-loops -fno-signed-zeros -fno-trapping-math
@@ -39,14 +45,12 @@ DEBUG := -g
 SDL_CXX := -DSDL -DSDL_DEFAULT
 SDL_LD := -lSDL2
 
-default: release
-
 $(OUTPUT): $(OBJECTS)
 	g++ -o $@ $^ $(LDFLAGS)
 
 obj/%.o: %.cc
 	@mkdir -p $(dir $@)
-	g++ -o $@ $< -c $(CXXFLAGS)
+	g++ -o $@ $< -c -MMD $(CXXFLAGS)
 
 release: CXXFLAGS=$(SDL_CXX) $(OPTIMIZE)
 release: LDFLAGS=$(SDL_LD)
@@ -66,6 +70,6 @@ bare: $(OUTPUT)
 
 clean:
 	rm -f $(OUTPUT)
-	rm -f $(OBJECTS)
+	rm -f $(OBJECTS) $(DEPS)
 	[ -d $(OBJECT_DIR) ] && rmdir --ignore-fail-on-non-empty $(OBJECT_DIR) || true
 

@@ -9,7 +9,7 @@
 			"name": "(gdb) Launch",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/MultiPLAY",
+			"program": "${workspaceFolder}/bin/debug/MultiPLAY-debug",
 			"args": ["-module", "/code/MultiPLAY/Samples/mods/search effort dbg.xm"],
 			"stopAtEntry": false,
 			"cwd": "${fileDirname}",

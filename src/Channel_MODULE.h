@@ -46,7 +46,10 @@ namespace MultiPLAY
 		double base_note_frequency;
 		unsigned int set_offset_high;
 
+		effect_info_type last_s3m_extended_effect_data;
+
 		bool portamento_glissando;
+
 		Waveform::Type vibrato_waveform, tremolo_waveform, panbrello_waveform;
 		bool vibrato_retrig, tremolo_retrig, panbrello_retrig;
 

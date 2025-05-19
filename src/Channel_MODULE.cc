@@ -696,27 +696,35 @@ namespace MultiPLAY
 						}
 						break;
 					case Effect::S3MExtendedEffect: // 'S'
-						switch (row_list[i].effect.info.high_nybble)
+					{
+						effect_info_type *extended_effect_info = &row_list[i].effect.info;
+
+						if (extended_effect_info->data == 0)
+							extended_effect_info = &last_s3m_extended_effect_data;
+						else
+							last_s3m_extended_effect_data = row_list[i].effect.info;
+
+						switch (extended_effect_info->high_nybble)
 						{
 							case S3MExtendedEffect::FinePatternDelay: // 0x6, pattern delay in ticks
 								// If multiple columns do this, they stack.
 								if (!pattern_delay_by_frames)
 								{
 									pattern_delay_by_frames = true;
-									pattern_delay_frames = row_list[i].effect.info.low_nybble;
+									pattern_delay_frames = extended_effect_info->low_nybble;
 								}
 								else
-									pattern_delay_frames += (int)row_list[i].effect.info.low_nybble;
+									pattern_delay_frames += (int)extended_effect_info->low_nybble;
 								module->speed += pattern_delay_frames;
 								break;
 							case S3MExtendedEffect::PatternDelay: // 0xE, pattern delay in frames
 								// If multiple columns do this, only the first one in the row takes effect
 								if (pattern_delay == 0)
-									pattern_delay = row_list[i].effect.info.low_nybble;
+									pattern_delay = extended_effect_info->low_nybble;
 								break;
 
 							case S3MExtendedEffect::PatternLoop: // 0xB
-								if (row_list[i].effect.info.low_nybble == 0)
+								if (extended_effect_info->low_nybble == 0)
 								{
 									if (!just_looped)
 									{
@@ -728,7 +736,7 @@ namespace MultiPLAY
 								{
 									if (module->pattern_loop[i].need_repetitions)
 									{
-										module->pattern_loop[i].repetitions = row_list[i].effect.info.low_nybble;
+										module->pattern_loop[i].repetitions = extended_effect_info->low_nybble;
 										module->pattern_loop[i].need_repetitions = false;
 									}
 
@@ -740,7 +748,9 @@ namespace MultiPLAY
 								}
 								break;
 						}
+
 						break;
+					}
 					case Effect::Tempo: // 'T'
 						if ((row_list[i].effect.info.data < 0x20) && it_effects)
 						{
@@ -1704,20 +1714,32 @@ namespace MultiPLAY
 						tremolo = true;
 						break;
 					case Effect::S3MExtendedEffect: // 'S'
-						switch (info.high_nybble)
+					{
+						effect_info_type *extended_effect_info = &info;
+						bool is_from_memory = false;
+
+						if (info.data == 0)
+						{
+							is_from_memory = true;
+							extended_effect_info = &last_s3m_extended_effect_data;
+						}
+						else
+							last_s3m_extended_effect_data = info;
+
+						switch (extended_effect_info->high_nybble)
 						{
 							// ignore song-wide commands
 							case S3MExtendedEffect::FinePatternDelay: // 0x6
 							case S3MExtendedEffect::PatternLoop:      // 0xB
 								break;
 							case S3MExtendedEffect::GlissandoControl: // 0x1
-								if (info.low_nybble == 0)
+								if (extended_effect_info->low_nybble == 0)
 									portamento_glissando = false;
-								else if (info.low_nybble == 1)
+								else if (extended_effect_info->low_nybble == 1)
 									portamento_glissando = true;
 								else
 									cerr << "Invalid parameter value: S3M command S1"
-										<< hex << uppercase << info.low_nybble << nouppercase << dec << ")" << endl;
+										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << ")" << endl;
 								break;
 							case S3MExtendedEffect::SetFineTune: // 0x2
 								if (current_sample == NULL)
@@ -1726,7 +1748,7 @@ namespace MultiPLAY
 								{
 									before_finetune = current_sample->samples_per_second;
 
-									current_sample->samples_per_second = mod_finetune[info.low_nybble];
+									current_sample->samples_per_second = mod_finetune[extended_effect_info->low_nybble];
 
 									note_frequency *= (current_sample->samples_per_second / before_finetune);
 									LINT_DOUBLE(note_frequency);
@@ -1736,7 +1758,7 @@ namespace MultiPLAY
 								}
 								break;
 							case S3MExtendedEffect::SetVibratoWaveform: // 0x3
-								switch (info.low_nybble & 0x3)
+								switch (extended_effect_info->low_nybble & 0x3)
 								{
 									case 0x0: vibrato_waveform = Waveform::Sine;     break;
 									case 0x1: vibrato_waveform = Waveform::RampDown; break;
@@ -1749,17 +1771,17 @@ namespace MultiPLAY
 											case 2: vibrato_waveform = Waveform::Square;   break;
 										}
 								}
-								if (info.low_nybble & 0x4)
+								if (extended_effect_info->low_nybble & 0x4)
 									vibrato_retrig = false;
 								else
 									vibrato_retrig = true;
 
-								if (info.low_nybble & 0x8)
+								if (extended_effect_info->low_nybble & 0x8)
 									cerr << "Warning: bit 3 ignored in effect S3"
-										<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 								break;
 							case S3MExtendedEffect::SetTremoloWaveform: // 0x4
-								switch (info.low_nybble & 0x3)
+								switch (extended_effect_info->low_nybble & 0x3)
 								{
 									case 0x3:
 									case 0x0: tremolo_waveform = Waveform::Sine;     break;
@@ -1767,19 +1789,19 @@ namespace MultiPLAY
 									case 0x2: tremolo_waveform = Waveform::Square;   break;
 									// case 0x3: tremolo_waveform = Waveform::Random;   break;
 								}
-								if (info.low_nybble & 0x4)
+								if (extended_effect_info->low_nybble & 0x4)
 									tremolo_retrig = false;
 								else
 									tremolo_retrig = true;
 
-								if (info.low_nybble & 0x8)
+								if (extended_effect_info->low_nybble & 0x8)
 									cerr << "Warning: bit 3 ignored in effect S4"
-										<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 								break;
 							case S3MExtendedEffect::SetPanbrelloWaveform: // 0x5
 								if (it_effects)
 								{
-									switch (info.low_nybble & 0x3)
+									switch (extended_effect_info->low_nybble & 0x3)
 									{
 										case 0x3:
 										case 0x0: panbrello_waveform = Waveform::Sine;     break;
@@ -1787,23 +1809,23 @@ namespace MultiPLAY
 										case 0x2: panbrello_waveform = Waveform::Square;   break;
 										// case 0x3: panbrello_waveform = Waveform::Random;   break;
 									}
-									if (info.low_nybble & 0x4)
+									if (extended_effect_info->low_nybble & 0x4)
 										panbrello_retrig = false;
 									else
 										panbrello_retrig = true;
 
-									if (info.low_nybble & 0x8)
+									if (extended_effect_info->low_nybble & 0x8)
 										cerr << "Warning: bit 3 ignored in effect S5"
-											<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+											<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 								}
 								else
 									cerr << "Ignoring pre-IT command: S5"
-										<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 								break;
 							case S3MExtendedEffect::OverrideNewNoteAction: // 0x7, past note cut/off/fade, temporary new note action
 								if (it_effects)
 								{
-									switch (info.low_nybble)
+									switch (extended_effect_info->low_nybble)
 									{
 										case 3: // set NNA to cut       ignore instrument-interpreted values
 										case 4: // set NNA to continue 
@@ -1844,65 +1866,73 @@ namespace MultiPLAY
 											break;
 										default:
 											cerr << "Warning: argument meaning unspecified in effect S7"
-												<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+												<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 									}
 								}
 								else
 									cerr << "Ignoring pre-IT command: S7"
-										<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 								break;
 							case S3MExtendedEffect::RoughPanning: // 0x8
 								if (module->stereo)
-									panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + info.low_nybble - 8);
+									panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + extended_effect_info->low_nybble - 8);
 								break;
 							case S3MExtendedEffect::ExtendedITEffect:
 								if (it_effects)
 								{
-									switch (info.low_nybble)
+									switch (extended_effect_info->low_nybble)
 									{
 										case 1: // set surround sound
 											panning.to_surround_sound();
 											break;
 										default:
 											cerr << "Warning: argument meaning unspecified in effect S9"
-												<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+												<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 									}
 								}
 								else
 									cerr << "Ignoring pre-IT command: S7"
-										<< hex << uppercase << info.low_nybble << nouppercase << dec << endl;
+										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 								break;
 							case S3MExtendedEffect::Panning:
 								if (it_effects)
-									set_offset_high = unsigned(info.low_nybble << 16);
+									set_offset_high = unsigned(extended_effect_info->low_nybble << 16);
 								else
 									if (module->stereo)
 									{
-										if (info.low_nybble > 7)
-											panning.from_s3m_pan(module->base_pan[unmapped_channel_number] - info.low_nybble);
+										if (extended_effect_info->low_nybble > 7)
+											panning.from_s3m_pan(module->base_pan[unmapped_channel_number] - extended_effect_info->low_nybble);
 										else
-											panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + info.low_nybble);
+											panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + extended_effect_info->low_nybble);
 									}
 								break;
 							case S3MExtendedEffect::NoteCut: // 0xC
 								note_cut_at_frame = true;
-								note_cut_frames = info.low_nybble;
+								note_cut_frames = extended_effect_info->low_nybble;
 								break;
 							case S3MExtendedEffect::NoteDelay: // 0xD
-								if (info.low_nybble <= static_cast<unsigned int>(module->speed))
+								if (extended_effect_info->low_nybble <= static_cast<unsigned int>(module->speed))
 								{
 									note_delay = true;
-									note_delay_frames = info.low_nybble;
+									note_delay_frames = extended_effect_info->low_nybble;
 									delayed_note = &row;
 
-									note_cut();
+									// ScreamTracker bug: When S00 is used to repeat NoteDelay, the original note instance isn't
+									// cut, so the note triggers twice, once is the correct delayed one, and the other is at
+									// tick 0, as if it weren't delayed. We're already playing the one from tick 0, so we do a
+									// note cut here so that it can be reinitialized after the delay -- but to replicate the
+									// ScreamTracker bug, we don't cut the note if this row command is an S00.
+									if (!it_effects && is_from_memory)
+										note_cut();
 								}
 								break;
 							default:
 								cerr << "Unimplemented S3M/IT command: " << row.effect.command
-									<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
+									<< setfill('0') << setw(2) << hex << uppercase << int(extended_effect_info->data) << nouppercase << dec << endl;
 						}
+
 						break;
+					}
 					case Effect::FineVibrato: // 'U'
 						if ((info.low_nybble == 0) || (info.high_nybble == 0))
 						{

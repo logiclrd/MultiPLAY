@@ -2,6 +2,8 @@
 
 A media player for several structured formats with an eye to audio quality.
 
+![MultiPLAY playing PIENIN.S3M](images/MultiPLAY-trace.png)
+
 ## What it plays
 
 MultiPLAY supports several formats, including the more common "module" or tracker files.
@@ -82,23 +84,19 @@ MultiPLAY was originally written and tested on Windows, but was subsequently mod
 
 ### Windows
 
-Building MultiPLAY on Windows requires Microsoft's Visual C++ compiler (though not necessarily the IDE). The configuration targets Platform Toolset v143, which corresponds to Visual Studio 2022. You can either use the Visual Studio 2022 GUI, or you can build from the command-line with one of these commands:
-```
-msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Debug"
-msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Debug DirectX"
-msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Debug SDL"
-msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Release"
-msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Release DirectX"
-msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Release SDL"
-msbuild MultiPLAY.vcxproj /p:Target="x64" /p:Configuration="Release All"
-```
+Building MultiPLAY on Windows requires Microsoft's Visual C++ compiler (though not necessarily the IDE). The configuration targets Platform Toolset v143, which corresponds to Visual Studio 2022. You can either use the Visual Studio 2022 GUI, or you can build from the command-line.
+
 If an SDL configuration is selected, the current `MultiPLAY.vcxproj` file assumes the SDL2 libraries can be found in the folder `X:\SDL2-2.32.6`. You may need to alter this. :-)
 
-#### Visual C++
+#### Visual Studio 2022
+
+![Visual Studio 2022](images/VisualStudio2022.png)
 
 You can load the `MultiPLAY.sln` file into Visual Studio 2022 to build within the IDE. The default profile "Release All" builds with both DirectX and SDL direct output options (selectable via command-line). There are also profiles that enable only one or the other, and a "Bare" profile that can only output raw files, and also "Debug" options that disable optimizations and enable symbols.
 
 #### Manual
+
+![MSBuild command-line build](images/MSBuild.png)
 
 All you need to do is:
 ```
@@ -121,6 +119,8 @@ msbuild MultiPLAY.vcxproj /p:Target=x64 /p:Configuration="Debug"
 ```
 
 ### Linux / OS X / other UNIX-y systems
+
+![make command-line build](images/make-clang.png)
 
 The supplied `Makefile` by default assumes there is a competent compiler called `g++`. It should handle the case where `g++` is really `clang++` in disguise. The default profile also assumes that you will be using SDL for direct output and have the development libraries for SDL installed. If you meet these criteria, simply execute:
 ```
@@ -157,6 +157,8 @@ Build output is placed in a folder named after the configuration:
 ```
 
 #### Visual Studio Code
+
+![Visual Studio Code on Linux](images/VisualStudioCode.png)
 
 There are `launch.json` and `tasks.json` files in the `.vscode` subdirectory that allow integration with Visual Studio Code, which provides a decent debugging experience using GDB as the underlying engine. Make sure you have the "C/C++" extension installed. You can configure the arguments for a debug run within the `launch.json` file.
 

@@ -848,7 +848,7 @@ namespace MultiPLAY
 							vector<signed char *> data = xm_sample.decode_sample_data<signed char>();
 
 							sample = new sample_builtintype<signed char>(
-								unsigned(i),
+								int(i),
 								int(data.size()),
 								xm_sample_header.volume / 64.0,
 								&data[0],
@@ -865,7 +865,7 @@ namespace MultiPLAY
 							vector<signed short *> data = xm_sample.decode_sample_data<signed short>();
 
 							sample = new sample_builtintype<signed short>(
-								unsigned(i),
+								int(i),
 								int(data.size()),
 								xm_sample_header.volume / 64.0,
 								&data[0],

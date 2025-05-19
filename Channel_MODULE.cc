@@ -706,7 +706,7 @@ namespace MultiPLAY
 									pattern_delay_frames = row_list[i].effect.info.low_nybble;
 								}
 								else
-									pattern_delay_frames += row_list[i].effect.info.low_nybble;
+									pattern_delay_frames += (int)row_list[i].effect.info.low_nybble;
 								module->speed += pattern_delay_frames;
 								break;
 							case S3MExtendedEffect::PatternDelay: // 0xE, pattern delay in frames

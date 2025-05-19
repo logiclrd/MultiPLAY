@@ -91,7 +91,7 @@ namespace MultiPLAY
 			use_sustain_loop = (susloop_end != LOOP_END_NO_LOOP);
 		}
 
-		virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0, bool top_level = true, int *znote = NULL)
+		virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0, bool top_level = true, int */*znote*/ = NULL)
 		{
 			if (c == NULL)
 				throw "need sample context";
@@ -133,7 +133,7 @@ namespace MultiPLAY
 			}
 		}
 
-		virtual void occlude_note(channel *p = NULL, sample_context **c = NULL, sample *new_sample = NULL, row *r = NULL)
+		virtual void occlude_note(channel */*p*/ = NULL, sample_context **/*c*/ = NULL, sample */*new_sample*/ = NULL, row */*r*/ = NULL)
 		{ // do nothing
 		}
 

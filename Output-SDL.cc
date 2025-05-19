@@ -71,7 +71,7 @@ namespace MultiPLAY
 				this->capture();
 		}
 
-		sdl_mutex_lock::sdl_mutex_lock(sdl_mutex_lock &other) {} // private (unavailable)
+		sdl_mutex_lock::sdl_mutex_lock(sdl_mutex_lock &/*other*/) {} // private (unavailable)
 
 		sdl_mutex_lock_release sdl_mutex_lock::temp_release()
 		{
@@ -98,7 +98,7 @@ namespace MultiPLAY
 			release();
 		}
 
-		void sdl_callback(void *userdata, Uint8 *stream, int len)
+		void sdl_callback(void */*userdata*/, Uint8 *stream, int len)
 		{
 			int bytes_available = (sdl_write_cursor - sdl_play_cursor + sdl_buffer_size) % sdl_buffer_size;
 
@@ -272,7 +272,7 @@ namespace MultiPLAY
 		}
 
 		sdl_buffer_size = sdl_audio_spec.samples * channels * (bits / 8) * 2; // twice the length of the output buffer
-		sdl_buffer = new unsigned char[sdl_buffer_size];
+		sdl_buffer = new unsigned char[unsigned(sdl_buffer_size)];
 
 		sdl_buffer_available_event = ::SDL_CreateCond();
 		sdl_finished_event = ::SDL_CreateCond();

@@ -30,7 +30,7 @@ namespace MultiPLAY
 
 	extern unsigned long from_lsb4_lu(unsigned char in[4])
 	{
-		return in[0] | (in[1] << 8) | (in[2] << 16) | (in[3] << 24);
+		return (unsigned long)(in[0] | (in[1] << 8) | (in[2] << 16) | (in[3] << 24));
 	}
 
 	extern short from_msb2(unsigned char in[2])

@@ -13,7 +13,7 @@ namespace MultiPLAY
 		current_it_cutoff_value = compute_it_cutoff_value(current_cutoff_frequency);
 	}
 
-	DSP::DSP(double cutoff_frequency, double reverb_response, double sampling_rate)
+	DSP::DSP(double cutoff_frequency, double /*reverb_response*/, double /*sampling_rate*/)
 	{
 		current_cutoff_frequency = cutoff_frequency;
 		current_it_cutoff_value = compute_it_cutoff_value(cutoff_frequency);

@@ -45,7 +45,7 @@ namespace MultiPLAY
     this->finish_with_fade = true;
   }
 
-  /*virtual*/ ChannelPlaybackState::Type channel_DYNAMIC::advance_pattern(one_sample &sample, Profile &profile)
+  /*virtual*/ ChannelPlaybackState::Type channel_DYNAMIC::advance_pattern(one_sample &/*sample*/, Profile &/*profile*/)
   {
     ticks_left = 1; // always have ticks left
     rest_ticks = 0;

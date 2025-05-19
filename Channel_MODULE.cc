@@ -89,7 +89,7 @@ namespace MultiPLAY
 			my_ancillary_channels[i]->ticks_per_fade_out_frame = this->ticks_per_fade_out_frame;
 	}
 
-	/*virtual*/ void channel_MODULE::note_off(bool calc_fade_per_tick/* = true*/, bool exit_envelope_loops/* = true*/)
+	/*virtual*/ void channel_MODULE::note_off(bool /*calc_fade_per_tick = true*/, bool exit_envelope_loops/* = true*/)
 	{
 		this->channel::note_off(false, exit_envelope_loops);
 	}
@@ -534,7 +534,7 @@ namespace MultiPLAY
 		profile.push_back("save state");
 
 		p_volume_slide = volume_slide;                       volume_slide = false;
-		p_portamento = p_portamento;                         portamento = false;
+		p_portamento = portamento;                           portamento = false;
 		p_vibrato = vibrato;                                 vibrato = false;
 		p_tremor = tremor;                                   tremor = false;
 		p_arpeggio = arpeggio;                               arpeggio = false;
@@ -1624,7 +1624,7 @@ namespace MultiPLAY
 						else
 							last_param[Effect::SampleOffset] = info;
 
-						target_offset = (info.data << 8) + set_offset_high;
+						target_offset = unsigned((unsigned(info.data) << 8) + set_offset_high);
 
 						if (it_new_effects)
 						{
@@ -1874,7 +1874,7 @@ namespace MultiPLAY
 								break;
 							case S3MExtendedEffect::Panning:
 								if (it_effects)
-									set_offset_high = info.low_nybble << 16;
+									set_offset_high = unsigned(info.low_nybble << 16);
 								else
 									if (module->stereo)
 									{

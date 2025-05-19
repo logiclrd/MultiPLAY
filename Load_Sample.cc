@@ -59,7 +59,7 @@ namespace MultiPLAY
 			file->read((char *)magic, 4);
 			if (string((char *)magic, 4) == "WAVE") // then it's a WAV audio file
 			{
-				WAV::chunk chunk = { 0 };
+				WAV::chunk chunk = { { 0 } };
 				WAV::format_chunk format_chunk = { 0 };
 				bool have_format_chunk = false;
 
@@ -510,7 +510,7 @@ namespace MultiPLAY
 
 			if ((diff_8bit < diff_16bit) && (diff_8bit < diff_16bit_msb)) // then try for 8-bit data :-)
 			{
-				unsigned char *data = new unsigned char[length];
+				unsigned char *data = new unsigned char[unsigned(length)];
 
 				file->read((char *)data, length);
 
@@ -559,7 +559,7 @@ namespace MultiPLAY
 
 				length >>= 1;
 
-				unsigned short *data = new unsigned short[length];
+				unsigned short *data = new unsigned short[unsigned(length)];
 
 				file->read((char *)data, length);
 
@@ -610,7 +610,7 @@ namespace MultiPLAY
 
 				unsigned char msb_bytes[2];
 
-				unsigned short *data = new unsigned short[length];
+				unsigned short *data = new unsigned short[unsigned(length)];
 
 				for (int i=0; i<length; i++)
 				{

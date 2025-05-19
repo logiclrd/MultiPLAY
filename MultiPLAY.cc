@@ -182,7 +182,7 @@ namespace MultiPLAY
 
 	namespace
 	{
-		void expect_filenames(int &index, int count, char *argv[], vector<string> &collection)
+		void expect_filenames(int &index, char *argv[], vector<string> &collection)
 		{
 			while (argv[index])
 			{
@@ -314,7 +314,7 @@ int main(int argc, char *argv[])
 				cerr << argv[0] << ": missing argument for parameter -play" << endl;
 			else
 			{
-				expect_filenames(i, argc, argv, play_filenames);
+				expect_filenames(i, argv, play_filenames);
 
 				while (play_overlap_notes.size() < play_filenames.size())
 					play_overlap_notes.push_back(next_play_overlap_notes);
@@ -326,7 +326,7 @@ int main(int argc, char *argv[])
 			if (i >= argc)
 				cerr << argv[0] << ": missing argument for parameter " << arg << endl;
 			else
-				expect_filenames(i, argc, argv, play_sample_filenames);
+				expect_filenames(i, argv, play_sample_filenames);
 		}
 		else if (arg == "-module_start_pattern")
 		{
@@ -343,7 +343,7 @@ int main(int argc, char *argv[])
 				cerr << argv[0] << ": missing argument for parameter " << arg << endl;
 			else
 			{
-				expect_filenames(i, argc, argv, module_filenames);
+				expect_filenames(i, argv, module_filenames);
 
 				while (module_start_patterns.size() < module_filenames.size())
 					module_start_patterns.push_back(module_start_pattern);
@@ -389,9 +389,15 @@ int main(int argc, char *argv[])
 		else if (arg == "-msb")
 			msb_output = true, lsb_output = false;
 		else if (arg == "-lsb")
-			msb_output = false, lsb_output = true;
+		{
+			msb_output = false;
+			lsb_output = true;
+		}
 		else if (arg == "-system_byte_order")
-			msb_output - false, lsb_output = false;
+		{
+			msb_output = false;
+			lsb_output = false;
+		}
 		else if (arg == "-stereo")
 			stereo_output = true;
 		else if (arg == "-mono")

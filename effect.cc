@@ -228,7 +228,6 @@ namespace MultiPLAY
 		}
 
 		this->type = EffectType::S3M; // translated :-)
-		this->command = command;
 		this->info = (Effect::Type)info;
 
 		present = true;

@@ -91,7 +91,7 @@ namespace MultiPLAY
 
 		namespace XMNoteEffect
 		{
-			enum Type
+			enum Type : unsigned char
 			{
 				Arpeggio = 0,
 				PortaUp = 1,
@@ -121,7 +121,7 @@ namespace MultiPLAY
 
 			MODEffect::Type ConvertToMODEffect(XMNoteEffect::Type effect)
 			{
-				if ((effect >= 0) && (effect <= 15))
+				if (effect <= 15)
 					return (MODEffect::Type)effect;
 				else
 					return MODEffect::None;
@@ -543,7 +543,7 @@ namespace MultiPLAY
 			return pattern;
 		}
 
-		xm_instrument load_xm_instrument(istream *file, const xm_header &header)
+		xm_instrument load_xm_instrument(istream *file)
 		{
 			xm_instrument instrument;
 
@@ -629,7 +629,7 @@ namespace MultiPLAY
 
 		void xm_module::load_instrument(istream *input)
 		{
-			instruments.push_back(load_xm_instrument(input, header));
+			instruments.push_back(load_xm_instrument(input));
 		}
 
 		/*static*/ xm_module xm_module::load(istream *input)

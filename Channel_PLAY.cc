@@ -161,7 +161,7 @@ namespace MultiPLAY
 		return duration;
 	}
 
-	/*virtual*/ ChannelPlaybackState::Type channel_PLAY::advance_pattern(one_sample &sample, Profile &profile)
+	/*virtual*/ ChannelPlaybackState::Type channel_PLAY::advance_pattern(one_sample &sample, Profile &/*profile*/)
 	{
 		intensity = overlap_notes ? 0 : actual_intensity;
 

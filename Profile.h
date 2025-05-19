@@ -1,6 +1,8 @@
 #ifndef PROFILE_H
 #define PROFILE_H
 
+#include <vector>
+
 #ifdef WIN32
 #include <windows.h>
 
@@ -36,29 +38,23 @@ struct ProfileEntry
 	}
 };
 
+#ifdef PROFILE
 struct Profile
 {
-#ifdef PROFILE
-	vector<ProfileEntry> entries;
-#endif
+	std::vector<ProfileEntry> entries;
 
 	void push_back(const char *point)
 	{
-#ifdef PROFILE
 		push_back((ProfileEntry)point);
-#endif
 	}
 
 	void push_back(const ProfileEntry &entry)
 	{
-#ifdef PROFILE
 		entries.push_back(entry);
-#endif
 	}
 
 	void dump()
 	{
-#ifdef PROFILE
 		ofstream out("profiles.txt", ios::app);
 
 		out << "---------" << endl;
@@ -71,12 +67,10 @@ struct Profile
 
 			out << setw(4) << whole_milliseconds << setw(0) << "." << remainder << " : " << entries[i].point << endl;
 		}
-#endif
 	}
 
 	~Profile()
 	{
-#ifdef PROFILE
 		if (entries.size() >= 2)
 		{
 			int duration_ns = entries.back().timestamp - entries.front().timestamp;
@@ -84,8 +78,27 @@ struct Profile
 			if (duration_ns > NS_PER_S / 44100)
 				dump();
 		}
-#endif
 	}
 };
+#else
+struct Profile
+{
+	void push_back(const char *)
+	{
+	}
+
+	void push_back(const ProfileEntry &)
+	{
+	}
+
+	void dump()
+	{
+	}
+
+	~Profile()
+	{
+	}
+};
+#endif
 
 #endif // PROFILE_H

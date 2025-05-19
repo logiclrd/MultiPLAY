@@ -98,20 +98,20 @@ namespace MultiPLAY
 			d << "name: " << mod->name << endl;
 
 			d << "pattern: " << mod->patterns.size() << endl;
-			for (unsigned i = 0, l = mod->patterns.size(); i < l; i++)
+			for (size_t i = 0, l = mod->patterns.size(); i < l; i++)
 			{
 				d << "[" << i << "]:" << endl;
 				format_pattern(d, &mod->patterns[i]);
 			}
 
 			d << "pattern list: " << mod->pattern_list_length << endl;
-			for (unsigned i = 0, l  = unsigned(mod->pattern_list_length); i < l; i++)
+			for (size_t i = 0, l  = unsigned(mod->pattern_list_length); i < l; i++)
 			{
 				d << "[" << i << "]: ";
 
 				bool found = false;
 
-				for (unsigned j = 0, k = mod->patterns.size(); j < k; j++)
+				for (size_t j = 0, k = mod->patterns.size(); j < k; j++)
 				{
 					if (mod->pattern_list[i] == &mod->patterns[j])
 					{
@@ -126,14 +126,14 @@ namespace MultiPLAY
 			}
 
 			d << "samples: " << mod->samples.size() << endl;
-			for (unsigned i = 0, l = mod->samples.size(); i < l; i++)
+			for (size_t i = 0, l = mod->samples.size(); i < l; i++)
 			{
 				d << "[" << i << "]: ";
 				format_sample(d, mod->samples[i]);
 			}
 
 			d << "sample_info: " << mod->sample_info.size() << endl;
-			for (unsigned i = 0, l = mod->sample_info.size(); i < l; i++)
+			for (size_t i = 0, l = mod->sample_info.size(); i < l; i++)
 				d << "[" << i << "]: vibrato_speed == " << mod->sample_info[i].vibrato_speed << ", vibrato_depth == " << mod->sample_info[i].vibrato_depth << endl;
 
 			d << "channel_enabled: ";

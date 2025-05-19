@@ -129,7 +129,7 @@ namespace MultiPLAY
 			module->filename = filename;
 
 			// Cap the pattern order, in case the loader hasn't already done it.
-			module->pattern_list_length = module->pattern_list.size();
+			module->pattern_list_length = unsigned int(module->pattern_list.size());
 			module->pattern_list.push_back(&pattern::end_marker);
 		}
 

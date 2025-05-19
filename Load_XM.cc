@@ -202,12 +202,15 @@ namespace MultiPLAY
 
 			void decode_and_fill(istream *src)
 			{
-				char first_byte = src->get();
+				int first_byte = src->get();
+
+				if (first_byte < 0)
+					throw "Does not appear to be an XM file";
 
 				if ((first_byte & 0x80) == 0)
 				{
 					// Unpacked; first_byte is the note.
-					this->note = first_byte;
+					this->note = (char)first_byte;
 					this->instrument = (unsigned char)src->get();
 					parse_command((unsigned char)src->get());
 					this->effect_type = (XMNoteEffect::Type)src->get();
@@ -218,7 +221,7 @@ namespace MultiPLAY
 					// Packed: first_byte is the field map.
 					int fields = first_byte;
 
-					this->note = (fields & 1) ? src->get() : 0;
+					this->note = (char)((fields & 1) ? src->get() : 0);
 					this->instrument = (fields & 2) ? (unsigned char)src->get() : 0;
 					if (fields & 4)
 						parse_command((unsigned char)src->get());
@@ -227,7 +230,7 @@ namespace MultiPLAY
 				}
 			}
 		};
-
+#pragma pack()
 		struct xm_pattern_row
 		{
 			vector<xm_pattern_note> channel_notes;
@@ -245,7 +248,7 @@ namespace MultiPLAY
 			xm_pattern_header header;
 			vector<xm_pattern_row> rows;
 		};
-
+#pragma pack(1)
 		namespace XMSampleFlags
 		{
 			enum Type : char
@@ -312,7 +315,7 @@ namespace MultiPLAY
 				this->encoded_sample_data = new char[header.sample_length];
 			}
 
-			xm_sample(xm_sample &&other)
+			xm_sample(xm_sample &&other) noexcept
 			{
 				this->header = other.header;
 				this->encoded_sample_data = other.encoded_sample_data;
@@ -332,7 +335,7 @@ namespace MultiPLAY
 				if (looks_like_adpcm)
 					throw "Not implemented: ADPCM";
 
-				vector<SampleType *> channels;
+				vector<SampleType *> sample_channels;
 
 				if (!stereo)
 				{
@@ -348,7 +351,7 @@ namespace MultiPLAY
 						for (unsigned i=1; i < sample_count; i++)
 							decoded[i] = decoded[i - 1] + encoded[i];
 
-						channels.push_back((SampleType *)decoded);
+						sample_channels.push_back((SampleType *)decoded);
 					}
 					else
 					{
@@ -362,7 +365,7 @@ namespace MultiPLAY
 						for (unsigned i=1; i < sample_count; i++)
 							decoded[i] = decoded[i - 1] + encoded[i];
 
-						channels.push_back((SampleType *)decoded);
+						sample_channels.push_back((SampleType *)decoded);
 					}
 				}
 				else
@@ -387,8 +390,8 @@ namespace MultiPLAY
 						for (unsigned i=1, p=sample_count+1; i < sample_count; i++, p++)
 							decoded_right[i] = decoded_right[i - 1] + encoded[p];
 
-						channels.push_back((SampleType *)decoded_left);
-						channels.push_back((SampleType *)decoded_right);
+						sample_channels.push_back((SampleType *)decoded_left);
+						sample_channels.push_back((SampleType *)decoded_right);
 					}
 					else
 					{
@@ -410,12 +413,12 @@ namespace MultiPLAY
 						for (unsigned i=1, p=sample_count+1; i < sample_count; i++, p++)
 							decoded_right[i] = decoded_right[i - 1] + encoded[p];
 
-						channels.push_back((SampleType *)decoded_left);
-						channels.push_back((SampleType *)decoded_right);
+						sample_channels.push_back((SampleType *)decoded_left);
+						sample_channels.push_back((SampleType *)decoded_right);
 					}
 				}
 
-				return channels;
+				return sample_channels;
 			}
 
 			~xm_sample()
@@ -485,6 +488,7 @@ namespace MultiPLAY
 			char instrument_type;
 			unsigned short number_of_samples;
 		};
+#pragma pack()
 
 		struct xm_instrument
 		{
@@ -512,7 +516,6 @@ namespace MultiPLAY
 
 			module_struct *to_module_struct();
 		};
-		#pragma pack()
 
 		xm_pattern load_xm_pattern(istream *file, const xm_header &module_header)
 		{
@@ -817,7 +820,7 @@ namespace MultiPLAY
 
 				xm_sample_set_header &xm_header = xm_instrument.sample_set_header;
 
-				vector<sample *> samples;
+				vector<sample *> converted_samples;
 
 				for (size_t i=0; i < xm_instrument.samples.size(); i++)
 				{
@@ -845,11 +848,11 @@ namespace MultiPLAY
 							vector<signed char *> data = xm_sample.decode_sample_data<signed char>();
 
 							sample = new sample_builtintype<signed char>(
-								i,
-								data.size(),
+								unsigned(i),
+								int(data.size()),
 								xm_sample_header.volume / 64.0,
 								&data[0],
-								xm_sample_header.sample_length / data.size(),
+								unsigned(xm_sample_header.sample_length / data.size()),
 								LoopStyle::Forward,
 								LoopStyle::Undefined,
 								loop_begin,
@@ -862,11 +865,11 @@ namespace MultiPLAY
 							vector<signed short *> data = xm_sample.decode_sample_data<signed short>();
 
 							sample = new sample_builtintype<signed short>(
-								i,
-								data.size(),
+								unsigned(i),
+								int(data.size()),
 								xm_sample_header.volume / 64.0,
 								&data[0],
-								xm_sample_header.sample_length / 2 / data.size(), // convert bytes to samples
+								unsigned(xm_sample_header.sample_length / 2 / data.size()), // convert bytes to samples
 								LoopStyle::Forward,
 								LoopStyle::Undefined,
 								loop_begin,
@@ -900,7 +903,7 @@ namespace MultiPLAY
 						sample->vibrato_sweep_frames = xm_header.vibrato_sweep;
 					}
 
-					samples.push_back(sample);
+					converted_samples.push_back(sample);
 				}
 
 				sample_instrument *instrument = new sample_instrument(sample_index);
@@ -941,8 +944,8 @@ namespace MultiPLAY
 				{
 					unsigned mapped_sample_index = xm_header.keymap[i];
 
-					if (mapped_sample_index < samples.size())
-						instrument->note_sample[i] = samples[mapped_sample_index];
+					if (mapped_sample_index < converted_samples.size())
+						instrument->note_sample[i] = converted_samples[mapped_sample_index];
 				}
 
 				ret.push_back(instrument);
@@ -1157,20 +1160,7 @@ namespace MultiPLAY
 
 		void dump_pattern(const xm_pattern &pattern)
 		{
-			xm_pattern_header header;
 			vector<xm_pattern_row> rows;
-
-			int header_length;
-			char packing_type; // not actually used
-			short pattern_rows;
-			short packed_data_length; // can't be trusted, if it's not zero then don't actually use the value, just decode until end is reached
-
-			char note;
-			unsigned char instrument;
-			XMNoteCommand::Type command;
-			char command_parameter;
-			char effect_type;
-			unsigned char effect_parameter;
 
 			for (unsigned row_number=0; row_number < pattern.header.pattern_rows; row_number++)
 			{

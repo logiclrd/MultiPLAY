@@ -81,7 +81,7 @@
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4063;4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
@@ -97,7 +97,7 @@
       <PreprocessorDefinitions>DIRECTX;WIN32;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4063;4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
@@ -115,7 +115,7 @@
       <AdditionalIncludeDirectories>x:\SDL2-2.32.6\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4063;4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
@@ -134,7 +134,7 @@
       <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4063;4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
@@ -151,7 +151,7 @@
       <PreprocessorDefinitions>DIRECTX;WIN32;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4063;4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
@@ -170,7 +170,7 @@
       <AdditionalIncludeDirectories>x:\SDL2-2.32.6\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4063;4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>
@@ -190,7 +190,7 @@
       <AdditionalIncludeDirectories>x:\SDL2-2.32.6\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>Level4</WarningLevel>
-      <DisableSpecificWarnings>4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4063;4100;4458;6001;6385;6386;26495</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
     </ClCompile>

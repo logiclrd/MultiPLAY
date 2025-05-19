@@ -117,7 +117,7 @@ namespace MultiPLAY
 			context.samples_per_second = samples_per_second;
 			context.default_volume = default_volume;
 			context.num_samples = num_samples;
-			context.vibrato_sweep_ticks = vibrato_sweep_frames * effect_tick_length;
+			context.vibrato_sweep_ticks = (long)round(vibrato_sweep_frames * effect_tick_length);
 
 			if (p)
 			{
@@ -219,7 +219,7 @@ namespace MultiPLAY
 
 						unsigned full_loops = (unsigned)floor(overrun / full_loop_length);
 
-						overrun -= full_loops * full_loop_length;
+						overrun -= (double)(full_loops * full_loop_length);
 
 						while (overrun > sustain_loop_length)
 						{

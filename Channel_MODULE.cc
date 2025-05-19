@@ -30,7 +30,7 @@ namespace MultiPLAY
 
 		this->identity = ss.str();
 
-		ticks_per_fade_out_frame = module->ticks_per_frame;
+		ticks_per_fade_out_frame = (int)round(module->ticks_per_frame);
 
 		panning.set_channels(output_channels);
 		offset = 0.0;
@@ -83,10 +83,10 @@ namespace MultiPLAY
 
 	void channel_MODULE::ticks_per_frame_changed()
 	{
-		this->ticks_per_fade_out_frame = module->ticks_per_frame;
+		this->ticks_per_fade_out_frame = (int)round(module->ticks_per_frame);
 
-		for (size_t i=0; i < my_ancillary_channels.size(); i++)
-			my_ancillary_channels[i]->ticks_per_fade_out_frame = module->ticks_per_frame;
+		for (size_t i = 0; i < my_ancillary_channels.size(); i++)
+			my_ancillary_channels[i]->ticks_per_fade_out_frame = this->ticks_per_fade_out_frame;
 	}
 
 	/*virtual*/ void channel_MODULE::note_off(bool calc_fade_per_tick/* = true*/, bool exit_envelope_loops/* = true*/)
@@ -706,7 +706,7 @@ namespace MultiPLAY
 									pattern_delay_frames = row_list[i].effect.info.low_nybble;
 								}
 								else
-									pattern_delay_by_frames += row_list[i].effect.info.low_nybble;
+									pattern_delay_frames += row_list[i].effect.info.low_nybble;
 								module->speed += pattern_delay_frames;
 								break;
 							case S3MExtendedEffect::PatternDelay: // 0xE, pattern delay in frames
@@ -797,7 +797,7 @@ namespace MultiPLAY
 						effect_info_type info = row_list[i].effect.info;
 
 						if (module->xm_module)
-							envelope_offset = info.data * module->ticks_per_frame;
+							envelope_offset = (long)(info.data * module->ticks_per_frame);
 						else
 							cerr << "Ignoring XM-specific effect Effect::SetEnvelopePosition in non-XM module" << endl;
 
@@ -1102,12 +1102,12 @@ namespace MultiPLAY
 						auto next = last;
 
 						if (info.high_nybble != 0)
-							next = (next & 0x0F) | (info.high_nybble << 4);
+							next = (unsigned char)((next & 0x0F) | (info.high_nybble << 4));
 						else
 							info.high_nybble = next >> 4;
 
 						if (info.low_nybble != 0)
-							next = (next & 0xF0) | info.low_nybble;
+							next = (unsigned char)((next & 0xF0) | info.low_nybble);
 						else
 							info.low_nybble = next & 0xF;
 

@@ -9,7 +9,7 @@
 			"name": "(gdb) Launch",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/bin/debug/MultiPLAY-debug",
+			"program": "${workspaceFolder}/bin/debug/MultiPLAY",
 			"args": ["-module", "/code/MultiPLAY/Samples/mods/tight to me.it"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",

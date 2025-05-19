@@ -96,28 +96,69 @@ If an SDL configuration is selected, the current `MultiPLAY.vcxproj` file assume
 
 #### Visual C++
 
-The included `MultiPLAY.vcproj` includes profiles for building with DirectX, building with SDL and building without a direct output engine.
+You can load the `MultiPLAY.sln` file into Visual Studio 2022 to build within the IDE. The default profile "Release All" builds with both DirectX and SDL direct output options (selectable via command-line). There are also profiles that enable only one or the other, and a "Bare" profile that can only output raw files, and also "Debug" options that disable optimizations and enable symbols.
 
 #### Manual
 
-This section is untested, but in theory, all you need to do is:
+All you need to do is:
 ```
-cl MultiPLAY.cc /DDIRECTX /Ldsound.lib /Ldxguid.lib
+msbuild MultiPLAY.vcxproj /p:Target=x64 /p:Configuration="Release All"
 ```
-..or
-```
-cl MultiPLAY.cc /DSDL /LSDL.lib /LSDLmain.lib
-```
-(you may need to specify additional library directories)
+(you may need to place SDL files into a specific folder or update the project file to point at the right place)
 
-If you compile without the optional DIRECTX support, then you can still run MultiPLAY but it will only be able to write raw audio files.
+You can also build with only one output engine, or with no direct output at all (only raw file output supported):
+```
+msbuild MultiPLAY.vcxproj /p:Target=x64 /p:Configuration="Release DirectX"
+msbuild MultiPLAY.vcxproj /p:Target=x64 /p:Configuration="Release SDL"
+msbuild MultiPLAY.vcxproj /p:Target=x64 /p:Configuration="Release Bare"
+```
+
+And of course, there are "Debug" profiles as well:
+```
+msbuild MultiPLAY.vcxproj /p:Target=x64 /p:Configuration="Debug DirectX"
+msbuild MultiPLAY.vcxproj /p:Target=x64 /p:Configuration="Debug SDL"
+msbuild MultiPLAY.vcxproj /p:Target=x64 /p:Configuration="Debug"
+```
 
 ### Linux / OS X / other UNIX-y systems
 
-The supplied `Makefile` assumes the build environment has a recent g++ version and has development libraries for SDL installed. If you meet these criteria, simply execute:
+The supplied `Makefile` by default assumes there is a competent compiler called `g++`. It should handle the case where `g++` is really `clang++` in disguise. The default profile also assumes that you will be using SDL for direct output and have the development libraries for SDL installed. If you meet these criteria, simply execute:
 ```
 make
 ```
+
+If you want to override the name of the compiler, you can specify this with a Make variable:
+```
+make CXX=clang++
+```
+
+If you want a build that doesn't require SDL (raw file output only), you can use the "bare" target:
+```
+make bare
+make bare CXX=clang++
+```
+
+You can also create a debug build with symbols using the "debug" target":
+```
+make debug
+```
+
+Finally, there is a configuration that enables warnings up the wazoo called "lint" that can be used to polish the code quality:
+```
+make lint
+```
+
+Build output is placed in a folder named after the configuration:
+```
+./bin/release/MultiPLAY
+./bin/debug/MultiPLAY
+./bin/bare/MultiPLAY
+./bin/lint/MultiPLAY
+```
+
+#### Visual Studio Code
+
+There are `launch.json` and `tasks.json` files in the `.vscode` subdirectory that allow integration with Visual Studio Code, which provides a decent debugging experience using GDB as the underlying engine. Make sure you have the "C/C++" extension installed. You can configure the arguments for a debug run within the `launch.json` file.
 
 ## Using MultiPLAY
 
@@ -125,16 +166,18 @@ Run `MultiPLAY` with no command-line arguments to get a comprehensive usage summ
 
 If you have one or more text files containing BASICA/QBASIC `PLAY` statement syntax, you can play them with a command such as:
 ```
-./MultiPLAY -play first.txt -play second.txt
+./bin/release/MultiPLAY -play first.txt -play second.txt
 ```
 
 If you have a module file, you can play it with a command such as:
 ```
-./MultiPLAY -module k_2deep.s3m
+./bin/release/MultiPLAY -module k_2deep.s3m
 ```
 
 ## Sample Files
 
 _'Sample' in the sense of files to test out MultiPLAY_
 
-This repository has links to a quick grab bag of module files and a few `PLAY` syntax files. To avoid ballooning the Git repository with binary files, these are stored in Git-LFS. Install the Git-LFS extensions and then clone the repository and it should automatically download them into a subdirectory called `Samples`.
+This repository has links to a quick grab bag of module files and a few `PLAY` syntax files. To avoid ballooning the Git repository with binary files, these are stored in Git-LFS. Install the Git-LFS extensions and then clone the repository and it should automatically download them into a subdirectory called `Samples`. Some of these are real bangers, others are included because they triggered bugs and thus were good tools for debugging.
+
+I really like `k_2deep.s3m`, personally. :-)

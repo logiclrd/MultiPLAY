@@ -1,19 +1,29 @@
+# Emplace the source files in the src/ subdirectory.
+__SPACE = $() $()
+
+SOURCES := src/$(subst $(__SPACE),$(__SPACE)src/,$(SOURCES))
+
+# Calculate paths, objects set and dependencies set
 OBJECT_DIR=obj/$(CONFIGURATION)
 OUTPUT_DIR=bin/$(CONFIGURATION)
 OUTPUT_FILE=$(OUTPUT_DIR)/MultiPLAY
 
-OBJECTS=$(patsubst %.cc,$(OBJECT_DIR)/%.o,$(SOURCES))
+OBJECTS=$(patsubst src/%.cc,$(OBJECT_DIR)/%.o,$(SOURCES))
 DEPS=$(patsubst %.o,%.d,$(OBJECTS))
 
+# Primary task
 $(CONFIGURATION): $(OUTPUT_FILE)
 
+# Include generated dependencies so that we know what headers affect what compilation units
 -include $(DEPS)
 
+# Link
 $(OUTPUT_FILE): $(OBJECTS)
 	@mkdir -p $(OUTPUT_DIR)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-obj/$(CONFIGURATION)/%.o: %.cc
+# Build
+obj/$(CONFIGURATION)/%.o: src/%.cc
 	@mkdir -p $(dir $@)
 	$(CXX) -o $@ $< -c -MMD $(CXXFLAGS) $(CXXCOMPATIBILITY)
 

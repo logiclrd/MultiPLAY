@@ -1,7 +1,21 @@
 WARNINGS := -pedantic -Wall -Wextra -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-declarations -Wmissing-include-dirs -Wnoexcept -Woverloaded-virtual -Wredundant-decls -Wsign-conversion -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wundef -Werror -Wno-unused -Wno-reorder -Wno-comment -Wno-missing-field-initializers -Wno-warn=switch -Wno-error=switch -Wno-switch
 
-OPTIMIZE := -Ofast -march=native -frename-registers -funroll-loops -fno-signed-zeros -fno-trapping-math
-DEBUG := -g -DDEBUG
+CXX=g++
+
+CXX_IS_CLANG := $(shell $(CXX) --version | grep -q clang 2>&1 && echo "yes" || echo "no")
+
+ifeq ($(CXX_IS_CLANG),yes)
+CXXCOMPATIBILITY = -fhonor-infinities -fhonor-nans
+WARNINGS := $(filter-out -Wlogical-op,$(WARNINGS))
+WARNINGS := $(filter-out -Wnoexcept,$(WARNINGS))
+WARNINGS := $(filter-out -Wstrict-null-sentinel,$(WARNINGS))
+WARNINGS := $(filter-out -Wno-warn=switch,$(WARNINGS))
+WARNINGS := $(WARNINGS) -Wno-missing-braces -Wno-cast-align
+else
+CXXCOMPATIBILITY = 
+endif
+
+OPTIMIZE := -Ofast -march=native -frename-registers -funroll-loops -fno-signed-zeros -fno-trapping-math -Wno-ignored-optimization-argument -Wno-comment -Wno-switch
+DEBUG := -g -DDEBUG -Wno-comment -Wno-switch
 SDL_CXX := -DSDL -DSDL_DEFAULT
 SDL_LD := -lSDL2
-

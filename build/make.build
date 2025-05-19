@@ -11,11 +11,11 @@ $(CONFIGURATION): $(OUTPUT_FILE)
 
 $(OUTPUT_FILE): $(OBJECTS)
 	@mkdir -p $(OUTPUT_DIR)
-	g++ -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 obj/$(CONFIGURATION)/%.o: %.cc
 	@mkdir -p $(dir $@)
-	g++ -o $@ $< -c -MMD $(CXXFLAGS)
+	$(CXX) -o $@ $< -c -MMD $(CXXFLAGS) $(CXXCOMPATIBILITY)
 
 FORCE:
 

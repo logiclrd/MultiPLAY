@@ -287,7 +287,7 @@ namespace MultiPLAY
 
 						unsigned full_loop_length;
 
-						if (sustain_loop_style == LoopStyle::PingPong)
+						if (loop_style == LoopStyle::PingPong)
 							full_loop_length = loop_length * 2;
 						else
 							full_loop_length = loop_length;

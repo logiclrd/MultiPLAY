@@ -841,6 +841,11 @@ namespace MultiPLAY
 					if ((xm_sample_header.flags & XMSampleFlags::LoopMask) == XMSampleFlags::NoLooping)
 						loop_end = LOOP_END_NO_LOOP;
 
+					LoopStyle::Type loop_style = LoopStyle::Forward;
+
+					if ((xm_sample_header.flags & XMSampleFlags::PingPongLooping) != 0)
+						loop_style = LoopStyle::PingPong;
+
 					switch (xm_sample_header.flags & XMSampleFlags::SampleSizeMask)
 					{
 						case XMSampleFlags::SampleSize8bit:
@@ -853,7 +858,7 @@ namespace MultiPLAY
 								xm_sample_header.volume / 64.0,
 								&data[0],
 								unsigned(xm_sample_header.sample_length / data.size()),
-								LoopStyle::Forward,
+								loop_style,
 								LoopStyle::Undefined,
 								loop_begin,
 								loop_end);
@@ -870,7 +875,7 @@ namespace MultiPLAY
 								xm_sample_header.volume / 64.0,
 								&data[0],
 								unsigned(xm_sample_header.sample_length / 2 / data.size()), // convert bytes to samples
-								LoopStyle::Forward,
+								loop_style,
 								LoopStyle::Undefined,
 								loop_begin,
 								loop_end);

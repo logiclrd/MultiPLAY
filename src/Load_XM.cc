@@ -731,7 +731,7 @@ namespace MultiPLAY
 								auto mod_effect = XMNoteEffect::ConvertToMODEffect(xm_note.effect_type);
 
 								if (mod_effect != MODEffect::None)
-									note.effect.init(mod_effect, xm_note.effect_parameter, &note);
+									note.effect.init(EffectType::XM, mod_effect, xm_note.effect_parameter, &note);
 								else
 								{
 									// XM-specific extensions to the MOD effects

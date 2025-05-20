@@ -57,6 +57,13 @@ namespace MultiPLAY
 
 	void effect_struct::init(MODEffect::Type mod_command, unsigned char info, row *r)
 	{
+		init(EffectType::MOD, mod_command, info, r);
+	}
+
+	void effect_struct::init(EffectType::Type type, MODEffect::Type mod_command, unsigned char info, row *r)
+	{
+		this->type = type;
+
 		// This is largely possible due to the correspondence between MOD and
 		// S3M effect parameters. Only the 'invert loop' option required
 		// special coding.
@@ -266,6 +273,7 @@ namespace MultiPLAY
 	effect_struct::effect_struct()
 		: present(false)
 	{
+		command = 0;
 	}
 
 	bool effect_struct::keepNote()

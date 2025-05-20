@@ -14,6 +14,19 @@ namespace MultiPLAY
 			XM,
 			IT,
 		};
+
+		inline const char *ToString(Type type)
+		{
+			switch (type)
+			{
+				case MOD: return "MOD";
+				case S3M: return "S3M";
+				case XM: return "XM";
+				case IT: return "IT";
+
+				default: return "<unknown type>";
+			}
+		}
 	}
 
 	namespace Effect
@@ -153,6 +166,7 @@ namespace MultiPLAY
 
 		void init(EffectType::Type type, Effect::Type command, unsigned char info, row *r = NULL);
 		void init(EffectType::Type type, Effect::Type command, unsigned char high_nybble, unsigned char low_nybble, row *r = NULL);
+		void init(EffectType::Type type, MODEffect::Type command, unsigned char info, row *r = NULL);
 		void init(MODEffect::Type command, unsigned char info, row *r = NULL);
 
 		bool keepNote();

@@ -54,7 +54,7 @@ namespace MultiPLAY
 		bool vibrato_retrig, tremolo_retrig, panbrello_retrig;
 
 		bool amiga_panning;
-		bool it_effects, it_new_effects, it_portamento_link, it_linear_slides;
+		bool it_new_effects, it_portamento_link, it_linear_slides;
 
 		effect_info_type last_param[256];
 
@@ -67,6 +67,7 @@ namespace MultiPLAY
 		virtual void note_fade();
 		virtual void get_playback_position(PlaybackPosition &position);
 		virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile);
+		void apply_effect(row &row, effect_struct &effect, bool &portamento, double &portamento_target);
 	};
 }
 

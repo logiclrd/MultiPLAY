@@ -69,7 +69,6 @@ namespace MultiPLAY
 		original_intensity = intensity;
 		target_volume = -1;
 		volume = channel_volume;
-		it_effects = module->it_module;
 		amiga_panning = module->amiga_panning;
 		it_new_effects = module->it_module_new_effects;
 		it_portamento_link = module->it_module_portamento_link;
@@ -685,7 +684,7 @@ namespace MultiPLAY
 						break;
 					case Effect::PatternJump: // 'C'
 						pattern_jump_target = int(module->current_pattern + 1);
-						if (it_effects)
+						if (row_list[i].effect.type == EffectType::IT)
 							row_jump_target = row_list[i].effect.info;
 						else
 							row_jump_target = row_list[i].effect.info.high_nybble * 10 + row_list[i].effect.info.low_nybble;
@@ -752,7 +751,7 @@ namespace MultiPLAY
 						break;
 					}
 					case Effect::Tempo: // 'T'
-						if ((row_list[i].effect.info.data < 0x20) && it_effects)
+						if ((row_list[i].effect.info.data < 0x20) && (row_list[i].effect.type == EffectType::IT))
 						{
 							tempo_slide = true;
 							original_tempo = tempo;
@@ -787,7 +786,7 @@ namespace MultiPLAY
 							global_volume_slide_end = global_volume_slide_start + (module->speed - 1) * info.high_nybble / 32.0;
 						else if (info.high_nybble == 0) // slide down
 							global_volume_slide_end = global_volume_slide_start - (module->speed - 1) * info.low_nybble / 32.0;
-						else if (it_effects)
+						else if (row_list[i].effect.type == EffectType::IT)
 						{
 							if (info.low_nybble == 0xF) // fine slide up
 								global_volume_slide_end = global_volume_slide_start + info.high_nybble / 2000.0;
@@ -989,13 +988,7 @@ namespace MultiPLAY
 
 			effect_info_type info = row.effect.info;
 
-			double old_frequency, old_delta_offset_per_tick;
-			int old_current_znote;
-			sample_context *temp_sc;
-
-			int second_note, third_note;
-			unsigned int target_offset;
-			double portamento_target, before_finetune;
+			double portamento_target;
 
 			if (p_vibrato && row.effect.isnt(Effect::Vibrato))
 			{
@@ -1186,7 +1179,7 @@ namespace MultiPLAY
 				}
 
 				if (row.effect.is(Effect::Panning) || row.secondary_effect.is(Effect::Panning)
-				|| row.effect.is(Effect::PanSlide) || row.secondary_effect.is(Effect::PanSlide))
+				 || row.effect.is(Effect::PanSlide) || row.secondary_effect.is(Effect::PanSlide))
 				{
 					// When doubled, the set goes to the primary, and slides compound.
 					if (module->stereo)
@@ -1215,7 +1208,7 @@ namespace MultiPLAY
 
 						bool fine = false;
 
-						if (it_effects && ((info.high_nybble == 0xF) || (info.low_nybble == 0xF)))
+						if ((row.effect.type == EffectType::IT) && ((info.high_nybble == 0xF) || (info.low_nybble == 0xF)))
 						{
 							if (info.low_nybble == 0xF) // fine pan left
 							{
@@ -1258,6 +1251,8 @@ namespace MultiPLAY
 						}
 					}
 				}
+
+				bool calculate_portamento_end_t = false;
 
 				bool primary_is_tone_portamento = row.effect.is(Effect::TonePortamento) || row.effect.is(Effect::TonePortamentoAndVolumeSlide);
 				bool secondary_is_tone_portamento = row.secondary_effect.is(Effect::TonePortamento) || row.secondary_effect.is(Effect::TonePortamentoAndVolumeSlide);
@@ -1304,9 +1299,9 @@ namespace MultiPLAY
 						fading = false;
 					}
 
-					old_frequency = note_frequency;
-					old_delta_offset_per_tick = delta_offset_per_tick;
-					old_current_znote = current_znote;
+					double old_frequency = note_frequency;
+					double old_delta_offset_per_tick = delta_offset_per_tick;
+					int old_current_znote = current_znote;
 
 					recalc(portamento_target_znote, 1.0, false, false);
 
@@ -1336,684 +1331,19 @@ namespace MultiPLAY
 							portamento_end = portamento_start - portamento_speed * (module->speed - 1);
 					}
 
-					portamento_end_t = (portamento_target - portamento_start) / (portamento_end - portamento_start);
-
 					portamento = true;
+
+					calculate_portamento_end_t = true;
 				}
 
-				switch (row.effect.command)
-				{
-					case Effect::MODExtraEffects: // 0xE
-						if (info.high_nybble == 0xF) // invert loop
-						{
-							// TODO
-							// delta_offset_per_tick = -info.low_nybble;
-						}
-						break;
+				if (row.secondary_effect.present)
+					apply_effect(row, row.secondary_effect, calculate_portamento_end_t, portamento_target);
 
-					// Global effects, processed up-front; ignore when we get to them here during the per-channel processing.
-					case Effect::SetSpeed:          // 'A'
-					case Effect::OrderJump:         // 'B'
-					case Effect::PatternJump:       // 'C' -- jumps into next pattern, specified row
-					case Effect::Tempo:             // 'T'
-					case Effect::GlobalVolume:      // 'V'
-					case Effect::GlobalVolumeSlide: // 'W'
-						break;
+				if (row.effect.present)
+					apply_effect(row, row.effect, calculate_portamento_end_t, portamento_target);
 
-					// Effects that could be in secondary effect; processed up-front to handle the case where it's specified in both.
-					case Effect::VolumeSlide:    // 'D'
-					case Effect::TonePortamento: // 'G'
-					case Effect::Vibrato:        // 'H'
-					case Effect::ChannelVolume:  // 'M'
-					case Effect::PanSlide:       // 'P'
-					case Effect::Panning:        // 'X'
-						break;
-
-					case Effect::PortamentoDown: // 'E'
-						if (it_linear_slides)
-							portamento_start = lg(note_frequency);
-						else
-							portamento_start = 14317056.0 / note_frequency;
-
-						if (info.data == 0)
-							info = last_param[Effect::PortamentoDown];
-						else
-							last_param[Effect::PortamentoDown] = last_param[Effect::PortamentoUp] = info;
-
-						if ((info.high_nybble == 0xF) || (info.high_nybble == 0xE))
-						{
-							if (info.high_nybble == 0xF) // 'fine'
-							{
-								if (it_linear_slides)
-									portamento_target = portamento_start - info.low_nybble / 192.0;
-								else
-									portamento_target = portamento_start + 4 * info.low_nybble;
-							}
-							else // E - 'extra fine'
-							{
-								if (it_linear_slides)
-									portamento_target = portamento_start - info.low_nybble / 768.0;
-								else
-									portamento_target = portamento_start + info.low_nybble;
-							}
-
-							if (it_linear_slides)
-								note_frequency = p2(portamento_target);
-							else
-								note_frequency = 14317056.0 / portamento_target;
-
-							LINT_DOUBLE(note_frequency);
-
-							delta_offset_per_tick = note_frequency / ticks_per_second;
-							LINT_DOUBLE(delta_offset_per_tick);
-						}
-						else
-						{
-							if (it_linear_slides)
-								portamento_end = portamento_start - info.data * (module->speed - 1) / 192.0;
-							else
-								portamento_end = portamento_start + 4 * info.data * (module->speed - 1);
-
-							portamento_end_t = 1.0;
-							portamento = true;
-						}
-						break;
-					case Effect::PortamentoUp: // 'F'
-						if (it_linear_slides)
-							portamento_start = lg(note_frequency);
-						else
-							portamento_start = 14317056.0 / note_frequency;
-
-						if (info.data == 0)
-							info = last_param[Effect::PortamentoUp];
-						else
-							last_param[Effect::PortamentoDown] = last_param[Effect::PortamentoUp] = info;
-
-						if ((info.high_nybble == 0xF) || (info.high_nybble == 0xE))
-						{
-							if (info.high_nybble == 0xF) // 'fine'
-							{
-								if (it_linear_slides)
-									portamento_target = portamento_start + info.low_nybble / 192.0;
-								else
-									portamento_target = portamento_start - 4 * info.low_nybble;
-							}
-							else // E -- 'extra fine'
-							{
-								if (it_linear_slides)
-									portamento_target = portamento_start + info.low_nybble / 768.0;
-								else
-									portamento_target = portamento_start - info.low_nybble;
-							}
-
-							if (it_linear_slides)
-								note_frequency = p2(portamento_target);
-							else
-								note_frequency = 14317056.0 / portamento_target;
-
-							LINT_DOUBLE(note_frequency);
-
-							delta_offset_per_tick = note_frequency / ticks_per_second;
-							LINT_DOUBLE(delta_offset_per_tick);
-						}
-						else
-						{
-							if (it_linear_slides)
-								portamento_end = portamento_start + info.data * (module->speed - 1) / 192.0;
-							else
-								portamento_end = portamento_start - 4 * info.data * (module->speed - 1);
-
-							portamento_end_t = 1.0;
-							portamento = true;
-						}
-						break;
-					case Effect::Tremor: // 'I', high = ontime, low = offtime
-						if ((info.low_nybble == 0) || (info.high_nybble == 0)) // repeat
-							tremor_frame_offset += module->speed;
-						else
-						{
-							if (p_tremor) // already tremoring
-								tremor_frame_offset += module->speed;
-							else
-								tremor_frame_offset = 0;
-							tremor_ontime = info.high_nybble;
-							tremor_offtime = info.low_nybble;
-						}
-						tremor = true;
-						break;
-					case Effect::Arpeggio: // 'J', high = first addition, low = second addition
-						old_frequency = note_frequency;
-						old_delta_offset_per_tick = delta_offset_per_tick;
-						old_current_znote = current_znote;
-
-						if (p_arpeggio) // already arpeggioing
-							arpeggio_tick_offset += module->previous_ticks_per_module_row;
-						else
-							arpeggio_tick_offset = 0;
-
-						if (current_sample == NULL)
-							break;
-
-						temp_sc = current_sample_context;
-						current_sample_context = NULL; // protect the existing context
-
-						arpeggio_first_delta_offset = delta_offset_per_tick;
-
-						second_note = row.znote + info.high_nybble;
-						current_sample->begin_new_note(&row, NULL, &current_sample_context, module->ticks_per_frame, true, &second_note);
-						recalc(second_note, 1.0, false);
-						if (current_sample_context)
-						{
-							delete current_sample_context;
-							current_sample_context = NULL;
-						}
-						arpeggio_second_delta_offset = delta_offset_per_tick;
-
-						third_note = row.znote + info.low_nybble;
-						current_sample->begin_new_note(&row, NULL, &current_sample_context, module->ticks_per_frame, true, &third_note);
-						recalc(third_note, 1.0, false);
-						if (current_sample_context)
-						{
-							delete current_sample_context;
-							current_sample_context = NULL;
-						}
-						arpeggio_third_delta_offset = delta_offset_per_tick;
-
-						current_sample_context = temp_sc;
-
-						note_frequency = old_frequency;
-						delta_offset_per_tick = old_delta_offset_per_tick;
-						current_znote = old_current_znote;
-
-						arpeggio = true;
-						break;
-					case Effect::VibratoAndVolumeSlide: // 'K'
-						if (!vibrato_retrig)
-						{
-							vibrato_cycle_offset += (1.0 - vibrato_start_t);
-							LINT_DOUBLE(vibrato_cycle_offset);
-						}
-
-						vibrato = true;
-						break;
-					case Effect::TonePortamentoAndVolumeSlide: // 'L'
-						if (row.snote >= 0)
-							portamento_target_znote = row.znote;
-						
-						old_frequency = note_frequency;
-						old_delta_offset_per_tick = delta_offset_per_tick;
-						old_current_znote = current_znote;
-
-						temp_sc = current_sample_context;
-						current_sample_context = NULL; // protect the existing context
-
-						current_sample->begin_new_note(&row, NULL, &current_sample_context, module->ticks_per_frame, true, &portamento_target_znote);
-						fading = false;
-						recalc(portamento_target_znote, 1.0, false, false);
-						if (current_sample_context)
-						{
-							delete current_sample_context;
-							current_sample_context = NULL;
-						}
-
-						current_sample_context = temp_sc;
-
-						if (it_linear_slides)
-							portamento_target = lg(note_frequency);
-						else
-							portamento_target = 14317056.0 / note_frequency;
-
-						note_frequency = old_frequency;
-						delta_offset_per_tick = old_delta_offset_per_tick;
-						current_znote = old_current_znote;
-
-						if (it_linear_slides)
-						{
-							portamento_start = lg(note_frequency);
-							if (portamento_target_znote > current_znote)
-								portamento_end = portamento_start + portamento_speed * (module->speed - 1) / 768.0;
-							else
-								portamento_end = portamento_start - portamento_speed * (module->speed - 1) / 768.0;
-						}
-						else
-						{
-							portamento_start = 14317056.0 / note_frequency;
-							if (portamento_target_znote > current_znote)
-								portamento_end = portamento_start - portamento_speed * (module->speed - 1);
-							else
-								portamento_end = portamento_start + portamento_speed * (module->speed - 1);
-						}
-
-						portamento_end_t = (portamento_target - portamento_start) / (portamento_end - portamento_start);
-
-						portamento = true;
-
-						break;
-					case Effect::ChannelVolumeSlide: // channel volume slide
-						if (it_effects)
-						{
-							if (info.data == 0) // repeat
-								info = last_param[Effect::ChannelVolumeSlide];
-							else
-								last_param[Effect::ChannelVolumeSlide] = info;
-
-							channel_volume_slide_start = channel_volume;
-
-							bool fine = false;
-
-							if (info.low_nybble == 0) // slide up
-								channel_volume_slide_end = channel_volume_slide_start + (module->speed - 1) * info.high_nybble / 32.0;
-							else if (info.high_nybble == 0) // slide down
-								channel_volume_slide_end = channel_volume_slide_start - (module->speed - 1) * info.low_nybble / 32.0;
-							else if (info.low_nybble == 0xF) // fine slide up
-							{
-								channel_volume = channel_volume_slide_start - info.high_nybble / 64.0;
-								fine = true;
-							}
-							else if (info.high_nybble == 0xF) // fine slide down
-							{
-								channel_volume = channel_volume_slide_start + info.high_nybble / 64.0;
-								fine = true;
-							}
-
-							if (!fine)
-							{
-								if (channel_volume_slide_end == channel_volume_slide_start)
-									break;
-
-								channel_volume_slide = true;
-							}
-						}
-						else
-							cerr << "Ignoring pre-IT command: " << row.effect.command
-								<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
-						break;
-					case Effect::SampleOffset: // 'O'
-						if (info.data == 0)
-							info = last_param[Effect::SampleOffset];
-						else
-							last_param[Effect::SampleOffset] = info;
-
-						target_offset = unsigned((unsigned(info.data) << 8) + set_offset_high);
-
-						if (it_new_effects)
-						{
-							if (current_sample_context && (target_offset > current_sample_context->num_samples))
-								break;
-						}
-
-						offset_major = target_offset;
-						break;
-					case Effect::Retrigger: // 'Q'
-						if (info.data == 0)
-							info = last_param[Effect::Retrigger];
-						else
-							last_param[Effect::Retrigger] = info;
-
-						if (info.low_nybble != 0)
-						{
-							switch (info.high_nybble)
-							{
-								case 0:  retrigger_factor = 1.0;       retrigger_bias =   0.0; break;
-								case 1:  retrigger_factor = 1.0;       retrigger_bias =  -1.0; break;
-								case 2:  retrigger_factor = 1.0;       retrigger_bias =  -2.0; break;
-								case 3:  retrigger_factor = 1.0;       retrigger_bias =  -4.0; break;
-								case 4:  retrigger_factor = 1.0;       retrigger_bias =  -8.0; break;
-								case 5:  retrigger_factor = 1.0;       retrigger_bias = -16.0; break;
-								case 6:  retrigger_factor = 2.0 / 3.0; retrigger_bias =   0.0; break;
-								case 7:  retrigger_factor = 1.0 / 2.0; retrigger_bias =   0.0; break;
-								case 9:  retrigger_factor = 1.0;       retrigger_bias =   1.0; break;
-								case 10: retrigger_factor = 1.0;       retrigger_bias =   2.0; break;
-								case 11: retrigger_factor = 1.0;       retrigger_bias =   4.0; break;
-								case 12: retrigger_factor = 1.0;       retrigger_bias =   8.0; break;
-								case 13: retrigger_factor = 1.0;       retrigger_bias =  16.0; break;
-								case 14: retrigger_factor = 3.0 / 2.0; retrigger_bias =   0.0; break;
-								case 15: retrigger_factor = 2.0 / 1.0; retrigger_bias =   0.0; break;
-							}
-
-							retrigger_bias *= (original_intensity / 64.0);
-
-							retrigger_ticks = module->ticks_per_module_row * info.low_nybble / module->speed;
-
-							retrigger = true;
-						}
-						break;
-					case Effect::Tremolo: // 'R'
-						if ((info.low_nybble == 0) || (info.high_nybble == 0)) // repeat
-						{
-							if (row.snote >= 0)
-								tremolo_middle_intensity = original_intensity * (volume / 64.0);
-							if (tremolo_retrig)
-								tremolo_cycle_offset += (1.0 - tremolo_start_t);
-						}
-						else
-						{
-							if (p_tremolo) // already tremoloing
-								tremolo_cycle_offset += (1.0 - tremolo_start_t);
-							else
-								tremolo_cycle_offset = 0.0;
-							tremolo_middle_intensity = intensity;
-							tremolo_depth = original_intensity * (info.low_nybble * 4.0 * (255.0 / 64.0)) / 64.0;
-							if (it_new_effects)
-								tremolo_depth *= 0.5;
-							double new_tremolo_cycle_frequency = double(info.high_nybble * module->speed) / 64.0;
-
-							if (p_tremolo && (new_tremolo_cycle_frequency != tremolo_cycle_frequency))
-								tremolo_cycle_offset *= (tremolo_cycle_frequency / new_tremolo_cycle_frequency);
-
-							tremolo_cycle_frequency = new_tremolo_cycle_frequency;
-
-							if (it_new_effects)
-								tremolo_start_t = 0.0;
-							else
-							{
-								vibrato_start_t = 1.0 / module->speed;
-								LINT_DOUBLE(vibrato_start_t);
-							}
-						}
-						tremolo = true;
-						break;
-					case Effect::S3MExtendedEffect: // 'S'
-					{
-						effect_info_type *extended_effect_info = &info;
-						bool is_from_memory = false;
-
-						if (info.data == 0)
-						{
-							is_from_memory = true;
-							extended_effect_info = &last_s3m_extended_effect_data;
-						}
-						else
-							last_s3m_extended_effect_data = info;
-
-						switch (extended_effect_info->high_nybble)
-						{
-							// ignore song-wide commands
-							case S3MExtendedEffect::FinePatternDelay: // 0x6
-							case S3MExtendedEffect::PatternLoop:      // 0xB
-								break;
-							case S3MExtendedEffect::GlissandoControl: // 0x1
-								if (extended_effect_info->low_nybble == 0)
-									portamento_glissando = false;
-								else if (extended_effect_info->low_nybble == 1)
-									portamento_glissando = true;
-								else
-									cerr << "Invalid parameter value: S3M command S1"
-										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << ")" << endl;
-								break;
-							case S3MExtendedEffect::SetFineTune: // 0x2
-								if (current_sample == NULL)
-									cerr << "No instrument for set finetune effect" << endl;
-								else
-								{
-									before_finetune = current_sample->samples_per_second;
-
-									current_sample->samples_per_second = mod_finetune[extended_effect_info->low_nybble];
-
-									note_frequency *= (current_sample->samples_per_second / before_finetune);
-									LINT_DOUBLE(note_frequency);
-
-									delta_offset_per_tick = note_frequency / ticks_per_second;
-									LINT_DOUBLE(delta_offset_per_tick);
-								}
-								break;
-							case S3MExtendedEffect::SetVibratoWaveform: // 0x3
-								switch (extended_effect_info->low_nybble & 0x3)
-								{
-									case 0x0: vibrato_waveform = Waveform::Sine;     break;
-									case 0x1: vibrato_waveform = Waveform::RampDown; break;
-									case 0x2: vibrato_waveform = Waveform::Square;   break;
-									case 0x3:
-										switch ((rand() >> 2) % 3)
-										{
-											case 0: vibrato_waveform = Waveform::Sine;     break;
-											case 1: vibrato_waveform = Waveform::RampDown; break;
-											case 2: vibrato_waveform = Waveform::Square;   break;
-										}
-								}
-								if (extended_effect_info->low_nybble & 0x4)
-									vibrato_retrig = false;
-								else
-									vibrato_retrig = true;
-
-								if (extended_effect_info->low_nybble & 0x8)
-									cerr << "Warning: bit 3 ignored in effect S3"
-										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
-								break;
-							case S3MExtendedEffect::SetTremoloWaveform: // 0x4
-								switch (extended_effect_info->low_nybble & 0x3)
-								{
-									case 0x3:
-									case 0x0: tremolo_waveform = Waveform::Sine;     break;
-									case 0x1: tremolo_waveform = Waveform::RampDown; break;
-									case 0x2: tremolo_waveform = Waveform::Square;   break;
-									// case 0x3: tremolo_waveform = Waveform::Random;   break;
-								}
-								if (extended_effect_info->low_nybble & 0x4)
-									tremolo_retrig = false;
-								else
-									tremolo_retrig = true;
-
-								if (extended_effect_info->low_nybble & 0x8)
-									cerr << "Warning: bit 3 ignored in effect S4"
-										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
-								break;
-							case S3MExtendedEffect::SetPanbrelloWaveform: // 0x5
-								if (it_effects)
-								{
-									switch (extended_effect_info->low_nybble & 0x3)
-									{
-										case 0x3:
-										case 0x0: panbrello_waveform = Waveform::Sine;     break;
-										case 0x1: panbrello_waveform = Waveform::RampDown; break;
-										case 0x2: panbrello_waveform = Waveform::Square;   break;
-										// case 0x3: panbrello_waveform = Waveform::Random;   break;
-									}
-									if (extended_effect_info->low_nybble & 0x4)
-										panbrello_retrig = false;
-									else
-										panbrello_retrig = true;
-
-									if (extended_effect_info->low_nybble & 0x8)
-										cerr << "Warning: bit 3 ignored in effect S5"
-											<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
-								}
-								else
-									cerr << "Ignoring pre-IT command: S5"
-										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
-								break;
-							case S3MExtendedEffect::OverrideNewNoteAction: // 0x7, past note cut/off/fade, temporary new note action
-								if (it_effects)
-								{
-									switch (extended_effect_info->low_nybble)
-									{
-										case 3: // set NNA to cut       ignore instrument-interpreted values
-										case 4: // set NNA to continue 
-										case 5: // set NNA to note off
-										case 6: // set NNA to fade
-										case 7: // disable volume envelope for this note
-										case 8: // disable volume envelope for this note
-											break;
-										case 0: // note cut
-											for (int i = int(ancillary_channels.size() - 1); i >= 0; i--)
-											{
-												auto my_own = find(my_ancillary_channels.begin(), my_ancillary_channels.end(), ancillary_channels[unsigned(i)]);
-
-												if (my_own != my_ancillary_channels.end())
-												{
-													ancillary_channels.erase(ancillary_channels.begin() + i);
-													my_ancillary_channels.erase(my_own);
-													delete *my_own;
-												}
-											}
-											break;
-										case 1: // note off
-											for (auto i = my_ancillary_channels.begin(), l = my_ancillary_channels.end(); i != l; ++i)
-												(*i)->note_off();
-											break;
-										case 2: // fade
-											for (auto i = my_ancillary_channels.begin(), l = my_ancillary_channels.end(); i != l; ++i)
-											{
-												channel &t = **i;
-												t.fading = true;
-												t.fade_value = 1.0;
-												if (!t.have_fade_per_tick)
-												{
-													t.note_off(true, false);
-													t.have_fade_per_tick = true;
-												}
-											}
-											break;
-										default:
-											cerr << "Warning: argument meaning unspecified in effect S7"
-												<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
-									}
-								}
-								else
-									cerr << "Ignoring pre-IT command: S7"
-										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
-								break;
-							case S3MExtendedEffect::RoughPanning: // 0x8
-								if (module->stereo)
-									panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + extended_effect_info->low_nybble - 8);
-								break;
-							case S3MExtendedEffect::ExtendedITEffect:
-								if (it_effects)
-								{
-									switch (extended_effect_info->low_nybble)
-									{
-										case 1: // set surround sound
-											panning.to_surround_sound();
-											break;
-										default:
-											cerr << "Warning: argument meaning unspecified in effect S9"
-												<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
-									}
-								}
-								else
-									cerr << "Ignoring pre-IT command: S7"
-										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
-								break;
-							case S3MExtendedEffect::Panning:
-								if (it_effects)
-									set_offset_high = unsigned(extended_effect_info->low_nybble << 16);
-								else
-									if (module->stereo)
-									{
-										if (extended_effect_info->low_nybble > 7)
-											panning.from_s3m_pan(module->base_pan[unmapped_channel_number] - extended_effect_info->low_nybble);
-										else
-											panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + extended_effect_info->low_nybble);
-									}
-								break;
-							case S3MExtendedEffect::NoteCut: // 0xC
-								note_cut_at_frame = true;
-								note_cut_frames = extended_effect_info->low_nybble;
-								break;
-							case S3MExtendedEffect::NoteDelay: // 0xD
-								if (extended_effect_info->low_nybble <= static_cast<unsigned int>(module->speed))
-								{
-									note_delay = true;
-									note_delay_frames = extended_effect_info->low_nybble;
-									delayed_note = &row;
-
-									// ScreamTracker bug: When S00 is used to repeat NoteDelay, the original note instance isn't
-									// cut, so the note triggers twice, once is the correct delayed one, and the other is at
-									// tick 0, as if it weren't delayed. We're already playing the one from tick 0, so we do a
-									// note cut here so that it can be reinitialized after the delay -- but to replicate the
-									// ScreamTracker bug, we don't cut the note if this row command is an S00.
-									if (!it_effects && is_from_memory)
-										note_cut();
-								}
-								break;
-							default:
-								cerr << "Unimplemented S3M/IT command: " << row.effect.command
-									<< setfill('0') << setw(2) << hex << uppercase << int(extended_effect_info->data) << nouppercase << dec << endl;
-						}
-
-						break;
-					}
-					case Effect::FineVibrato: // 'U'
-						if ((info.low_nybble == 0) || (info.high_nybble == 0))
-						{
-							if (!vibrato_retrig)
-							{
-								vibrato_cycle_offset += 1.0;
-								LINT_DOUBLE(vibrato_cycle_offset);
-							}
-						}
-						else
-						{
-							if (p_vibrato) // already vibratoing
-							{
-								vibrato_cycle_offset += 1.0;
-								LINT_DOUBLE(vibrato_cycle_offset);
-							}
-							else
-								vibrato_cycle_offset = 0.0;
-
-							if (it_linear_slides)
-								vibrato_depth = info.low_nybble * (255.0 / 128.0) / -768.0;
-							else
-								vibrato_depth = info.low_nybble * (255.0 / 128.0);
-
-							if (it_new_effects)
-								vibrato_depth *= 0.5;
-
-							double new_vibrato_cycle_frequency = (module->speed * info.high_nybble) / 64.0;
-
-							if (p_vibrato && (new_vibrato_cycle_frequency != vibrato_cycle_frequency))
-							{
-								vibrato_cycle_offset *= (vibrato_cycle_frequency / new_vibrato_cycle_frequency);
-								LINT_DOUBLE(vibrato_cycle_offset);
-							}
-
-							vibrato_cycle_frequency = new_vibrato_cycle_frequency;
-							LINT_DOUBLE(vibrato_cycle_frequency);
-						}
-						vibrato = true;
-						break;
-					case Effect::Panbrello: // 'Y', high = speed, low - depth
-						if (it_effects)
-						{
-							if ((info.low_nybble == 0) || (info.high_nybble == 0))
-							{
-								if (!panbrello_retrig)
-									panbrello_cycle_offset += 1.0;
-							}
-							else
-							{
-								if (p_panbrello) // already panbrelloing
-									panbrello_cycle_offset += 1.0;
-								else
-									panbrello_cycle_offset = 0.0;
-
-								if (it_linear_slides)
-									panbrello_depth = info.low_nybble * (255.0 / 128.0) / -192.0;
-								else
-									panbrello_depth = info.low_nybble * 4.0 * (255.0 / 128.0);
-
-								if (it_effects)
-									panbrello_depth *= 0.5;
-
-								double new_panbrello_cycle_frequency = (module->speed * info.high_nybble) / 64.0;
-
-								if (p_panbrello && (new_panbrello_cycle_frequency != panbrello_cycle_frequency))
-									panbrello_cycle_offset *= (panbrello_cycle_frequency / new_panbrello_cycle_frequency);
-
-								panbrello_cycle_frequency = new_panbrello_cycle_frequency;
-							}
-							panbrello = true;
-						}
-						else
-							cerr << "Ignoring pre-IT command: " << row.effect.command
-								<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
-						break;
-
-					default:
-						cerr << "Unimplemented S3M/IT command: " << row.effect.command
-							<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
-				}
+				if (calculate_portamento_end_t)
+					portamento_end_t = (portamento_target - portamento_start) / (portamento_end - portamento_start);
 			}
 		}
 
@@ -2023,5 +1353,721 @@ namespace MultiPLAY
 		cutoff_ticks = 0;
 
 		return ChannelPlaybackState::Ongoing;
+	}
+
+	void channel_MODULE::apply_effect(row &row, effect_struct &effect, bool &calculate_portamento_end_t, double &portamento_target)
+	{
+		effect_info_type &info = effect.info;
+
+		switch (effect.command)
+		{
+			case Effect::MODExtraEffects: // 0xE
+				if (info.high_nybble == 0xF) // invert loop
+				{
+					// TODO
+					// delta_offset_per_tick = -info.low_nybble;
+				}
+				break;
+
+			// Global effects, processed up-front; ignore when we get to them here during the per-channel processing.
+			case Effect::SetSpeed:          // 'A'
+			case Effect::OrderJump:         // 'B'
+			case Effect::PatternJump:       // 'C' -- jumps into next pattern, specified row
+			case Effect::Tempo:             // 'T'
+			case Effect::GlobalVolume:      // 'V'
+			case Effect::GlobalVolumeSlide: // 'W'
+				break;
+
+			// Effects that could be in secondary effect; processed up-front to handle the case where it's specified in both.
+			case Effect::VolumeSlide:    // 'D'
+			case Effect::TonePortamento: // 'G'
+			case Effect::Vibrato:        // 'H'
+			case Effect::ChannelVolume:  // 'M'
+			case Effect::PanSlide:       // 'P'
+			case Effect::Panning:        // 'X'
+				break;
+
+			case Effect::PortamentoDown: // 'E'
+			{
+				if (it_linear_slides)
+					portamento_start = lg(note_frequency);
+				else
+					portamento_start = 14317056.0 / note_frequency;
+
+				if (info.data == 0)
+					info = last_param[Effect::PortamentoDown];
+				else
+					last_param[Effect::PortamentoDown] = last_param[Effect::PortamentoUp] = info;
+
+				if ((info.high_nybble == 0xF) || (info.high_nybble == 0xE))
+				{
+					if (info.high_nybble == 0xF) // 'fine'
+					{
+						if (it_linear_slides)
+							portamento_target = portamento_start - info.low_nybble / 192.0;
+						else
+							portamento_target = portamento_start + 4 * info.low_nybble;
+					}
+					else // E - 'extra fine'
+					{
+						if (it_linear_slides)
+							portamento_target = portamento_start - info.low_nybble / 768.0;
+						else
+							portamento_target = portamento_start + info.low_nybble;
+					}
+
+					if (it_linear_slides)
+						note_frequency = p2(portamento_target);
+					else
+						note_frequency = 14317056.0 / portamento_target;
+
+					LINT_DOUBLE(note_frequency);
+
+					delta_offset_per_tick = note_frequency / ticks_per_second;
+					LINT_DOUBLE(delta_offset_per_tick);
+
+					calculate_portamento_end_t = true;
+					portamento = true;
+				}
+				else
+				{
+					if (it_linear_slides)
+						portamento_end = portamento_start - info.data * (module->speed - 1) / 192.0;
+					else
+						portamento_end = portamento_start + 4 * info.data * (module->speed - 1);
+
+					portamento_end_t = 1.0;
+					portamento = true;
+				}
+
+				break;
+			}
+			case Effect::PortamentoUp: // 'F'
+			{
+				if (it_linear_slides)
+					portamento_start = lg(note_frequency);
+				else
+					portamento_start = 14317056.0 / note_frequency;
+
+				if (info.data == 0)
+					info = last_param[Effect::PortamentoUp];
+				else
+					last_param[Effect::PortamentoDown] = last_param[Effect::PortamentoUp] = info;
+
+				if ((info.high_nybble == 0xF) || (info.high_nybble == 0xE))
+				{
+					if (info.high_nybble == 0xF) // 'fine'
+					{
+						if (it_linear_slides)
+							portamento_target = portamento_start + info.low_nybble / 192.0;
+						else
+							portamento_target = portamento_start - 4 * info.low_nybble;
+					}
+					else // E -- 'extra fine'
+					{
+						if (it_linear_slides)
+							portamento_target = portamento_start + info.low_nybble / 768.0;
+						else
+							portamento_target = portamento_start - info.low_nybble;
+					}
+
+					if (it_linear_slides)
+						note_frequency = p2(portamento_target);
+					else
+						note_frequency = 14317056.0 / portamento_target;
+
+					LINT_DOUBLE(note_frequency);
+
+					delta_offset_per_tick = note_frequency / ticks_per_second;
+					LINT_DOUBLE(delta_offset_per_tick);
+
+					calculate_portamento_end_t = true;
+					portamento = true;
+				}
+				else
+				{
+					if (it_linear_slides)
+						portamento_end = portamento_start + info.data * (module->speed - 1) / 192.0;
+					else
+						portamento_end = portamento_start - 4 * info.data * (module->speed - 1);
+
+					portamento_end_t = 1.0;
+					portamento = true;
+				}
+
+				break;
+			}
+			case Effect::Tremor: // 'I', high = ontime, low = offtime
+			{
+				if ((info.low_nybble == 0) || (info.high_nybble == 0)) // repeat
+					tremor_frame_offset += module->speed;
+				else
+				{
+					if (p_tremor) // already tremoring
+						tremor_frame_offset += module->speed;
+					else
+						tremor_frame_offset = 0;
+					tremor_ontime = info.high_nybble;
+					tremor_offtime = info.low_nybble;
+				}
+				tremor = true;
+
+				break;
+			}
+			case Effect::Arpeggio: // 'J', high = first addition, low = second addition
+			{
+				double old_frequency = note_frequency;
+				double old_delta_offset_per_tick = delta_offset_per_tick;
+				int old_current_znote = current_znote;
+
+				if (p_arpeggio) // already arpeggioing
+					arpeggio_tick_offset += module->previous_ticks_per_module_row;
+				else
+					arpeggio_tick_offset = 0;
+
+				if (current_sample == NULL)
+					break;
+
+				sample_context *temp_sc = current_sample_context;
+				current_sample_context = NULL; // protect the existing context
+
+				arpeggio_first_delta_offset = delta_offset_per_tick;
+
+				int second_note = row.znote + info.high_nybble;
+				current_sample->begin_new_note(&row, NULL, &current_sample_context, module->ticks_per_frame, true, &second_note);
+				recalc(second_note, 1.0, false);
+				if (current_sample_context)
+				{
+					delete current_sample_context;
+					current_sample_context = NULL;
+				}
+				arpeggio_second_delta_offset = delta_offset_per_tick;
+
+				int third_note = row.znote + info.low_nybble;
+				current_sample->begin_new_note(&row, NULL, &current_sample_context, module->ticks_per_frame, true, &third_note);
+				recalc(third_note, 1.0, false);
+				if (current_sample_context)
+				{
+					delete current_sample_context;
+					current_sample_context = NULL;
+				}
+				arpeggio_third_delta_offset = delta_offset_per_tick;
+
+				current_sample_context = temp_sc;
+
+				note_frequency = old_frequency;
+				delta_offset_per_tick = old_delta_offset_per_tick;
+				current_znote = old_current_znote;
+
+				arpeggio = true;
+				break;
+			}
+			case Effect::VibratoAndVolumeSlide: // 'K'
+			{
+				if (!vibrato_retrig)
+				{
+					vibrato_cycle_offset += (1.0 - vibrato_start_t);
+					LINT_DOUBLE(vibrato_cycle_offset);
+				}
+
+				vibrato = true;
+
+				break;
+			}
+			case Effect::TonePortamentoAndVolumeSlide: // 'L'
+			{
+				if (row.snote >= 0)
+					portamento_target_znote = row.znote;
+
+				double old_frequency = note_frequency;
+				double old_delta_offset_per_tick = delta_offset_per_tick;
+				int old_current_znote = current_znote;
+
+				sample_context *temp_sc = current_sample_context;
+				current_sample_context = NULL; // protect the existing context
+
+				current_sample->begin_new_note(&row, NULL, &current_sample_context, module->ticks_per_frame, true, &portamento_target_znote);
+				fading = false;
+				recalc(portamento_target_znote, 1.0, false, false);
+				if (current_sample_context)
+				{
+					delete current_sample_context;
+					current_sample_context = NULL;
+				}
+
+				current_sample_context = temp_sc;
+
+				if (it_linear_slides)
+					portamento_target = lg(note_frequency);
+				else
+					portamento_target = 14317056.0 / note_frequency;
+
+				note_frequency = old_frequency;
+				delta_offset_per_tick = old_delta_offset_per_tick;
+				current_znote = old_current_znote;
+
+				if (it_linear_slides)
+				{
+					portamento_start = lg(note_frequency);
+					if (portamento_target_znote > current_znote)
+						portamento_end = portamento_start + portamento_speed * (module->speed - 1) / 768.0;
+					else
+						portamento_end = portamento_start - portamento_speed * (module->speed - 1) / 768.0;
+				}
+				else
+				{
+					portamento_start = 14317056.0 / note_frequency;
+					if (portamento_target_znote > current_znote)
+						portamento_end = portamento_start - portamento_speed * (module->speed - 1);
+					else
+						portamento_end = portamento_start + portamento_speed * (module->speed - 1);
+				}
+
+				portamento_end_t = (portamento_target - portamento_start) / (portamento_end - portamento_start);
+
+				portamento = true;
+
+				break;
+			}
+			case Effect::ChannelVolumeSlide: // channel volume slide
+			{
+				if (row.effect.type == EffectType::IT)
+				{
+					if (info.data == 0) // repeat
+						info = last_param[Effect::ChannelVolumeSlide];
+					else
+						last_param[Effect::ChannelVolumeSlide] = info;
+
+					channel_volume_slide_start = channel_volume;
+
+					bool fine = false;
+
+					if (info.low_nybble == 0) // slide up
+						channel_volume_slide_end = channel_volume_slide_start + (module->speed - 1) * info.high_nybble / 32.0;
+					else if (info.high_nybble == 0) // slide down
+						channel_volume_slide_end = channel_volume_slide_start - (module->speed - 1) * info.low_nybble / 32.0;
+					else if (info.low_nybble == 0xF) // fine slide up
+					{
+						channel_volume = channel_volume_slide_start - info.high_nybble / 64.0;
+						fine = true;
+					}
+					else if (info.high_nybble == 0xF) // fine slide down
+					{
+						channel_volume = channel_volume_slide_start + info.high_nybble / 64.0;
+						fine = true;
+					}
+
+					if (!fine)
+					{
+						if (channel_volume_slide_end == channel_volume_slide_start)
+							break;
+
+						channel_volume_slide = true;
+					}
+				}
+				else
+					cerr << "Ignoring pre-IT command: " << row.effect.command
+						<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
+
+				break;
+			}
+			case Effect::SampleOffset: // 'O'
+			{
+				if (info.data == 0)
+					info = last_param[Effect::SampleOffset];
+				else
+					last_param[Effect::SampleOffset] = info;
+
+				unsigned target_offset = unsigned((unsigned(info.data) << 8) + set_offset_high);
+
+				if (it_new_effects)
+				{
+					if (current_sample_context && (target_offset > current_sample_context->num_samples))
+						break;
+				}
+
+				offset_major = target_offset;
+
+				break;
+			}
+			case Effect::Retrigger: // 'Q'
+			{
+				if (info.data == 0)
+					info = last_param[Effect::Retrigger];
+				else
+					last_param[Effect::Retrigger] = info;
+
+				if (info.low_nybble != 0)
+				{
+					switch (info.high_nybble)
+					{
+						case 0:  retrigger_factor = 1.0;       retrigger_bias =   0.0; break;
+						case 1:  retrigger_factor = 1.0;       retrigger_bias =  -1.0; break;
+						case 2:  retrigger_factor = 1.0;       retrigger_bias =  -2.0; break;
+						case 3:  retrigger_factor = 1.0;       retrigger_bias =  -4.0; break;
+						case 4:  retrigger_factor = 1.0;       retrigger_bias =  -8.0; break;
+						case 5:  retrigger_factor = 1.0;       retrigger_bias = -16.0; break;
+						case 6:  retrigger_factor = 2.0 / 3.0; retrigger_bias =   0.0; break;
+						case 7:  retrigger_factor = 1.0 / 2.0; retrigger_bias =   0.0; break;
+						case 9:  retrigger_factor = 1.0;       retrigger_bias =   1.0; break;
+						case 10: retrigger_factor = 1.0;       retrigger_bias =   2.0; break;
+						case 11: retrigger_factor = 1.0;       retrigger_bias =   4.0; break;
+						case 12: retrigger_factor = 1.0;       retrigger_bias =   8.0; break;
+						case 13: retrigger_factor = 1.0;       retrigger_bias =  16.0; break;
+						case 14: retrigger_factor = 3.0 / 2.0; retrigger_bias =   0.0; break;
+						case 15: retrigger_factor = 2.0 / 1.0; retrigger_bias =   0.0; break;
+					}
+
+					retrigger_bias *= (original_intensity / 64.0);
+
+					retrigger_ticks = module->ticks_per_module_row * info.low_nybble / module->speed;
+
+					retrigger = true;
+				}
+
+				break;
+			}
+			case Effect::Tremolo: // 'R'
+				if ((info.low_nybble == 0) || (info.high_nybble == 0)) // repeat
+				{
+					if (row.snote >= 0)
+						tremolo_middle_intensity = original_intensity * (volume / 64.0);
+					if (tremolo_retrig)
+						tremolo_cycle_offset += (1.0 - tremolo_start_t);
+				}
+				else
+				{
+					if (p_tremolo) // already tremoloing
+						tremolo_cycle_offset += (1.0 - tremolo_start_t);
+					else
+						tremolo_cycle_offset = 0.0;
+					tremolo_middle_intensity = intensity;
+					tremolo_depth = original_intensity * (info.low_nybble * 4.0 * (255.0 / 64.0)) / 64.0;
+					if (it_new_effects)
+						tremolo_depth *= 0.5;
+					double new_tremolo_cycle_frequency = double(info.high_nybble * module->speed) / 64.0;
+
+					if (p_tremolo && (new_tremolo_cycle_frequency != tremolo_cycle_frequency))
+						tremolo_cycle_offset *= (tremolo_cycle_frequency / new_tremolo_cycle_frequency);
+
+					tremolo_cycle_frequency = new_tremolo_cycle_frequency;
+
+					if (it_new_effects)
+						tremolo_start_t = 0.0;
+					else
+					{
+						vibrato_start_t = 1.0 / module->speed;
+						LINT_DOUBLE(vibrato_start_t);
+					}
+				}
+				tremolo = true;
+				break;
+			case Effect::S3MExtendedEffect: // 'S'
+			{
+				effect_info_type *extended_effect_info = &info;
+				bool is_from_memory = false;
+
+				if (info.data == 0)
+				{
+					is_from_memory = true;
+					extended_effect_info = &last_s3m_extended_effect_data;
+				}
+				else
+					last_s3m_extended_effect_data = info;
+
+				switch (extended_effect_info->high_nybble)
+				{
+					// ignore song-wide commands
+					case S3MExtendedEffect::FinePatternDelay: // 0x6
+					case S3MExtendedEffect::PatternLoop:      // 0xB
+						break;
+					case S3MExtendedEffect::GlissandoControl: // 0x1
+						if (extended_effect_info->low_nybble == 0)
+							portamento_glissando = false;
+						else if (extended_effect_info->low_nybble == 1)
+							portamento_glissando = true;
+						else
+							cerr << "Invalid parameter value: S3M command S1"
+								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << ")" << endl;
+						break;
+					case S3MExtendedEffect::SetFineTune: // 0x2
+						if (current_sample == NULL)
+							cerr << "No instrument for set finetune effect" << endl;
+						else
+						{
+							double before_finetune = current_sample->samples_per_second;
+
+							current_sample->samples_per_second = mod_finetune[extended_effect_info->low_nybble];
+
+							note_frequency *= (current_sample->samples_per_second / before_finetune);
+							LINT_DOUBLE(note_frequency);
+
+							delta_offset_per_tick = note_frequency / ticks_per_second;
+							LINT_DOUBLE(delta_offset_per_tick);
+						}
+						break;
+					case S3MExtendedEffect::SetVibratoWaveform: // 0x3
+						switch (extended_effect_info->low_nybble & 0x3)
+						{
+							case 0x0: vibrato_waveform = Waveform::Sine;     break;
+							case 0x1: vibrato_waveform = Waveform::RampDown; break;
+							case 0x2: vibrato_waveform = Waveform::Square;   break;
+							case 0x3:
+								switch ((rand() >> 2) % 3)
+								{
+									case 0: vibrato_waveform = Waveform::Sine;     break;
+									case 1: vibrato_waveform = Waveform::RampDown; break;
+									case 2: vibrato_waveform = Waveform::Square;   break;
+								}
+						}
+						if (extended_effect_info->low_nybble & 0x4)
+							vibrato_retrig = false;
+						else
+							vibrato_retrig = true;
+
+						if (extended_effect_info->low_nybble & 0x8)
+							cerr << "Warning: bit 3 ignored in effect S3"
+								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
+						break;
+					case S3MExtendedEffect::SetTremoloWaveform: // 0x4
+						switch (extended_effect_info->low_nybble & 0x3)
+						{
+							case 0x3:
+							case 0x0: tremolo_waveform = Waveform::Sine;     break;
+							case 0x1: tremolo_waveform = Waveform::RampDown; break;
+							case 0x2: tremolo_waveform = Waveform::Square;   break;
+							// case 0x3: tremolo_waveform = Waveform::Random;   break;
+						}
+						if (extended_effect_info->low_nybble & 0x4)
+							tremolo_retrig = false;
+						else
+							tremolo_retrig = true;
+
+						if (extended_effect_info->low_nybble & 0x8)
+							cerr << "Warning: bit 3 ignored in effect S4"
+								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
+						break;
+					case S3MExtendedEffect::SetPanbrelloWaveform: // 0x5
+						if (row.effect.type == EffectType::IT)
+						{
+							switch (extended_effect_info->low_nybble & 0x3)
+							{
+								case 0x3:
+								case 0x0: panbrello_waveform = Waveform::Sine;     break;
+								case 0x1: panbrello_waveform = Waveform::RampDown; break;
+								case 0x2: panbrello_waveform = Waveform::Square;   break;
+								// case 0x3: panbrello_waveform = Waveform::Random;   break;
+							}
+							if (extended_effect_info->low_nybble & 0x4)
+								panbrello_retrig = false;
+							else
+								panbrello_retrig = true;
+
+							if (extended_effect_info->low_nybble & 0x8)
+								cerr << "Warning: bit 3 ignored in effect S5"
+									<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
+						}
+						else
+							cerr << "Ignoring pre-IT command: S5"
+								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
+						break;
+					case S3MExtendedEffect::OverrideNewNoteAction: // 0x7, past note cut/off/fade, temporary new note action
+						if (row.effect.type == EffectType::IT)
+						{
+							switch (extended_effect_info->low_nybble)
+							{
+								case 3: // set NNA to cut       ignore instrument-interpreted values
+								case 4: // set NNA to continue 
+								case 5: // set NNA to note off
+								case 6: // set NNA to fade
+								case 7: // disable volume envelope for this note
+								case 8: // disable volume envelope for this note
+									break;
+								case 0: // note cut
+									for (int i = int(ancillary_channels.size() - 1); i >= 0; i--)
+									{
+										auto my_own = find(my_ancillary_channels.begin(), my_ancillary_channels.end(), ancillary_channels[unsigned(i)]);
+
+										if (my_own != my_ancillary_channels.end())
+										{
+											ancillary_channels.erase(ancillary_channels.begin() + i);
+											my_ancillary_channels.erase(my_own);
+											delete *my_own;
+										}
+									}
+									break;
+								case 1: // note off
+									for (auto i = my_ancillary_channels.begin(), l = my_ancillary_channels.end(); i != l; ++i)
+										(*i)->note_off();
+									break;
+								case 2: // fade
+									for (auto i = my_ancillary_channels.begin(), l = my_ancillary_channels.end(); i != l; ++i)
+									{
+										channel &t = **i;
+										t.fading = true;
+										t.fade_value = 1.0;
+										if (!t.have_fade_per_tick)
+										{
+											t.note_off(true, false);
+											t.have_fade_per_tick = true;
+										}
+									}
+									break;
+								default:
+									cerr << "Warning: argument meaning unspecified in effect S7"
+										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
+							}
+						}
+						else
+							cerr << "Ignoring pre-IT command: S7"
+								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
+						break;
+					case S3MExtendedEffect::RoughPanning: // 0x8
+						if (module->stereo)
+							panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + extended_effect_info->low_nybble - 8);
+						break;
+					case S3MExtendedEffect::ExtendedITEffect:
+						if (row.effect.type == EffectType::IT)
+						{
+							switch (extended_effect_info->low_nybble)
+							{
+								case 1: // set surround sound
+									panning.to_surround_sound();
+									break;
+								default:
+									cerr << "Warning: argument meaning unspecified in effect S9"
+										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
+							}
+						}
+						else
+							cerr << "Ignoring pre-IT command: S7"
+								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
+						break;
+					case S3MExtendedEffect::Panning:
+						if (row.effect.type == EffectType::IT)
+							set_offset_high = unsigned(extended_effect_info->low_nybble << 16);
+						else
+							if (module->stereo)
+							{
+								if (extended_effect_info->low_nybble > 7)
+									panning.from_s3m_pan(module->base_pan[unmapped_channel_number] - extended_effect_info->low_nybble);
+								else
+									panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + extended_effect_info->low_nybble);
+							}
+						break;
+					case S3MExtendedEffect::NoteCut: // 0xC
+						note_cut_at_frame = true;
+						note_cut_frames = extended_effect_info->low_nybble;
+						break;
+					case S3MExtendedEffect::NoteDelay: // 0xD
+						if (extended_effect_info->low_nybble <= static_cast<unsigned int>(module->speed))
+						{
+							note_delay = true;
+							note_delay_frames = extended_effect_info->low_nybble;
+							delayed_note = &row;
+
+							// ScreamTracker bug: When S00 is used to repeat NoteDelay, the original note instance isn't
+							// cut, so the note triggers twice, once is the correct delayed one, and the other is at
+							// tick 0, as if it weren't delayed. We're already playing the one from tick 0, so we do a
+							// note cut here so that it can be reinitialized after the delay -- but to replicate the
+							// ScreamTracker bug, we don't cut the note if this row command is an S00.
+							if ((row.effect.type == EffectType::S3M) && is_from_memory)
+								note_cut();
+						}
+						break;
+					default:
+						cerr << "Unimplemented S3M/IT command: " << row.effect.command
+							<< setfill('0') << setw(2) << hex << uppercase << int(extended_effect_info->data) << nouppercase << dec << endl;
+				}
+
+				break;
+			}
+			case Effect::FineVibrato: // 'U'
+			{
+				if ((info.low_nybble == 0) || (info.high_nybble == 0))
+				{
+					if (!vibrato_retrig)
+					{
+						vibrato_cycle_offset += 1.0;
+						LINT_DOUBLE(vibrato_cycle_offset);
+					}
+				}
+				else
+				{
+					if (p_vibrato) // already vibratoing
+					{
+						vibrato_cycle_offset += 1.0;
+						LINT_DOUBLE(vibrato_cycle_offset);
+					}
+					else
+						vibrato_cycle_offset = 0.0;
+
+					if (it_linear_slides)
+						vibrato_depth = info.low_nybble * (255.0 / 128.0) / -768.0;
+					else
+						vibrato_depth = info.low_nybble * (255.0 / 128.0);
+
+					if (it_new_effects)
+						vibrato_depth *= 0.5;
+
+					double new_vibrato_cycle_frequency = (module->speed * info.high_nybble) / 64.0;
+
+					if (p_vibrato && (new_vibrato_cycle_frequency != vibrato_cycle_frequency))
+					{
+						vibrato_cycle_offset *= (vibrato_cycle_frequency / new_vibrato_cycle_frequency);
+						LINT_DOUBLE(vibrato_cycle_offset);
+					}
+
+					vibrato_cycle_frequency = new_vibrato_cycle_frequency;
+					LINT_DOUBLE(vibrato_cycle_frequency);
+				}
+				vibrato = true;
+
+				break;
+			}
+			case Effect::Panbrello: // 'Y', high = speed, low - depth
+			{
+				if (row.effect.type == EffectType::IT)
+				{
+					if ((info.low_nybble == 0) || (info.high_nybble == 0))
+					{
+						if (!panbrello_retrig)
+							panbrello_cycle_offset += 1.0;
+					}
+					else
+					{
+						if (p_panbrello) // already panbrelloing
+							panbrello_cycle_offset += 1.0;
+						else
+							panbrello_cycle_offset = 0.0;
+
+						if (it_linear_slides)
+							panbrello_depth = info.low_nybble * (255.0 / 128.0) / -192.0;
+						else
+							panbrello_depth = info.low_nybble * 4.0 * (255.0 / 128.0);
+
+						if (row.effect.type == EffectType::IT)
+							panbrello_depth *= 0.5;
+
+						double new_panbrello_cycle_frequency = (module->speed * info.high_nybble) / 64.0;
+
+						if (p_panbrello && (new_panbrello_cycle_frequency != panbrello_cycle_frequency))
+							panbrello_cycle_offset *= (panbrello_cycle_frequency / new_panbrello_cycle_frequency);
+
+						panbrello_cycle_frequency = new_panbrello_cycle_frequency;
+					}
+					panbrello = true;
+				}
+				else
+					cerr << "Ignoring " << EffectType::ToString(row.effect.type) << " command: " << row.effect.command
+						<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
+
+				break;
+			}
+
+			default:
+				cerr << "Unimplemented " << EffectType::ToString(row.effect.type) << " command: " << row.effect.command
+					<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
+		}
 	}
 }

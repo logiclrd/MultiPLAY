@@ -267,11 +267,12 @@ namespace MultiPLAY
 		switch (type)
 		{
 			case EffectType::S3M:
+			case EffectType::XM:
 			case EffectType::IT:
 				switch (command)
 				{
-					case 'G':
-					case 'L':
+					case Effect::TonePortamento:
+					case Effect::TonePortamentoAndVolumeSlide:
 						return true;
 					default:
 						return false;
@@ -281,29 +282,6 @@ namespace MultiPLAY
 		}
 	}
 		
-	bool effect_struct::keepVolume()
-	{
-		if (!present)
-			return false;
-
-		switch (type)
-		{
-			case EffectType::S3M:
-			case EffectType::IT:
-				switch (command)
-				{
-					case 'D':
-					case 'K':
-					case 'L':
-						return true;
-					default:
-						return false;
-				}
-			default:
-				throw "internal error";
-		}
-	}
-
 	bool effect_struct::isnt(Effect::Type effect, signed char high_nybble/* = -1*/, signed char low_nybble/* = -1*/)
 	{
 		if (!present)

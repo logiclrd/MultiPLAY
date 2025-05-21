@@ -170,7 +170,6 @@ namespace MultiPLAY
 		void init(MODEffect::Type command, unsigned char info, row *r = NULL);
 
 		bool keepNote();
-		bool keepVolume();
 		bool isnt(Effect::Type effect, signed char high_nybble = -1, signed char low_nybble = -1);
 		bool is(Effect::Type effect, signed char high_nybble = -1, signed char low_nybble = -1);
 

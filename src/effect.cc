@@ -50,11 +50,6 @@ namespace MultiPLAY
 		init(type, command, high_nybble, low_nybble);
 	}
 
-	effect_struct::effect_struct(EffectType::Type type, unsigned char raw_command, unsigned char info)
-	{
-		init(type, raw_command, info);
-	}
-
 	effect_struct::effect_struct(EffectType::Type type, Effect::Type command, unsigned char info)
 	{
 		init(type, command, info);
@@ -248,32 +243,6 @@ namespace MultiPLAY
 	void effect_struct::init(EffectType::Type type, Effect::Type command, unsigned char high_nybble, unsigned char low_nybble, row *r)
 	{
 		init(type, command, (high_nybble << 4) | (low_nybble & 0xF), r);
-	}
-
-	void effect_struct::init(EffectType::Type type, unsigned char raw_command, unsigned char info, row *r)
-	{
-		switch (type)
-		{
-			case EffectType::MOD:
-				init((MODEffect::Type)command, info, r);
-				break;
-			case EffectType::XM:
-			case EffectType::S3M:
-			case EffectType::IT:
-				if ((raw_command < 1) || (raw_command > 26))
-				{
-					present = false; // no further processing required
-					return;
-				}
-				this->command = raw_command + 64;
-				this->info = info;
-				break;
-			default:
-				throw "unimplemented effect type";
-		}
-
-		this->type = type;
-		present = true;
 	}
 
 	void effect_struct::init(EffectType::Type type, Effect::Type command, unsigned char info, row *r)

@@ -798,19 +798,92 @@ namespace MultiPLAY
 			}
 		};
 
+		namespace ITEffect
+		{
+			enum Type
+			{
+				Empty = -1,
+				None  =  0,
+
+				SetSpeed                     =  1,
+				OrderJump                    =  2,
+				PatternJump                  =  3,
+				VolumeSlide                  =  4,
+				PortamentoDown               =  5,
+				PortamentoUp                 =  6,
+				TonePortamento               =  7,
+				Vibrato                      =  8,
+				Tremor                       =  9,
+				Arpeggio                     = 10,
+				VibratoAndVolumeSlide        = 11,
+				TonePortamentoAndVolumeSlide = 12,
+				ChannelVolume                = 13,
+				ChannelVolumeSlide           = 14,
+				SampleOffset                 = 15,
+				PanSlide                     = 16,
+				Retrigger                    = 17,
+				Tremolo                      = 18,
+				ExtendedEffect               = 19,
+				Tempo                        = 20,
+				FineVibrato                  = 21,
+				GlobalVolume                 = 22,
+				GlobalVolumeSlide            = 23,
+				Panning                      = 24,
+				Panbrello                    = 25,
+				MIDIMacros                   = 26,
+			};
+		}
+
+		Effect::Type translate_it_effect_command(ITEffect::Type it_command)
+		{
+			switch (it_command)
+			{
+				case ITEffect::SetSpeed: return Effect::SetSpeed;
+				case ITEffect::OrderJump: return Effect::OrderJump;
+				case ITEffect::PatternJump: return Effect::PatternJump;
+				case ITEffect::VolumeSlide: return Effect::VolumeSlide;
+				case ITEffect::PortamentoDown: return Effect::PortamentoDown;
+				case ITEffect::PortamentoUp: return Effect::PortamentoUp;
+				case ITEffect::TonePortamento: return Effect::TonePortamento;
+				case ITEffect::Vibrato: return Effect::Vibrato;
+				case ITEffect::Tremor: return Effect::Tremor;
+				case ITEffect::Arpeggio: return Effect::Arpeggio;
+				case ITEffect::VibratoAndVolumeSlide: return Effect::VibratoAndVolumeSlide;
+				case ITEffect::TonePortamentoAndVolumeSlide: return Effect::TonePortamentoAndVolumeSlide;
+				case ITEffect::ChannelVolume: return Effect::ChannelVolume;
+				case ITEffect::ChannelVolumeSlide: return Effect::ChannelVolumeSlide;
+				case ITEffect::SampleOffset: return Effect::SampleOffset;
+				case ITEffect::PanSlide: return Effect::PanSlide;
+				case ITEffect::Retrigger: return Effect::Retrigger;
+				case ITEffect::Tremolo: return Effect::Tremolo;
+				case ITEffect::ExtendedEffect: return Effect::ExtendedEffect;
+				case ITEffect::Tempo: return Effect::Tempo;
+				case ITEffect::FineVibrato: return Effect::FineVibrato;
+				case ITEffect::GlobalVolume: return Effect::GlobalVolume;
+				case ITEffect::GlobalVolumeSlide: return Effect::GlobalVolumeSlide;
+				case ITEffect::Panning: return Effect::Panning;
+				case ITEffect::Panbrello: return Effect::Panbrello;
+
+				default:
+					return Effect::None;
+			}
+		}
+
 		struct it_pattern_slot
 		{
 			int note;
 			unsigned int instrument;
 			int volume_panning;
-			int effect_command, effect_data;
+			ITEffect::Type effect_command;
+			int effect_data;
 
 			const static unsigned int NoInstrument = 0xFFFFFFFF;
 
 			it_pattern_slot()
 			{
 				note = volume_panning = -1;
-				effect_command = effect_data = 0;
+				effect_command = ITEffect::None;
+				effect_data = 0;
 
 				instrument = 0xFFFFFFFF;
 			}
@@ -851,7 +924,7 @@ namespace MultiPLAY
 					cur_row[j].note = -1;
 					cur_row[j].instrument = it_pattern_slot::NoInstrument;
 					cur_row[j].volume_panning = -1;
-					cur_row[j].effect_command = -1;
+					cur_row[j].effect_command = ITEffect::Empty;
 				}
 
 				while (true)
@@ -877,7 +950,7 @@ namespace MultiPLAY
 						c.volume_panning = *(data++);
 					if (mask.has_effect())
 					{
-						c.effect_command = (unsigned char)*(data++);
+						c.effect_command = (ITEffect::Type)(unsigned char)*(data++);
 						c.effect_data = (unsigned char)*(data++);
 					}
 					if (mask.use_last_note())
@@ -959,9 +1032,13 @@ namespace MultiPLAY
 						}
 					}
 
-					if ((c.effect_command != -1) // no data read
-					 && (c.effect_command != 'Z')) // MIDI Macros -- strip them out as we explicitly do not support them
-						r.effect = effect_struct(EffectType::IT, (unsigned char)c.effect_command, (unsigned char)(c.effect_data));
+					if (c.effect_command != -1) // no data read
+					{
+						Effect::Type command = translate_it_effect_command(c.effect_command);
+
+						if (command != Effect::None)
+							r.effect = effect_struct(EffectType::IT, command, (unsigned char)(c.effect_data));
+					}
 
 					if (r.effect.present)
 						has_note_events[channel] = true;

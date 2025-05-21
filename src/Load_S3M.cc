@@ -117,6 +117,74 @@ namespace MultiPLAY
 		};
 	}
 
+	namespace S3MEffect
+	{
+		enum Type : unsigned char
+		{
+			SetSpeed                     =  1,
+			OrderJump                    =  2,
+			PatternJump                  =  3,
+			VolumeSlide                  =  4,
+			PortamentoDown               =  5,
+			PortamentoUp                 =  6,
+			TonePortamento               =  7,
+			Vibrato                      =  8,
+			Tremor                       =  9,
+			Arpeggio                     = 10,
+			VibratoAndVolumeSlide        = 11,
+			TonePortamentoAndVolumeSlide = 12,
+			ChannelVolume                = 13,
+			ChannelVolumeSlide           = 14,
+			SampleOffset                 = 15,
+			PanSlide                     = 16,
+			Retrigger                    = 17,
+			Tremolo                      = 18,
+			ExtendedEffect               = 19,
+			Tempo                        = 20,
+			FineVibrato                  = 21,
+			GlobalVolume                 = 22,
+			GlobalVolumeSlide            = 23,
+			Panning                      = 24,
+			Panbrello                    = 25,
+			MIDIMacros                   = 26,
+		};
+	}
+
+	Effect::Type translate_s3m_effect_command(S3MEffect::Type s3m_command)
+	{
+		switch (s3m_command)
+		{
+			case S3MEffect::SetSpeed: return Effect::SetSpeed;
+			case S3MEffect::OrderJump: return Effect::OrderJump;
+			case S3MEffect::PatternJump: return Effect::PatternJump;
+			case S3MEffect::VolumeSlide: return Effect::VolumeSlide;
+			case S3MEffect::PortamentoDown: return Effect::PortamentoDown;
+			case S3MEffect::PortamentoUp: return Effect::PortamentoUp;
+			case S3MEffect::TonePortamento: return Effect::TonePortamento;
+			case S3MEffect::Vibrato: return Effect::Vibrato;
+			case S3MEffect::Tremor: return Effect::Tremor;
+			case S3MEffect::Arpeggio: return Effect::Arpeggio;
+			case S3MEffect::VibratoAndVolumeSlide: return Effect::VibratoAndVolumeSlide;
+			case S3MEffect::TonePortamentoAndVolumeSlide: return Effect::TonePortamentoAndVolumeSlide;
+			case S3MEffect::ChannelVolume: return Effect::ChannelVolume;
+			case S3MEffect::ChannelVolumeSlide: return Effect::ChannelVolumeSlide;
+			case S3MEffect::SampleOffset: return Effect::SampleOffset;
+			case S3MEffect::PanSlide: return Effect::PanSlide;
+			case S3MEffect::Retrigger: return Effect::Retrigger;
+			case S3MEffect::Tremolo: return Effect::Tremolo;
+			case S3MEffect::ExtendedEffect: return Effect::ExtendedEffect;
+			case S3MEffect::Tempo: return Effect::Tempo;
+			case S3MEffect::FineVibrato: return Effect::FineVibrato;
+			case S3MEffect::GlobalVolume: return Effect::GlobalVolume;
+			case S3MEffect::GlobalVolumeSlide: return Effect::GlobalVolumeSlide;
+			case S3MEffect::Panning: return Effect::Panning;
+			case S3MEffect::Panbrello: return Effect::Panbrello;
+
+			default:
+				return Effect::None;
+		}
+	}
+
 	module_struct *load_s3m(istream *file)
 	{
 		int file_base_offset = (int)file->tellg();
@@ -540,10 +608,13 @@ namespace MultiPLAY
 
 					if (what & 128)
 					{
-						unsigned char command = (unsigned char)file->get(); if (!--bytes_left) break;
+						auto s3m_command = (S3MEffect::Type)file->get(); if (!--bytes_left) break;
 						int info = file->get(); if (!--bytes_left) break;
 
-						rowdata[channel].effect = effect_struct(EffectType::S3M, command, (unsigned char)info);
+						auto command = translate_s3m_effect_command(s3m_command);
+
+						if (command != Effect::None)
+							rowdata[channel].effect = effect_struct(EffectType::S3M, command, (unsigned char)info);
 					}
 				}
 

@@ -53,12 +53,12 @@ namespace MultiPLAY
 			short packed_data_length; // can't be trusted, if it's not zero then don't actually use the value, just decode until end is reached
 		};
 
-		#define XM_NOTE_CUT 97
+		#define XM_NOTE_OFF 97
 
 		int snote_from_xnote(int xm_note)
 		{
-			if (xm_note == XM_NOTE_CUT)
-				return SNOTE_NOTE_CUT;
+			if (xm_note == XM_NOTE_OFF)
+				return SNOTE_NOTE_OFF;
 			else
 			{
 				// xm_note: 1 == C-1, 13 == C-2, 25 == C-3, 37 == C-4
@@ -689,34 +689,34 @@ namespace MultiPLAY
 									note.volume = xm_note.command_parameter;
 									break;
 								case XMNoteCommand::VolumeSlideDown:
-									note.secondary_effect = effect_struct(EffectType::S3M, Effect::VolumeSlide, xm_note.command_parameter);
+									note.secondary_effect = effect_struct(EffectType::XM, Effect::VolumeSlide, xm_note.command_parameter);
 									break;
 								case XMNoteCommand::VolumeSlideUp:
-									note.secondary_effect = effect_struct(EffectType::S3M, Effect::VolumeSlide, xm_note.command_parameter << 4);
+									note.secondary_effect = effect_struct(EffectType::XM, Effect::VolumeSlide, xm_note.command_parameter << 4);
 									break;
 								case XMNoteCommand::VolumeFineSlideDown:
-									note.secondary_effect = effect_struct(EffectType::S3M, Effect::VolumeSlide, 0xF0 | xm_note.command_parameter);
+									note.secondary_effect = effect_struct(EffectType::XM, Effect::VolumeSlide, 0xF0 | xm_note.command_parameter);
 									break;
 								case XMNoteCommand::VolumeFineSlideUp:
-									note.secondary_effect = effect_struct(EffectType::S3M, Effect::VolumeSlide, 0x0F | (xm_note.command_parameter << 4));
+									note.secondary_effect = effect_struct(EffectType::XM, Effect::VolumeSlide, 0x0F | (xm_note.command_parameter << 4));
 									break;
 								case XMNoteCommand::VibratoSpeed:
-									note.secondary_effect = effect_struct(EffectType::S3M, Effect::SetVibratoSpeed, xm_note.command_parameter * 0x11);
+									note.secondary_effect = effect_struct(EffectType::XM, Effect::SetVibratoSpeed, xm_note.command_parameter * 0x11);
 									break;
 								case XMNoteCommand::VibratoDepth:
-									note.secondary_effect = effect_struct(EffectType::S3M, Effect::Vibrato, xm_note.command_parameter);
+									note.secondary_effect = effect_struct(EffectType::XM, Effect::Vibrato, xm_note.command_parameter);
 									break;
 								case XMNoteCommand::Pan:
-									note.secondary_effect = effect_struct(EffectType::S3M, Effect::Panning, xm_note.command_parameter * 4);
+									note.secondary_effect = effect_struct(EffectType::XM, Effect::Panning, xm_note.command_parameter * 4);
 									break;
 								case XMNoteCommand::PanSlideLeft:
-									note.secondary_effect = effect_struct(EffectType::S3M, Effect::PanSlide, xm_note.command_parameter << 4);
+									note.secondary_effect = effect_struct(EffectType::XM, Effect::PanSlide, xm_note.command_parameter << 4);
 									break;
-							case XMNoteCommand::PanSlideRight:
-									note.secondary_effect = effect_struct(EffectType::S3M, Effect::PanSlide, xm_note.command_parameter);
+								case XMNoteCommand::PanSlideRight:
+									note.secondary_effect = effect_struct(EffectType::XM, Effect::PanSlide, xm_note.command_parameter);
 									break;
 								case XMNoteCommand::TonePortamento:
-									note.secondary_effect = effect_struct(EffectType::S3M, Effect::TonePortamento, xm_note.command_parameter * 0x11);
+									note.secondary_effect = effect_struct(EffectType::XM, Effect::TonePortamento, xm_note.command_parameter * 0x11);
 									break;
 							}
 
@@ -738,34 +738,34 @@ namespace MultiPLAY
 									switch (xm_note.effect_type)
 									{
 										case XMNoteEffect::SetGlobalVolume: // 'G'
-											note.effect.init(EffectType::S3M, Effect::GlobalVolume, xm_note.effect_parameter, &note);
+											note.effect.init(EffectType::XM, Effect::GlobalVolume, xm_note.effect_parameter, &note);
 											break;
 										case XMNoteEffect::GlobalVolumeSlide: // 'H'
-											note.effect.init(EffectType::S3M, Effect::GlobalVolumeSlide, xm_note.effect_parameter, &note);
+											note.effect.init(EffectType::XM, Effect::GlobalVolumeSlide, xm_note.effect_parameter, &note);
 											break;
 										case XMNoteEffect::KeyOff: // 'K'
-											note.effect.init(EffectType::S3M, Effect::S3MExtendedEffect, S3MExtendedEffect::NoteCut, xm_note.effect_parameter, &note);
+											note.effect.init(EffectType::XM, Effect::ExtendedEffect, ExtendedEffect::NoteCut, xm_note.effect_parameter, &note);
 											break;
 										case XMNoteEffect::SetEnvelopePosition: // 'L'
 											note.effect.init(EffectType::XM, Effect::SetEnvelopePosition, xm_note.effect_parameter, &note);
 											break;
 										case XMNoteEffect::PanningSlide: // 'P'
-											note.effect.init(EffectType::S3M, Effect::PanSlide, xm_note.effect_parameter, &note);
+											note.effect.init(EffectType::XM, Effect::PanSlide, xm_note.effect_parameter, &note);
 											break;
 										case XMNoteEffect::MultiRetrigger: // 'R'
-											note.effect.init(EffectType::S3M, Effect::Retrigger, xm_note.effect_parameter, &note);
+											note.effect.init(EffectType::XM, Effect::Retrigger, xm_note.effect_parameter, &note);
 											break;
 										case XMNoteEffect::Tremor: // 'T'
-											note.effect.init(EffectType::S3M, Effect::Tremor, xm_note.effect_parameter, &note);
+											note.effect.init(EffectType::XM, Effect::Tremor, xm_note.effect_parameter, &note);
 											break;
 										case XMNoteEffect::ExtraFinePortamento: // 'X'
 											switch (xm_note.command_parameter >> 4)
 											{
 												case 1: // up
-													note.effect.init(EffectType::S3M, Effect::PortamentoUp, 0xE, xm_note.command_parameter & 0xF, &note);
+													note.effect.init(EffectType::XM, Effect::PortamentoUp, 0xE, xm_note.command_parameter & 0xF, &note);
 													break;
 												case 2: // down
-													note.effect.init(EffectType::S3M, Effect::PortamentoDown, 0xE, xm_note.command_parameter & 0xF, &note);
+													note.effect.init(EffectType::XM, Effect::PortamentoDown, 0xE, xm_note.command_parameter & 0xF, &note);
 													break;
 											}
 

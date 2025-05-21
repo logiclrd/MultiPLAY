@@ -62,7 +62,7 @@ namespace MultiPLAY
 			PanSlide = 'P',
 			Retrigger = 'Q',
 			Tremolo = 'R',
-			S3MExtendedEffect = 'S',
+			ExtendedEffect = 'S',
 			FineVibrato = 'U',
 			Panning = 'X',
 			Panbrello = 'Y',
@@ -70,7 +70,7 @@ namespace MultiPLAY
 		};
 	}
 
-	namespace S3MExtendedEffect
+	namespace ExtendedEffect
 	{
 		enum Type : unsigned
 		{

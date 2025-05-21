@@ -694,7 +694,7 @@ namespace MultiPLAY
 							row_jump_target -= 64;
 						}
 						break;
-					case Effect::S3MExtendedEffect: // 'S'
+					case Effect::ExtendedEffect: // 'S'
 					{
 						effect_info_type *extended_effect_info = &row_list[i].effect.info;
 
@@ -705,7 +705,7 @@ namespace MultiPLAY
 
 						switch (extended_effect_info->high_nybble)
 						{
-							case S3MExtendedEffect::FinePatternDelay: // 0x6, pattern delay in ticks
+							case ExtendedEffect::FinePatternDelay: // 0x6, pattern delay in ticks
 								// If multiple columns do this, they stack.
 								if (!pattern_delay_by_frames)
 								{
@@ -716,13 +716,13 @@ namespace MultiPLAY
 									pattern_delay_frames += (int)extended_effect_info->low_nybble;
 								module->speed += pattern_delay_frames;
 								break;
-							case S3MExtendedEffect::PatternDelay: // 0xE, pattern delay in frames
+							case ExtendedEffect::PatternDelay: // 0xE, pattern delay in frames
 								// If multiple columns do this, only the first one in the row takes effect
 								if (pattern_delay == 0)
 									pattern_delay = extended_effect_info->low_nybble;
 								break;
 
-							case S3MExtendedEffect::PatternLoop: // 0xB
+							case ExtendedEffect::PatternLoop: // 0xB
 								if (extended_effect_info->low_nybble == 0)
 								{
 									if (!just_looped)
@@ -1762,7 +1762,7 @@ namespace MultiPLAY
 				}
 				tremolo = true;
 				break;
-			case Effect::S3MExtendedEffect: // 'S'
+			case Effect::ExtendedEffect: // 'S'
 			{
 				effect_info_type *extended_effect_info = &info;
 				bool is_from_memory = false;
@@ -1778,10 +1778,10 @@ namespace MultiPLAY
 				switch (extended_effect_info->high_nybble)
 				{
 					// ignore song-wide commands
-					case S3MExtendedEffect::FinePatternDelay: // 0x6
-					case S3MExtendedEffect::PatternLoop:      // 0xB
+					case ExtendedEffect::FinePatternDelay: // 0x6
+					case ExtendedEffect::PatternLoop:      // 0xB
 						break;
-					case S3MExtendedEffect::GlissandoControl: // 0x1
+					case ExtendedEffect::GlissandoControl: // 0x1
 						if (extended_effect_info->low_nybble == 0)
 							portamento_glissando = false;
 						else if (extended_effect_info->low_nybble == 1)
@@ -1790,7 +1790,7 @@ namespace MultiPLAY
 							cerr << "Invalid parameter value: S3M command S1"
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << ")" << endl;
 						break;
-					case S3MExtendedEffect::SetFineTune: // 0x2
+					case ExtendedEffect::SetFineTune: // 0x2
 						if (current_sample == NULL)
 							cerr << "No instrument for set finetune effect" << endl;
 						else
@@ -1806,7 +1806,7 @@ namespace MultiPLAY
 							LINT_DOUBLE(delta_offset_per_tick);
 						}
 						break;
-					case S3MExtendedEffect::SetVibratoWaveform: // 0x3
+					case ExtendedEffect::SetVibratoWaveform: // 0x3
 						switch (extended_effect_info->low_nybble & 0x3)
 						{
 							case 0x0: vibrato_waveform = Waveform::Sine;     break;
@@ -1829,7 +1829,7 @@ namespace MultiPLAY
 							cerr << "Warning: bit 3 ignored in effect S3"
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 						break;
-					case S3MExtendedEffect::SetTremoloWaveform: // 0x4
+					case ExtendedEffect::SetTremoloWaveform: // 0x4
 						switch (extended_effect_info->low_nybble & 0x3)
 						{
 							case 0x3:
@@ -1847,7 +1847,7 @@ namespace MultiPLAY
 							cerr << "Warning: bit 3 ignored in effect S4"
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 						break;
-					case S3MExtendedEffect::SetPanbrelloWaveform: // 0x5
+					case ExtendedEffect::SetPanbrelloWaveform: // 0x5
 						if (row.effect.type == EffectType::IT)
 						{
 							switch (extended_effect_info->low_nybble & 0x3)
@@ -1871,7 +1871,7 @@ namespace MultiPLAY
 							cerr << "Ignoring pre-IT command: S5"
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 						break;
-					case S3MExtendedEffect::OverrideNewNoteAction: // 0x7, past note cut/off/fade, temporary new note action
+					case ExtendedEffect::OverrideNewNoteAction: // 0x7, past note cut/off/fade, temporary new note action
 						if (row.effect.type == EffectType::IT)
 						{
 							switch (extended_effect_info->low_nybble)
@@ -1922,11 +1922,11 @@ namespace MultiPLAY
 							cerr << "Ignoring pre-IT command: S7"
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 						break;
-					case S3MExtendedEffect::RoughPanning: // 0x8
+					case ExtendedEffect::RoughPanning: // 0x8
 						if (module->stereo)
 							panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + extended_effect_info->low_nybble - 8);
 						break;
-					case S3MExtendedEffect::ExtendedITEffect:
+					case ExtendedEffect::ExtendedITEffect:
 						if (row.effect.type == EffectType::IT)
 						{
 							switch (extended_effect_info->low_nybble)
@@ -1943,7 +1943,7 @@ namespace MultiPLAY
 							cerr << "Ignoring pre-IT command: S7"
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 						break;
-					case S3MExtendedEffect::Panning:
+					case ExtendedEffect::Panning:
 						if (row.effect.type == EffectType::IT)
 							set_offset_high = unsigned(extended_effect_info->low_nybble << 16);
 						else
@@ -1955,11 +1955,11 @@ namespace MultiPLAY
 									panning.from_s3m_pan(module->base_pan[unmapped_channel_number] + extended_effect_info->low_nybble);
 							}
 						break;
-					case S3MExtendedEffect::NoteCut: // 0xC
+					case ExtendedEffect::NoteCut: // 0xC
 						note_cut_at_frame = true;
 						note_cut_frames = extended_effect_info->low_nybble;
 						break;
-					case S3MExtendedEffect::NoteDelay: // 0xD
+					case ExtendedEffect::NoteDelay: // 0xD
 						if (extended_effect_info->low_nybble <= static_cast<unsigned int>(module->speed))
 						{
 							note_delay = true;

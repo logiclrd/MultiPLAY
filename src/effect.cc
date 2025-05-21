@@ -166,27 +166,27 @@ namespace MultiPLAY
 						}
 						break;
 					case MODExtendedEffect::GlissandoControl: // 0x3
-						command = Effect::S3MExtendedEffect;
-						info = (info & 0xF) | (S3MExtendedEffect::GlissandoControl << 4);
+						command = Effect::ExtendedEffect;
+						info = (info & 0xF) | (ExtendedEffect::GlissandoControl << 4);
 						break;
 					case MODExtendedEffect::SetVibratoWaveform: // 0x4
-						command = Effect::S3MExtendedEffect;
-						info = (info & 0xF) | (S3MExtendedEffect::SetVibratoWaveform << 4);
+						command = Effect::ExtendedEffect;
+						info = (info & 0xF) | (ExtendedEffect::SetVibratoWaveform << 4);
 						break;
 					case MODExtendedEffect::SetFineTune: // 0x5
-						command = Effect::S3MExtendedEffect;
-						info = ((info & 0xF) ^ 8) | (S3MExtendedEffect::SetFineTune << 4);
+						command = Effect::ExtendedEffect;
+						info = ((info & 0xF) ^ 8) | (ExtendedEffect::SetFineTune << 4);
 						break;
 					case MODExtendedEffect::PatternLoop: // 0x6
-						command = Effect::S3MExtendedEffect;
-						info = (info & 0xF) | (S3MExtendedEffect::PatternLoop << 4);
+						command = Effect::ExtendedEffect;
+						info = (info & 0xF) | (ExtendedEffect::PatternLoop << 4);
 						break;
 					case MODExtendedEffect::SetTremoloWaveform: // 0x7
-						command = Effect::S3MExtendedEffect;
-						info = (info & 0xF) | (S3MExtendedEffect::SetTremoloWaveform << 4);
+						command = Effect::ExtendedEffect;
+						info = (info & 0xF) | (ExtendedEffect::SetTremoloWaveform << 4);
 						break;
 					case MODExtendedEffect::RoughPanning: // 0x8
-						command = Effect::S3MExtendedEffect;
+						command = Effect::ExtendedEffect;
 						// No further conversion needed, because this is also S3M extended effect 0x8.
 						break;
 					case MODExtendedEffect::Retrigger: // 0x9
@@ -214,13 +214,13 @@ namespace MultiPLAY
 						info = (info & 0xF) | 0xF0;
 						break;
 					case MODExtendedEffect::NoteCut: // 0xC
-						command = Effect::S3MExtendedEffect;
+						command = Effect::ExtendedEffect;
 						break;
 					case MODExtendedEffect::NoteDelay: // 0xD
-						command = Effect::S3MExtendedEffect;
+						command = Effect::ExtendedEffect;
 						break;
 					case MODExtendedEffect::PatternDelay: // 0xE
-						command = Effect::S3MExtendedEffect;
+						command = Effect::ExtendedEffect;
 						break;
 					case 0xF: // invert loop
 						break; // do not change

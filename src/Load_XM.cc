@@ -678,7 +678,7 @@ namespace MultiPLAY
 							note.snote = snote_from_xnote(xm_note.note);
 							note.znote = znote_from_snote(note.snote);
 
-							if ((xm_note.instrument > 0) && (xm_note.instrument < converted_instruments.size()))
+							if ((xm_note.instrument > 0) && (xm_note.instrument <= converted_instruments.size()))
 								note.instrument = converted_instruments[xm_note.instrument - 1];
 							else
 								note.instrument = NULL;
@@ -788,11 +788,19 @@ namespace MultiPLAY
 			instrument_envelope ret;
 
 			ret.enabled = ((flags & XMEnvelopeFlags::On) != 0);
-			ret.looping = ((flags & XMEnvelopeFlags::Loop) != 0);
+			ret.looping = true;
 			ret.sustain_loop = ((flags & XMEnvelopeFlags::Sustain) != 0);
 
-			ret.loop_begin_tick = loop_start_point;
-			ret.loop_end_tick = loop_end_point;
+			if ((flags & XMEnvelopeFlags::Loop) != 0)
+			{
+				ret.loop_begin_tick = loop_start_point;
+				ret.loop_end_tick = loop_end_point;
+			}
+			else
+			{
+				ret.loop_begin_tick = points[num_points - 1].frame;
+				ret.loop_end_tick = points[num_points - 1].frame;
+			}
 
 			ret.sustain_loop_begin_tick = sustain_point;
 			ret.sustain_loop_end_tick = sustain_point;
@@ -925,7 +933,7 @@ namespace MultiPLAY
 				instrument->vibrato_cycle_frequency = xm_header.vibrato_rate * 95;
 				instrument->vibrato_sweep_frames = xm_header.vibrato_sweep;
 
-				instrument->fade_out = xm_header.fade_out;
+				instrument->fade_out = xm_header.fade_out / 32768.0;
 
 				instrument->volume_envelope = convert_xm_envelope(
 					xm_header.num_volume_envelope_points,

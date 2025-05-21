@@ -1064,14 +1064,21 @@ namespace MultiPLAY
 		void load_it_convert_envelope(instrument_envelope &target, it_envelope_description &source)
 		{
 			target.enabled = source.enabled;
-			target.looping = source.looping;
-			if (target.looping)
+			target.looping = true;
+
+			if (source.looping)
 			{
 				target.loop_begin_tick = source.envelope[source.loop_start_node].tick;
 				target.loop_end_tick = source.envelope[source.loop_end_node].tick;
 			}
+			else
+			{
+				target.loop_begin_tick = source.envelope.back().tick;
+				target.loop_end_tick = source.envelope.back().tick;
+			}
 
 			target.sustain_loop = source.sustain_loop;
+
 			if (target.sustain_loop)
 			{
 				target.sustain_loop_begin_tick = source.envelope[source.sustain_loop_start_node].tick;

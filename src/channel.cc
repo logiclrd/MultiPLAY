@@ -149,7 +149,7 @@ namespace MultiPLAY
 				pitch_envelope->note_off(envelope_offset);
 		}
 
-		if ((volume_envelope == NULL) || volume_envelope->looping)
+		if ((volume_envelope == NULL) || volume_envelope->looping || (current_sample->fade_out > 0))
 		{
 			if (!fading)
 			{
@@ -163,21 +163,23 @@ namespace MultiPLAY
 
 		if (calc_fade_per_tick)
 		{
-			double fade_duration;
+			double fade_duration_ticks;
 
 			if ((current_sample != NULL) && (current_sample->fade_out > 0) && (ticks_per_fade_out_frame > 0))
-				fade_duration = current_sample->fade_out * unsigned(ticks_per_fade_out_frame);
+				fade_duration_ticks = ticks_per_fade_out_frame / current_sample->fade_out;
 			else
-				fade_duration = dropoff_proportion * ticks_left;
+			{
+				double fade_duration = dropoff_proportion * ticks_left;
 
-			if (fade_duration < dropoff_min_length)
-				fade_duration = dropoff_min_length;
-			if (fade_duration > dropoff_max_length)
-				fade_duration = dropoff_max_length;
+				if (fade_duration < dropoff_min_length)
+					fade_duration = dropoff_min_length;
+				if (fade_duration > dropoff_max_length)
+					fade_duration = dropoff_max_length;
 
-			double fade_ticks = fade_duration * ticks_per_second;
+				fade_duration_ticks = fade_duration * ticks_per_second;
+			}
 
-			fade_per_tick = 1.0 / fade_ticks;
+			fade_per_tick = 1.0 / fade_duration_ticks;
 
 			have_fade_per_tick = true;
 		}

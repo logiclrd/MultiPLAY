@@ -90,7 +90,7 @@ namespace MultiPLAY
 
 	/*virtual*/ void channel_MODULE::note_off(bool /*calc_fade_per_tick = true*/, bool exit_envelope_loops/* = true*/)
 	{
-		this->channel::note_off(false, exit_envelope_loops);
+		this->channel::note_off(true, exit_envelope_loops);
 	}
 
 	/*virtual*/ void channel_MODULE::note_fade()

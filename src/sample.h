@@ -53,7 +53,7 @@ namespace MultiPLAY
 		int index;
 		string name;
 
-		unsigned int fade_out;
+		double fade_out;
 
 		unsigned int num_samples;
 		double samples_per_second;

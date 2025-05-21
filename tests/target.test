@@ -1,0 +1,27 @@
+INPUTS = $(wildcard tests/input/*)
+ACTUALS = $(INPUTS:tests/input/%=tests/actual/%.raw)
+RESULTS = $(INPUTS:tests/input/%=tests/result/%.result)
+MULTIPLAY = bin/release/MultiPLAY
+
+test: release $(RESULTS) FORCE
+	@echo =========================================================
+	@echo TEST RESULTS
+	@echo
+	@echo Pass: $(shell cat $(RESULTS) | grep -c '^0$$') / $(shell cat $(RESULTS) | wc -w)
+	@echo
+	@echo Fail: $(shell cat $(RESULTS) | grep -cv '^0$$')
+	@echo
+	@! grep -lv '^0$$' $(RESULTS)
+
+tests/actual/%.raw: tests/input/% release
+	$(MULTIPLAY) -module $< -output $@
+	
+tests/result/%.result: BASE=$(shell echo $@ | sed -e 's:^tests/result/\(.*\).result$$:\1:')
+tests/result/%.result: EXPECTED=tests/expected/$(BASE).raw
+tests/result/%.result: ACTUAL=tests/actual/$(BASE).raw
+tests/result/%.result: tests/actual/%.raw
+	@diff $(EXPECTED) $(ACTUAL) ; echo $$? > $@
+
+.PHONY: test
+
+.PRECIOUS: $(ACTUALS)

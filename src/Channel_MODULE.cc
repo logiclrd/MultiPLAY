@@ -939,7 +939,7 @@ namespace MultiPLAY
 							else
 								volume = 64;
 
-							intensity = original_intensity * (volume / 64.0);
+							intensity =  original_intensity * (volume / 64.0);
 						}
 					}
 				}

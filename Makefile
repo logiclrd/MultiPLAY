@@ -13,7 +13,9 @@ bare: FORCE
 	@make -f build/target.$@ $@
 
 clean: FORCE
-	rm -rf obj/ bin/
+	rm -rf obj/ bin/ tests/actual
+
+-include tests/target.test
 
 FORCE:
 

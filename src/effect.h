@@ -161,9 +161,11 @@ namespace MultiPLAY
 		EffectType::Type type;
 
 		effect_struct();
+		effect_struct(EffectType::Type type, unsigned char raw_command, unsigned char info);
 		effect_struct(EffectType::Type type, Effect::Type command, unsigned char info);
 		effect_struct(EffectType::Type type, Effect::Type command, unsigned char high_nybble, unsigned char low_nybble);
 
+		void init(EffectType::Type type, unsigned char raw_command, unsigned char info, row *r = NULL);
 		void init(EffectType::Type type, Effect::Type command, unsigned char info, row *r = NULL);
 		void init(EffectType::Type type, Effect::Type command, unsigned char high_nybble, unsigned char low_nybble, row *r = NULL);
 		void init(EffectType::Type type, MODEffect::Type command, unsigned char info, row *r = NULL);

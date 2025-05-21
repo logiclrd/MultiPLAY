@@ -540,10 +540,10 @@ namespace MultiPLAY
 
 					if (what & 128)
 					{
-						int command = file->get(); if (!--bytes_left) break;
+						unsigned char command = (unsigned char)file->get(); if (!--bytes_left) break;
 						int info = file->get(); if (!--bytes_left) break;
 
-						rowdata[channel].effect = effect_struct(EffectType::S3M, Effect::Type(command), (unsigned char)info);
+						rowdata[channel].effect = effect_struct(EffectType::S3M, command, (unsigned char)info);
 					}
 				}
 

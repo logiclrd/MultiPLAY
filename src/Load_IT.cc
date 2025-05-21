@@ -960,7 +960,7 @@ namespace MultiPLAY
 					}
 
 					if (c.effect_command != 'Z') // MIDI Macros -- strip them out as we explicitly do not support them
-						r.effect = effect_struct(EffectType::IT, Effect::Type(c.effect_command), (unsigned char)(c.effect_data));
+						r.effect = effect_struct(EffectType::IT, (unsigned char)c.effect_command, (unsigned char)(c.effect_data));
 
 					if (r.effect.present)
 						has_note_events[channel] = true;

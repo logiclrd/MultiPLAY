@@ -65,7 +65,7 @@ namespace MultiPLAY
 
 	/*virtual*/ void sample_instrument::occlude_note(
 		channel *p/* = NULL*/,
-		sample_context **context/* = NULL*/,
+		sample_context **context_ref/* = NULL*/,
 		sample *new_sample/* = NULL*/,
 		row *r/* = NULL*/)
 	{
@@ -82,78 +82,76 @@ namespace MultiPLAY
 			}
 		}
 
-		sample_instrument_context &c = *(sample_instrument_context *)*context;
-
-		if ((*context != NULL) && (p != NULL))
+		if (*context_ref != NULL)
 		{
-			bool is_duplicate = false;
-			int new_inote = (r->snote >> 4) * 12 + (r->snote & 15);
+			sample_context *context = *context_ref;
 
-			if (this == new_sample)
+			sample_instrument_context *c_ptr = dynamic_cast<sample_instrument_context *>(context);
+
+			if (c_ptr != NULL)
 			{
-				switch (duplicate_note_check)
+				sample_instrument_context &c = *c_ptr;
+
+				bool is_duplicate = false;
+				int new_inote = (r->snote >> 4) * 12 + (r->snote & 15);
+
+				if (this == new_sample)
 				{
-					case DuplicateCheck::Off:
-						// Do nothing
-						break;
-					case DuplicateCheck::Note:
-						is_duplicate = (c.inote == new_inote);
-						break;
-					case DuplicateCheck::Sample:
-						is_duplicate = (c.cur_sample == note_sample[new_inote]);
-						break;
-					case DuplicateCheck::Instrument:
-						is_duplicate = true;
-						break;
+					switch (duplicate_note_check)
+					{
+						case DuplicateCheck::Off:
+							// Do nothing
+							break;
+						case DuplicateCheck::Note:
+							is_duplicate = (c.inote == new_inote);
+							break;
+						case DuplicateCheck::Sample:
+							is_duplicate = (c.cur_sample == note_sample[new_inote]);
+							break;
+						case DuplicateCheck::Instrument:
+							is_duplicate = true;
+							break;
+					}
+
+					if (is_duplicate)
+					{
+						switch (duplicate_check_action)
+						{
+							case DuplicateCheckAction::Cut:
+								return; // let the note get cut off
+							case DuplicateCheckAction::NoteFade:
+								effective_nna = NewNoteAction::NoteFade;
+								break;
+							case DuplicateCheckAction::NoteOff:
+								effective_nna = NewNoteAction::NoteOff;
+								break;
+						}
+					}
+				}
+
+				if (effective_nna == NewNoteAction::Cut)
+					p->note_cut();
+				else
+				{
+					switch (effective_nna)
+					{
+						case NewNoteAction::ContinueNote:
+							// Do nothing.
+							break;
+						case NewNoteAction::NoteOff:
+							p->note_off();
+							break;
+						case NewNoteAction::NoteFade:
+							p->note_fade();
+							break;
+					}
+
+					channel_DYNAMIC *ancillary = channel_DYNAMIC::assume_note(p);
+
+					ancillary_channels.push_back(ancillary);
+					p->add_ancillary_channel(ancillary);
 				}
 			}
-
-			if (is_duplicate)
-			{
-				switch (duplicate_check_action)
-				{
-					case DuplicateCheckAction::Cut:
-						return; // let the note get cut off
-					case DuplicateCheckAction::NoteFade:
-						effective_nna = NewNoteAction::NoteFade;
-						break;
-					case DuplicateCheckAction::NoteOff:
-						effective_nna = NewNoteAction::NoteOff;
-						break;
-				}
-			}
-
-			double fade_per_tick;
-
-			fade_per_tick = (c.created_with->fade_out / 1024.0) / c.effect_tick_length;
-
-			channel_DYNAMIC *ancillary;
-			
-			ancillary = new channel_DYNAMIC(*p, (*context)->created_with, *context, fade_per_tick);
-
-			if ((p->volume_envelope) && (effective_nna != NewNoteAction::Cut))
-				ancillary->volume_envelope = new playback_envelope(*p->volume_envelope);
-			if (p->panning_envelope)
-				ancillary->panning_envelope = new playback_envelope(*p->panning_envelope);
-			if (p->pitch_envelope)
-				ancillary->pitch_envelope = new playback_envelope(*p->pitch_envelope);
-
-			switch (effective_nna)
-			{
-				case NewNoteAction::ContinueNote:
-					break;
-				case NewNoteAction::NoteFade:
-					ancillary->fading = true;
-					ancillary->fade_value = 1.0;
-					break;
-				case NewNoteAction::Cut: // Cut has extra handling above (no volume envelope is copied)
-				case NewNoteAction::NoteOff:
-					ancillary->note_off();
-					break;
-			}
-
-			ancillary_channels.push_back(ancillary);
-			p->add_ancillary_channel(ancillary);
 		}
 	}
 
@@ -280,7 +278,12 @@ namespace MultiPLAY
 		if (c == NULL)
 			throw "need context for instrument";
 
-		sample_instrument_context &context = *(sample_instrument_context *)c;
+		sample_instrument_context *context_ptr = dynamic_cast<sample_instrument_context *>(c);
+
+		if (context_ptr == NULL)
+			throw "INTERNAL ERROR: sample/context type mismatch";
+
+		sample_instrument_context &context = *context_ptr;
 
 		if (context.cur_sample != NULL)
 		{
@@ -294,7 +297,12 @@ namespace MultiPLAY
 		if (c == NULL)
 			throw "need context for instrument";
 
-		sample_instrument_context &context = *(sample_instrument_context *)c;
+		sample_instrument_context *context_ptr = dynamic_cast<sample_instrument_context *>(c);
+
+		if (context_ptr == NULL)
+			throw "INTERNAL ERROR: sample/context type mismatch";
+
+		sample_instrument_context &context = *context_ptr;
 
 		if (context.cur_sample != NULL)
 		{
@@ -309,7 +317,12 @@ namespace MultiPLAY
 		if (c == NULL)
 			throw "need context for instrument";
 
-		sample_instrument_context &context = *(sample_instrument_context *)c;
+		sample_instrument_context *context_ptr = dynamic_cast<sample_instrument_context *>(c);
+
+		if (context_ptr == NULL)
+			throw "INTERNAL ERROR: sample/context type mismatch";
+
+		sample_instrument_context &context = *context_ptr;
 
 		if (context.cur_sample != NULL)
 			return context.cur_sample->past_end(sample, offset, c);
@@ -322,7 +335,12 @@ namespace MultiPLAY
 		if (c == NULL)
 			throw "need context for instrument";
 
-		sample_instrument_context &context = *(sample_instrument_context *)c;
+		sample_instrument_context *context_ptr = dynamic_cast<sample_instrument_context *>(c);
+
+		if (context_ptr == NULL)
+			throw "INTERNAL ERROR: sample/context type mismatch";
+
+		sample_instrument_context &context = *context_ptr;
 
 		one_sample ret(output_channels);
 

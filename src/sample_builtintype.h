@@ -107,7 +107,12 @@ namespace MultiPLAY
 
 			*c = new sample_builtintype_context(this);
 
-			sample_builtintype_context &context = *(sample_builtintype_context *)*c;
+			sample_builtintype_context *context_ptr = dynamic_cast<sample_builtintype_context *>(*c);
+
+			if (context_ptr == NULL)
+				throw "INTERNAL ERROR: sample/context type mismatch";
+
+			sample_builtintype_context &context = *context_ptr;
 
 			if (use_sustain_loop) // reset sustain loop
 				context.sustain_loop_state = SustainLoopState::Running;
@@ -142,7 +147,13 @@ namespace MultiPLAY
 
 		virtual void exit_sustain_loop(sample_context *c)
 		{
-			sample_builtintype_context &context = *(sample_builtintype_context *)c;
+			sample_builtintype_context *context_ptr = dynamic_cast<sample_builtintype_context *>(c);
+
+			if (context_ptr == NULL)
+				throw "INTERNAL ERROR: sample/context type mismatch";
+
+			sample_builtintype_context &context = *context_ptr;
+
 			if (context.sustain_loop_state == SustainLoopState::Running)
 				context.sustain_loop_state = SustainLoopState::Finishing;
 		}
@@ -160,7 +171,13 @@ namespace MultiPLAY
 			if (loop_end != LOOP_END_NO_LOOP)
 				return false;
 
-			sample_builtintype_context &context = *(sample_builtintype_context *)c;
+			sample_builtintype_context *context_ptr = dynamic_cast<sample_builtintype_context *>(c);
+
+			if (context_ptr == NULL)
+				throw "INTERNAL ERROR: sample/context type mismatch";
+
+			sample_builtintype_context &context = *context_ptr;
+
 			switch (context.sustain_loop_state)
 			{
 				case SustainLoopState::Running:
@@ -181,7 +198,12 @@ namespace MultiPLAY
 			if (c == NULL)
 				throw "need a sample context";
 
-			sample_builtintype_context &context = *(sample_builtintype_context *)c;
+			sample_builtintype_context *context_ptr = dynamic_cast<sample_builtintype_context *>(c);
+
+			if (context_ptr == NULL)
+				throw "INTERNAL ERROR: sample/context type mismatch";
+
+			sample_builtintype_context &context = *context_ptr;
 
 			if ((unsigned(sample) >= num_samples)
 			 && (loop_end == LOOP_END_NO_LOOP)

@@ -6,9 +6,9 @@
 
 using namespace std;
 
-#include "channel.h"
-#include "envelope.h"
 #include "one_sample.h"
+#include "envelope.h"
+#include "channel.h"
 #include "sample.h"
 
 namespace MultiPLAY
@@ -105,12 +105,9 @@ namespace MultiPLAY
 			if (is_primary && (p != NULL))
 				p->current_sample = this;
 
-			*c = new sample_builtintype_context(this);
+			sample_builtintype_context *context_ptr = new sample_builtintype_context(this);
 
-			sample_builtintype_context *context_ptr = dynamic_cast<sample_builtintype_context *>(*c);
-
-			if (context_ptr == NULL)
-				throw "INTERNAL ERROR: sample/context type mismatch";
+			*c = context_ptr;
 
 			sample_builtintype_context &context = *context_ptr;
 
@@ -195,6 +192,7 @@ namespace MultiPLAY
 
 		virtual one_sample get_sample(unsigned int sample, double offset, sample_context *c = NULL)
 		{
+
 			if (c == NULL)
 				throw "need a sample context";
 

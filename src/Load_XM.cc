@@ -1028,6 +1028,7 @@ namespace MultiPLAY
 
 			ret->xm_module = true;
 			ret->amiga_panning = false;
+			ret->channel_remember_note = true;
 
 			return ret;
 		}

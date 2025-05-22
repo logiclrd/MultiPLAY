@@ -234,7 +234,7 @@ namespace MultiPLAY
 				break;
 		}
 
-		this->type = EffectType::S3M; // translated :-)
+		this->type = type;
 		this->info = (Effect::Type)info;
 
 		present = true;
@@ -266,6 +266,9 @@ namespace MultiPLAY
 
 		switch (type)
 		{
+			case EffectType::MOD:
+				return false;
+
 			case EffectType::S3M:
 			case EffectType::XM:
 			case EffectType::IT:

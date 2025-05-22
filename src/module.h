@@ -42,6 +42,7 @@ namespace MultiPLAY
 		bool amiga_panning;
 		bool it_module, it_module_new_effects, it_module_portamento_link, it_module_linear_slides;
 		bool xm_module;
+		bool channel_remember_note;
 		bool finished;
 
 		module_struct();

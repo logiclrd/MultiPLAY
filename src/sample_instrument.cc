@@ -8,9 +8,9 @@ using namespace std;
 
 #include "Channel_DYNAMIC.h"
 
+#include "pattern.h"
 #include "sample.h"
 #include "notes.h"
-#include "pattern.h"
 
 namespace MultiPLAY
 {
@@ -325,7 +325,7 @@ namespace MultiPLAY
 		sample_instrument_context &context = *context_ptr;
 
 		if (context.cur_sample != NULL)
-			return context.cur_sample->past_end(sample, offset, c);
+			return context.cur_sample->past_end(sample, offset, context.cur_sample_context);
 		else
 			return true;
 	}

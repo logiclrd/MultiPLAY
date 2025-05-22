@@ -207,13 +207,22 @@ namespace MultiPLAY
 			{
 				double exponent = portamento_start * (1.0 - t) + portamento_end * t;
 				note_frequency = p2(exponent);
-				LINT_DOUBLE(note_frequency);
+				LINT_POSITIVE_DOUBLE(note_frequency);
 			}
 			else
 			{
 				double period = portamento_start * (1.0 - t) + portamento_end * t;
-				note_frequency = 14317056.0 / period;
-				LINT_DOUBLE(note_frequency);
+
+				if (period < 1)
+				{
+					portamento = false;
+					note_cut();
+				}
+				else
+				{
+					note_frequency = 14317056.0 / period;
+					LINT_POSITIVE_DOUBLE(note_frequency);
+				}
 			}
 
 			if (portamento_glissando)
@@ -222,11 +231,11 @@ namespace MultiPLAY
 				long note = (long)exponent * 12;
 				exponent = note / 12.0;
 				note_frequency = p2(exponent) / 1.16363636363636363;
-				LINT_DOUBLE(note_frequency);
+				LINT_POSITIVE_DOUBLE(note_frequency);
 			}
 
 			delta_offset_per_tick = note_frequency / ticks_per_second;
-			LINT_DOUBLE(delta_offset_per_tick);
+			LINT_POSITIVE_DOUBLE(delta_offset_per_tick);
 
 			profile.push_back("end portamento");
 		}
@@ -284,7 +293,7 @@ namespace MultiPLAY
 					this_note_frequency = 14317056.0 / value;
 
 				delta_offset_per_tick = this_note_frequency / ticks_per_second;
-				LINT_DOUBLE(delta_offset_per_tick);
+				LINT_POSITIVE_DOUBLE(delta_offset_per_tick);
 			}
 
 			profile.push_back("end vibrato");
@@ -356,7 +365,7 @@ namespace MultiPLAY
 				case 2: delta_offset_per_tick = arpeggio_third_delta_offset;  break;
 			}
 
-			LINT_DOUBLE(delta_offset_per_tick);
+			LINT_POSITIVE_DOUBLE(delta_offset_per_tick);
 
 			profile.push_back("end arpeggio");
 		}
@@ -888,7 +897,7 @@ namespace MultiPLAY
 					note_fade();
 				else
 				{
-					if ((row.instrument != NULL) || module->it_module)
+					if ((row.instrument != NULL) || module->channel_remember_note)
 					{
 						if (!row.effect.keepNote() || (current_sample == NULL))
 						{
@@ -976,7 +985,7 @@ namespace MultiPLAY
 			if (p_vibrato && row.effect.isnt(Effect::Vibrato))
 			{
 				delta_offset_per_tick = note_frequency / ticks_per_second;
-				LINT_DOUBLE(delta_offset_per_tick);
+				LINT_POSITIVE_DOUBLE(delta_offset_per_tick);
 			}
 
 			if (row.effect.present || row.secondary_effect.present)
@@ -1076,11 +1085,11 @@ namespace MultiPLAY
 							if (p_vibrato && (new_vibrato_cycle_frequency != vibrato_cycle_frequency))
 							{
 								vibrato_cycle_offset *= (vibrato_cycle_frequency / new_vibrato_cycle_frequency);
-								LINT_DOUBLE(vibrato_cycle_frequency);
+								LINT_POSITIVE_DOUBLE(vibrato_cycle_frequency);
 							}
 
 							vibrato_cycle_frequency = new_vibrato_cycle_frequency;
-							LINT_DOUBLE(vibrato_cycle_frequency);
+							LINT_POSITIVE_DOUBLE(vibrato_cycle_frequency);
 						}
 					}
 
@@ -1114,7 +1123,7 @@ namespace MultiPLAY
 							}
 
 							vibrato_cycle_frequency = new_vibrato_cycle_frequency;
-							LINT_DOUBLE(vibrato_cycle_frequency);
+							LINT_POSITIVE_DOUBLE(vibrato_cycle_frequency);
 						}
 					}
 
@@ -1129,7 +1138,13 @@ namespace MultiPLAY
 						if (it_linear_slides)
 							vibrato_depth = depth_param * (255.0 / 128.0) / -192.0;
 						else
-							vibrato_depth = depth_param * 4.0 * (255.0 / 128.0);
+						{
+							vibrato_depth = depth_param * (255.0 / 128.0);
+
+							if ((primary_is_vibrato && (row.effect.type == EffectType::MOD))
+							 || (secondary_is_vibrato && (row.secondary_effect.type == EffectType::MOD)))
+								vibrato_depth *= 4.0;
+						}
 
 						if (it_new_effects)
 							vibrato_depth *= 0.5;
@@ -1157,7 +1172,7 @@ namespace MultiPLAY
 						else
 						{
 							vibrato_start_t = 1.0 / module->speed;
-							LINT_DOUBLE(vibrato_start_t);
+							LINT_POSITIVE_DOUBLE(vibrato_start_t);
 						}
 					}
 					vibrato = true;
@@ -1318,6 +1333,9 @@ namespace MultiPLAY
 								portamento_end = portamento_start - portamento_speed * (module->speed - 1);
 						}
 
+						LINT_POSITIVE_DOUBLE(portamento_start);
+						LINT_DOUBLE(portamento_end);
+
 						portamento = true;
 
 						calculate_portamento_end_t = true;
@@ -1382,6 +1400,8 @@ namespace MultiPLAY
 				else
 					portamento_start = 14317056.0 / note_frequency;
 
+				LINT_POSITIVE_DOUBLE(portamento_start);
+
 				if (info.data == 0)
 					info = last_param[Effect::PortamentoDown];
 				else
@@ -1409,10 +1429,10 @@ namespace MultiPLAY
 					else
 						note_frequency = 14317056.0 / portamento_target;
 
-					LINT_DOUBLE(note_frequency);
+					LINT_POSITIVE_DOUBLE(note_frequency);
 
 					delta_offset_per_tick = note_frequency / ticks_per_second;
-					LINT_DOUBLE(delta_offset_per_tick);
+					LINT_POSITIVE_DOUBLE(delta_offset_per_tick);
 
 					calculate_portamento_end_t = true;
 					portamento = true;
@@ -1423,6 +1443,8 @@ namespace MultiPLAY
 						portamento_end = portamento_start - info.data * (module->speed - 1) / 192.0;
 					else
 						portamento_end = portamento_start + 4 * info.data * (module->speed - 1);
+
+					LINT_POSITIVE_DOUBLE(portamento_end);
 
 					portamento_end_t = 1.0;
 					portamento = true;
@@ -1437,6 +1459,7 @@ namespace MultiPLAY
 				else
 					portamento_start = 14317056.0 / note_frequency;
 
+				LINT_POSITIVE_DOUBLE(portamento_start);
 				if (info.data == 0)
 					info = last_param[Effect::PortamentoUp];
 				else
@@ -1464,10 +1487,10 @@ namespace MultiPLAY
 					else
 						note_frequency = 14317056.0 / portamento_target;
 
-					LINT_DOUBLE(note_frequency);
+					LINT_POSITIVE_DOUBLE(note_frequency);
 
 					delta_offset_per_tick = note_frequency / ticks_per_second;
-					LINT_DOUBLE(delta_offset_per_tick);
+					LINT_POSITIVE_DOUBLE(delta_offset_per_tick);
 
 					calculate_portamento_end_t = true;
 					portamento = true;
@@ -1478,6 +1501,8 @@ namespace MultiPLAY
 						portamento_end = portamento_start + info.data * (module->speed - 1) / 192.0;
 					else
 						portamento_end = portamento_start - 4 * info.data * (module->speed - 1);
+
+					LINT_DOUBLE(portamento_end);
 
 					portamento_end_t = 1.0;
 					portamento = true;
@@ -1610,6 +1635,8 @@ namespace MultiPLAY
 					else
 						portamento_end = portamento_start + portamento_speed * (module->speed - 1);
 				}
+
+				LINT_POSITIVE_DOUBLE(portamento_end);
 
 				portamento_end_t = (portamento_target - portamento_start) / (portamento_end - portamento_start);
 
@@ -1745,7 +1772,7 @@ namespace MultiPLAY
 					else
 					{
 						vibrato_start_t = 1.0 / module->speed;
-						LINT_DOUBLE(vibrato_start_t);
+						LINT_POSITIVE_DOUBLE(vibrato_start_t);
 					}
 				}
 				tremolo = true;
@@ -1788,10 +1815,10 @@ namespace MultiPLAY
 							current_sample->samples_per_second = mod_finetune[extended_effect_info->low_nybble];
 
 							note_frequency *= (current_sample->samples_per_second / before_finetune);
-							LINT_DOUBLE(note_frequency);
+							LINT_POSITIVE_DOUBLE(note_frequency);
 
 							delta_offset_per_tick = note_frequency / ticks_per_second;
-							LINT_DOUBLE(delta_offset_per_tick);
+							LINT_POSITIVE_DOUBLE(delta_offset_per_tick);
 						}
 						break;
 					case ExtendedEffect::SetVibratoWaveform: // 0x3
@@ -2007,7 +2034,7 @@ namespace MultiPLAY
 					}
 
 					vibrato_cycle_frequency = new_vibrato_cycle_frequency;
-					LINT_DOUBLE(vibrato_cycle_frequency);
+					LINT_POSITIVE_DOUBLE(vibrato_cycle_frequency);
 				}
 				vibrato = true;
 

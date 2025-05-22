@@ -1349,6 +1349,8 @@ namespace MultiPLAY
 		ret->it_module_portamento_link = flags.portamento_memory_link();
 		ret->it_module_linear_slides = flags.linear_slides();
 
+		ret->channel_remember_note = true;
+
 		return ret;
 	}
 }

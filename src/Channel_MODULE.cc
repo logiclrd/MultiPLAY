@@ -1284,41 +1284,44 @@ namespace MultiPLAY
 						fading = false;
 					}
 
-					double old_frequency = note_frequency;
-					double old_delta_offset_per_tick = delta_offset_per_tick;
-					int old_current_znote = current_znote;
-
-					recalc(portamento_target_znote, 1.0, false, false);
-
-					if (it_linear_slides)
-						portamento_target = lg(note_frequency);
-					else
-						portamento_target = 14317056.0 / note_frequency;
-
-					note_frequency = old_frequency;
-					delta_offset_per_tick = old_delta_offset_per_tick;
-					current_znote = old_current_znote;
-
-					if (it_linear_slides)
+					if ((portamento_target_znote > 0) && (portamento_target_znote <= 120))
 					{
-						portamento_start = lg(note_frequency);
-						if (portamento_target > portamento_start)
-							portamento_end = portamento_start - portamento_speed * (module->speed - 1) / 768.0;
-						else
-							portamento_end = portamento_start + portamento_speed * (module->speed - 1) / 768.0;
-					}
-					else
-					{
-						portamento_start = 14317056.0 / note_frequency;
-						if (portamento_target > portamento_start)
-							portamento_end = portamento_start + portamento_speed * (module->speed - 1);
-						else
-							portamento_end = portamento_start - portamento_speed * (module->speed - 1);
-					}
+						double old_frequency = note_frequency;
+						double old_delta_offset_per_tick = delta_offset_per_tick;
+						int old_current_znote = current_znote;
 
-					portamento = true;
+						recalc(portamento_target_znote, 1.0, false, false);
 
-					calculate_portamento_end_t = true;
+						if (it_linear_slides)
+							portamento_target = lg(note_frequency);
+						else
+							portamento_target = 14317056.0 / note_frequency;
+
+						note_frequency = old_frequency;
+						delta_offset_per_tick = old_delta_offset_per_tick;
+						current_znote = old_current_znote;
+
+						if (it_linear_slides)
+						{
+							portamento_start = lg(note_frequency);
+							if (portamento_target > portamento_start)
+								portamento_end = portamento_start - portamento_speed * (module->speed - 1) / 768.0;
+							else
+								portamento_end = portamento_start + portamento_speed * (module->speed - 1) / 768.0;
+						}
+						else
+						{
+							portamento_start = 14317056.0 / note_frequency;
+							if (portamento_target > portamento_start)
+								portamento_end = portamento_start + portamento_speed * (module->speed - 1);
+							else
+								portamento_end = portamento_start - portamento_speed * (module->speed - 1);
+						}
+
+						portamento = true;
+
+						calculate_portamento_end_t = true;
+					}
 				}
 
 				if (row.secondary_effect.present)

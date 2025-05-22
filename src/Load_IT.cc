@@ -1249,7 +1249,7 @@ namespace MultiPLAY
 				is->volume_variation_pctg = id.volume_variation_pctg;
 				is->panning_variation = id.panning_variation;
 
-				is->fade_out = id.fade_out;
+				is->fade_out = id.fade_out / 1024.0;
 
 				is->duplicate_note_check = id.duplicate_note_check;
 				is->duplicate_check_action = id.duplicate_check_action;

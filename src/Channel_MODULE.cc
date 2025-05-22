@@ -101,7 +101,7 @@ namespace MultiPLAY
 			fade_value = 1.0;
 
 			if (current_sample != NULL)
-				fade_per_tick = (current_sample->fade_out / 1024.0) / module->ticks_per_frame;
+				fade_per_tick = current_sample->fade_out / ticks_per_fade_out_frame;
 		}
 	}
 
@@ -135,6 +135,7 @@ namespace MultiPLAY
 				tremolo_middle_intensity *= (new_intensity / intensity);
 
 			intensity = new_intensity;
+			volume = (int)round(intensity * 64.0 / original_intensity);
 
 			profile.push_back("end volume_slide");
 		}
@@ -1037,7 +1038,9 @@ namespace MultiPLAY
 							volume = max(0, volume - int(info.low_nybble));
 					}
 
-					if (frame_delta != 0)
+					if (frame_delta == 0)
+						intensity = original_intensity * (volume / 64.0);
+					else
 					{
 						target_volume = volume + frame_delta;
 

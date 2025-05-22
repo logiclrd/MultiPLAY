@@ -77,7 +77,7 @@ namespace MultiPLAY
 		// FLT8 mods store 8-channel patterns as two consecutive 4-channel patterns.
 		bool weird_channel_format = false;
 
-		int tag_bytes;
+		unsigned int tag_bytes;
 
 		if (num_samples == 15)
 		{

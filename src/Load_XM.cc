@@ -793,8 +793,13 @@ namespace MultiPLAY
 
 			if ((flags & XMEnvelopeFlags::Loop) != 0)
 			{
-				ret.loop_begin_tick = loop_start_point;
-				ret.loop_end_tick = loop_end_point;
+				if ((loop_start_point < 0) || (loop_start_point >= num_points))
+					throw "Does not appear to be an XM file";
+				if ((loop_end_point < 0) || (loop_end_point >= num_points))
+					throw "Does not appear to be an XM file";
+
+				ret.loop_begin_tick = points[loop_start_point].frame;
+				ret.loop_end_tick = points[loop_end_point].frame;
 			}
 			else
 			{
@@ -802,8 +807,14 @@ namespace MultiPLAY
 				ret.loop_end_tick = points[num_points - 1].frame;
 			}
 
-			ret.sustain_loop_begin_tick = sustain_point;
-			ret.sustain_loop_end_tick = sustain_point;
+			if (ret.sustain_loop)
+			{
+				if ((sustain_point < 0) && (sustain_point >= num_points))
+					throw "Does not appear to be an XM file";
+
+				ret.sustain_loop_begin_tick = points[sustain_point].frame;
+				ret.sustain_loop_end_tick = points[sustain_point].frame;
+			}
 
 			for (int i=0; i < num_points; i++)
 			{

@@ -1265,7 +1265,12 @@ namespace MultiPLAY
 					{
 						if (info.data != 0)
 						{
-							portamento_speed += info.data * 4;
+							portamento_speed += info.data;
+
+							if ((primary_is_tone_portamento && (row.effect.type == EffectType::MOD))
+							 || (secondary_is_tone_portamento && (row.secondary_effect.type == EffectType::MOD)))
+								portamento_speed *= 4;
+
 							if (it_portamento_link)
 								last_param[Effect::PortamentoDown] = last_param[Effect::PortamentoUp] = info;
 							else

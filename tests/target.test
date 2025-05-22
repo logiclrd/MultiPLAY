@@ -21,6 +21,7 @@ test: release removebackupfiles $(RESULTS) FORCE
 	@! grep -lv '^0$$' $(RESULTS)
 
 tests/actual/%.raw: tests/input/% release
+	rm -f $@
 	$(MULTIPLAY) -module $< -output $@
 
 tests/result/%.result: BASE=$(shell echo $@ | sed -e 's:^tests/result/\(.*\).result$$:\1:')

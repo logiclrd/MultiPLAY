@@ -1347,7 +1347,7 @@ namespace MultiPLAY
 		ret->it_module = true;
 		ret->it_module_new_effects = !flags.old_effects();
 		ret->it_module_portamento_link = flags.portamento_memory_link();
-		ret->it_module_linear_slides = flags.linear_slides();
+		ret->linear_slides = flags.linear_slides();
 
 		ret->channel_remember_note = true;
 

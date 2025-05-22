@@ -72,7 +72,7 @@ namespace MultiPLAY
 		amiga_panning = module->amiga_panning;
 		it_new_effects = module->it_module_new_effects;
 		it_portamento_link = module->it_module_portamento_link;
-		it_linear_slides = module->it_module_linear_slides;
+		linear_slides = module->linear_slides;
 		set_offset_high = 0;
 	}
 
@@ -203,7 +203,7 @@ namespace MultiPLAY
 			if (t > portamento_end_t)
 				t = portamento_end_t;
 
-			if (it_linear_slides)
+			if (linear_slides)
 			{
 				double exponent = portamento_start * (1.0 - t) + portamento_end * t;
 				note_frequency = p2(exponent);
@@ -253,7 +253,7 @@ namespace MultiPLAY
 				double t_offset = t_vibrato - floor(t_vibrato);
 				double value;
 				
-				if (it_linear_slides)
+				if (linear_slides)
 					value = lg(note_frequency);
 				else
 					value = 14317056.0 / note_frequency;
@@ -287,7 +287,7 @@ namespace MultiPLAY
 
 				double this_note_frequency;
 				
-				if (it_linear_slides)
+				if (linear_slides)
 					this_note_frequency = p2(value);
 				else
 					this_note_frequency = 14317056.0 / value;
@@ -1135,7 +1135,7 @@ namespace MultiPLAY
 
 					if (depth_param > 0)
 					{
-						if (it_linear_slides)
+						if (linear_slides)
 							vibrato_depth = depth_param * (255.0 / 128.0) / -192.0;
 						else
 						{
@@ -1259,17 +1259,16 @@ namespace MultiPLAY
 
 				if (primary_is_tone_portamento || secondary_is_tone_portamento)
 				{
+					int primary_multiplier = (row.effect.type == EffectType::MOD) ? 4 : 1;
+					int secondary_multiplier = (row.secondary_effect.type == EffectType::MOD) ? 4 : 1;
+
 					portamento_speed = 0;
 
 					if (primary_is_tone_portamento)
 					{
 						if (info.data != 0)
 						{
-							portamento_speed += info.data;
-
-							if ((primary_is_tone_portamento && (row.effect.type == EffectType::MOD))
-							 || (secondary_is_tone_portamento && (row.secondary_effect.type == EffectType::MOD)))
-								portamento_speed *= 4;
+							portamento_speed += info.data * primary_multiplier;
 
 							if (it_portamento_link)
 								last_param[Effect::PortamentoDown] = last_param[Effect::PortamentoUp] = info;
@@ -1277,13 +1276,13 @@ namespace MultiPLAY
 								last_param[Effect::TonePortamento] = info;
 						}
 						else if (it_portamento_link)
-							portamento_speed += last_param[Effect::PortamentoDown].data * 4;
+							portamento_speed += last_param[Effect::PortamentoDown].data * primary_multiplier;
 						else
-							portamento_speed += last_param[Effect::TonePortamento].data * 4;
+							portamento_speed += last_param[Effect::TonePortamento].data * primary_multiplier;
 					}
 
 					if (secondary_is_tone_portamento)
-						portamento_speed += secondary_info.data * 4;
+						portamento_speed += secondary_info.data * secondary_multiplier;
 
 					if (row.snote >= 0)
 						portamento_target_znote = row.znote;
@@ -1312,7 +1311,7 @@ namespace MultiPLAY
 
 						recalc(portamento_target_znote, 1.0, false, false);
 
-						if (it_linear_slides)
+						if (linear_slides)
 							portamento_target = lg(note_frequency);
 						else
 							portamento_target = 14317056.0 / note_frequency;
@@ -1321,13 +1320,13 @@ namespace MultiPLAY
 						delta_offset_per_tick = old_delta_offset_per_tick;
 						current_znote = old_current_znote;
 
-						if (it_linear_slides)
+						if (linear_slides)
 						{
 							portamento_start = lg(note_frequency);
 							if (portamento_target > portamento_start)
-								portamento_end = portamento_start - portamento_speed * (module->speed - 1) / 768.0;
+								portamento_end = portamento_start + portamento_speed * (module->speed - 1) / 128.0;
 							else
-								portamento_end = portamento_start + portamento_speed * (module->speed - 1) / 768.0;
+								portamento_end = portamento_start - portamento_speed * (module->speed - 1) / 128.0;
 						}
 						else
 						{
@@ -1400,7 +1399,7 @@ namespace MultiPLAY
 
 			case Effect::PortamentoDown: // 'E'
 			{
-				if (it_linear_slides)
+				if (linear_slides)
 					portamento_start = lg(note_frequency);
 				else
 					portamento_start = 14317056.0 / note_frequency;
@@ -1416,20 +1415,20 @@ namespace MultiPLAY
 				{
 					if (info.high_nybble == 0xF) // 'fine'
 					{
-						if (it_linear_slides)
+						if (linear_slides)
 							portamento_target = portamento_start - info.low_nybble / 192.0;
 						else
 							portamento_target = portamento_start + 4 * info.low_nybble;
 					}
 					else // E - 'extra fine'
 					{
-						if (it_linear_slides)
+						if (linear_slides)
 							portamento_target = portamento_start - info.low_nybble / 768.0;
 						else
 							portamento_target = portamento_start + info.low_nybble;
 					}
 
-					if (it_linear_slides)
+					if (linear_slides)
 						note_frequency = p2(portamento_target);
 					else
 						note_frequency = 14317056.0 / portamento_target;
@@ -1444,7 +1443,7 @@ namespace MultiPLAY
 				}
 				else
 				{
-					if (it_linear_slides)
+					if (linear_slides)
 						portamento_end = portamento_start - info.data * (module->speed - 1) / 192.0;
 					else
 						portamento_end = portamento_start + 4 * info.data * (module->speed - 1);
@@ -1459,7 +1458,7 @@ namespace MultiPLAY
 			}
 			case Effect::PortamentoUp: // 'F'
 			{
-				if (it_linear_slides)
+				if (linear_slides)
 					portamento_start = lg(note_frequency);
 				else
 					portamento_start = 14317056.0 / note_frequency;
@@ -1474,20 +1473,20 @@ namespace MultiPLAY
 				{
 					if (info.high_nybble == 0xF) // 'fine'
 					{
-						if (it_linear_slides)
+						if (linear_slides)
 							portamento_target = portamento_start + info.low_nybble / 192.0;
 						else
 							portamento_target = portamento_start - 4 * info.low_nybble;
 					}
 					else // E -- 'extra fine'
 					{
-						if (it_linear_slides)
+						if (linear_slides)
 							portamento_target = portamento_start + info.low_nybble / 768.0;
 						else
 							portamento_target = portamento_start - info.low_nybble;
 					}
 
-					if (it_linear_slides)
+					if (linear_slides)
 						note_frequency = p2(portamento_target);
 					else
 						note_frequency = 14317056.0 / portamento_target;
@@ -1502,7 +1501,7 @@ namespace MultiPLAY
 				}
 				else
 				{
-					if (it_linear_slides)
+					if (linear_slides)
 						portamento_end = portamento_start + info.data * (module->speed - 1) / 192.0;
 					else
 						portamento_end = portamento_start - 4 * info.data * (module->speed - 1);
@@ -1615,7 +1614,7 @@ namespace MultiPLAY
 
 				current_sample_context = temp_sc;
 
-				if (it_linear_slides)
+				if (linear_slides)
 					portamento_target = lg(note_frequency);
 				else
 					portamento_target = 14317056.0 / note_frequency;
@@ -1624,7 +1623,7 @@ namespace MultiPLAY
 				delta_offset_per_tick = old_delta_offset_per_tick;
 				current_znote = old_current_znote;
 
-				if (it_linear_slides)
+				if (linear_slides)
 				{
 					portamento_start = lg(note_frequency);
 					if (portamento_target_znote > current_znote)
@@ -2022,7 +2021,7 @@ namespace MultiPLAY
 					else
 						vibrato_cycle_offset = 0.0;
 
-					if (it_linear_slides)
+					if (linear_slides)
 						vibrato_depth = info.low_nybble * (255.0 / 128.0) / -768.0;
 					else
 						vibrato_depth = info.low_nybble * (255.0 / 128.0);
@@ -2061,7 +2060,7 @@ namespace MultiPLAY
 						else
 							panbrello_cycle_offset = 0.0;
 
-						if (it_linear_slides)
+						if (linear_slides)
 							panbrello_depth = info.low_nybble * (255.0 / 128.0) / -192.0;
 						else
 							panbrello_depth = info.low_nybble * 4.0 * (255.0 / 128.0);

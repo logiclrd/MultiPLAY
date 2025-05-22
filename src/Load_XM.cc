@@ -1029,6 +1029,7 @@ namespace MultiPLAY
 			ret->xm_module = true;
 			ret->amiga_panning = false;
 			ret->channel_remember_note = true;
+			ret->linear_slides = true;
 
 			return ret;
 		}
@@ -1490,6 +1491,6 @@ namespace MultiPLAY
 
 	module_struct *load_xm(istream *file)
 	{
-		return xm_module::load(file).to_module_struct();;
+		return xm_module::load(file).to_module_struct();
 	}
 }

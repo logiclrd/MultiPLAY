@@ -31,7 +31,7 @@ namespace MultiPLAY
 		it_module = false;
 		it_module_new_effects = false;
 		it_module_portamento_link = false;
-		it_module_linear_slides = false;
+		linear_slides = false;
 		xm_module = false;
 		channel_remember_note = false;
 		auto_loop_target = -1;

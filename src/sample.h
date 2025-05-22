@@ -64,7 +64,7 @@ namespace MultiPLAY
 		int vibrato_sweep_frames;
 
 		virtual one_sample get_sample(unsigned int sample, double offset, sample_context *c = NULL) = 0;
-		virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0.0, bool top_level = true, int *znote = NULL) = 0;
+		virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0.0, bool top_level = true, int *znote = NULL, bool is_primary = true) = 0;
 		virtual void occlude_note(channel *p = NULL, sample_context **c = NULL, sample *new_sample = NULL, row *r = NULL) = 0;
 		virtual void exit_sustain_loop(sample_context *c = NULL) = 0; //..if it has one :-)
 		virtual void kill_note(sample_context *c = NULL) = 0;

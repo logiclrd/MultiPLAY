@@ -163,7 +163,8 @@ namespace MultiPLAY
 		sample_context **context/* = NULL*/,
 		double effect_tick_length/* = 0*/,
 		bool top_level/* = true*/,
-		int *znote/* = NULL*/)
+		int *znote/* = NULL*/,
+		bool is_primary/* = true*/)
 	{
 		if (context == NULL)
 			throw "need context for instrument";
@@ -175,6 +176,9 @@ namespace MultiPLAY
 				(*context)->created_with->occlude_note(p, context, this, r);
 				delete *context;
 			}
+
+			if (is_primary)
+				p->current_sample = this;
 
 			sample_instrument_context *c = new sample_instrument_context(this);
 
@@ -257,7 +261,7 @@ namespace MultiPLAY
 					}
 				}
 
-				c->cur_sample->begin_new_note(r, p, &c->cur_sample_context, effect_tick_length, false, znote);
+				c->cur_sample->begin_new_note(r, p, &c->cur_sample_context, effect_tick_length, false, znote, false);
 				c->samples_per_second = c->cur_sample_context->samples_per_second;
 				c->default_volume = c->cur_sample_context->default_volume;
 				c->num_samples = c->cur_sample_context->num_samples;

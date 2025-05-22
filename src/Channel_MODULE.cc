@@ -903,12 +903,14 @@ namespace MultiPLAY
 							}
 
 							MultiPLAY::sample *note_sample = current_sample;
+
 							if (row.instrument)
-								current_sample = row.instrument;
-							if (current_sample != NULL)
+								note_sample = row.instrument;
+
+							if (note_sample != NULL)
 							{
 								int translated_znote = row.znote;
-								current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
+								note_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
 								fading = false;
 								recalc(translated_znote, 1.0, false);
 							}

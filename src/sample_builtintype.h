@@ -91,7 +91,7 @@ namespace MultiPLAY
 			use_sustain_loop = (susloop_end != LOOP_END_NO_LOOP);
 		}
 
-		virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0, bool top_level = true, int */*znote*/ = NULL)
+		virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0, bool top_level = true, int */*znote*/ = NULL, bool is_primary = true)
 		{
 			if (c == NULL)
 				throw "need sample context";
@@ -101,6 +101,9 @@ namespace MultiPLAY
 				(*c)->created_with->occlude_note(p, c, this, r);
 				delete *c;
 			}
+
+			if (is_primary)
+				p->current_sample = this;
 
 			*c = new sample_builtintype_context(this);
 

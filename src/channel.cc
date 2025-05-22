@@ -124,6 +124,24 @@ namespace MultiPLAY
 			delete current_sample_context;
 			current_sample_context = NULL;
 		}
+
+		if (volume_envelope != NULL)
+		{
+			delete volume_envelope;
+			volume_envelope = NULL;
+		}
+
+		if (panning_envelope != NULL)
+		{
+			delete panning_envelope;
+			panning_envelope = NULL;
+		}
+
+		if (pitch_envelope != NULL)
+		{
+			delete pitch_envelope;
+			pitch_envelope = NULL;
+		}
 	}
 
 	/*virtual*/ void channel::note_off(bool calc_fade_per_tick/* = true*/, bool exit_envelope_loops/* = true*/)

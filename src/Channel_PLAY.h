@@ -12,7 +12,6 @@ namespace MultiPLAY
 	{
 		std::istream *in;
 		long in_offset, in_length;
-		double actual_intensity;
 		bool overlap_notes;
 
 		channel_PLAY(std::istream *input, bool looping, bool overlap = false);

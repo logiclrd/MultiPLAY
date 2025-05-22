@@ -703,7 +703,7 @@ int main(int argc, char *argv[])
 					auto dynamic_chan = dynamic_cast<channel_DYNAMIC *>(chan);
 
 					if (dynamic_chan != NULL)
-						dynamic_chan->parent_channel.remove_ancillary_channel(chan);
+						dynamic_chan->parent_channel->remove_ancillary_channel(chan);
 
 					delete chan;
 					ancillary_channels.erase(ancillary_channels.begin() + i);

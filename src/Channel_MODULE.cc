@@ -389,22 +389,17 @@ namespace MultiPLAY
 						{
 							if (!delayed_note->effect.keepNote())
 							{
-								if (delayed_note->instrument != NULL)
-									current_sample = delayed_note->instrument;
+								current_sample = delayed_note->instrument;
 
-								if (current_sample != NULL)
-								{
-									int translated_znote = delayed_note->znote;
-									profile.push_back("note_delay: call begin_new_note");
-									current_sample->begin_new_note(delayed_note, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
-									fading = false;
-									profile.push_back("note_delay: call recalc");
-									recalc(translated_znote, 1.0, false);
-									profile.push_back("note_delay: call recalc returned");
-								}
-								else
-									current_sample_context = NULL;
+								int translated_znote = delayed_note->znote;
+								profile.push_back("note_delay: call begin_new_note");
+								current_sample->begin_new_note(delayed_note, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
+								fading = false;
+								profile.push_back("note_delay: call recalc");
+								recalc(translated_znote, 1.0, false);
+								profile.push_back("note_delay: call recalc returned");
 							}
+
 							if (delayed_note->volume < 0)
 							{
 								if (current_sample_context != NULL)
@@ -867,7 +862,7 @@ namespace MultiPLAY
 					{
 						note_off(true, false);
 
-						channel_DYNAMIC *ancillary = new channel_DYNAMIC(*this, current_sample, current_sample_context, fade_per_tick);
+						channel_DYNAMIC *ancillary = channel_DYNAMIC::assume_note(this);
 
 						ancillary->volume_envelope = volume_envelope;
 						ancillary->panning_envelope = panning_envelope;
@@ -883,8 +878,8 @@ namespace MultiPLAY
 
 						ancillary_channels.push_back(ancillary);
 					}
-
-					note_cut();
+					else
+						note_cut();
 				}
 				else if (row.snote == SNOTE_NOTE_OFF)
 					note_off();
@@ -900,23 +895,14 @@ namespace MultiPLAY
 							{
 								note_off(true, false);
 
-								channel_DYNAMIC *ancillary = new channel_DYNAMIC(*this, current_sample, current_sample_context, fade_per_tick);
-
-								ancillary->volume_envelope = volume_envelope;
-								ancillary->panning_envelope = panning_envelope;
-								ancillary->pitch_envelope = pitch_envelope;
-								ancillary->fading = true;
-								ancillary->fade_value = 1.0;
+								channel_DYNAMIC *ancillary = channel_DYNAMIC::assume_note(this);
 
 								add_ancillary_channel(ancillary);
-
-								volume_envelope = NULL;
-								panning_envelope = NULL;
-								pitch_envelope = NULL;
 
 								ancillary_channels.push_back(ancillary);
 							}
 
+							MultiPLAY::sample *note_sample = current_sample;
 							if (row.instrument)
 								current_sample = row.instrument;
 							if (current_sample != NULL)
@@ -950,13 +936,7 @@ namespace MultiPLAY
 				{
 					note_off(true, false);
 
-					channel_DYNAMIC *ancillary = new channel_DYNAMIC(*this, current_sample, current_sample_context, fade_per_tick);
-
-					ancillary->volume_envelope = volume_envelope;
-					ancillary->panning_envelope = panning_envelope;
-					ancillary->pitch_envelope = pitch_envelope;
-					ancillary->fading = true;
-					ancillary->fade_value = 1.0;
+					channel_DYNAMIC *ancillary = channel_DYNAMIC::assume_note(this);
 
 					add_ancillary_channel(ancillary);
 

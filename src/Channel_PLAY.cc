@@ -42,8 +42,6 @@ namespace MultiPLAY
 		in->seekg(0, ios::beg);
 		in_offset = 0;
 
-		actual_intensity = intensity;
-		intensity = 0;
 		overlap_notes = overlap;
 
 		looped = false;
@@ -163,8 +161,6 @@ namespace MultiPLAY
 
 	/*virtual*/ ChannelPlaybackState::Type channel_PLAY::advance_pattern(one_sample &sample, Profile &/*profile*/)
 	{
-		intensity = overlap_notes ? 0 : actual_intensity;
-
 		while (!ticks_left)
 		{
 			int ch = pull_char();
@@ -253,13 +249,7 @@ namespace MultiPLAY
 						recalc(znote, duration_scale);
 
 						if (overlap_notes)
-						{
-							channel_DYNAMIC *ancillary = new channel_DYNAMIC(*this, current_sample, current_sample_context, fade_per_tick);
-
-							ancillary->intensity = actual_intensity;
-
-							ancillary_channels.push_back(ancillary);
-						}
+							ancillary_channels.push_back(channel_DYNAMIC::assume_note(this));
 					}
 					break;
 				}

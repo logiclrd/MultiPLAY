@@ -1027,7 +1027,7 @@ namespace MultiPLAY
 			ret->tempo = header.initial_tempo;
 
 			ret->xm_module = true;
-			ret->amiga_panning = true;
+			ret->amiga_panning = false;
 
 			return ret;
 		}

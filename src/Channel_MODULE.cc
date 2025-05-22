@@ -1025,30 +1025,30 @@ namespace MultiPLAY
 					if (secondary_is_volume_slide)
 					{
 						// Secondary needs to be processed first to satisfy XM, as it is used for the XM volume column.
-						if (secondary_info.low_nybble == 0) // slide up
+						if (secondary_info.low_nybble == 0xF) // fine adjustment
+							intensity = min(original_intensity, intensity + int(secondary_info.high_nybble) * original_intensity / 64.0);
+						else if (secondary_info.high_nybble == 0xF) // fine adjustment
+							intensity = max(0.0, intensity - int(secondary_info.low_nybble) * original_intensity / 64.0);
+						else if (secondary_info.low_nybble == 0) // slide up
 							frame_delta += (module->speed - 1) * secondary_info.high_nybble;
 						else if (secondary_info.high_nybble == 0) // slide down
 							frame_delta -= (module->speed - 1) * secondary_info.low_nybble;
-						else if (secondary_info.low_nybble == 0xF) // fine adjustment
-							volume = min(64, volume + int(secondary_info.high_nybble));
-						else if (secondary_info.high_nybble == 0xF) // fine adjustment
-							volume = max(0, volume - int(secondary_info.low_nybble));
 					}
 
 					if (primary_is_volume_slide)
 					{
-						if (info.low_nybble == 0) // slide up
+						if (info.low_nybble == 0xF) // fine adjustment
+							intensity = min(original_intensity, intensity + int(info.high_nybble) * original_intensity / 64.0);
+						else if (info.high_nybble == 0xF) // fine adjustment
+							intensity = max(0.0, intensity - int(info.low_nybble) * original_intensity / 64.0);
+						else if (info.low_nybble == 0) // slide up
 							frame_delta += (module->speed - 1) * info.high_nybble;
 						else if (info.high_nybble == 0) // slide down
 							frame_delta -= (module->speed - 1) * info.low_nybble;
-						else if (info.low_nybble == 0xF) // fine adjustment
-							volume = min(64, volume + int(info.high_nybble));
-						else if (info.high_nybble == 0xF) // fine adjustment
-							volume = max(0, volume - int(info.low_nybble));
 					}
 
 					if (frame_delta == 0)
-						intensity = original_intensity * (volume / 64.0);
+						volume = (int)round(intensity * 64.0 / original_intensity);
 					else
 					{
 						target_volume = volume + frame_delta;

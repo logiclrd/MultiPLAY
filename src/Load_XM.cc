@@ -791,37 +791,40 @@ namespace MultiPLAY
 			ret.looping = true;
 			ret.sustain_loop = ((flags & XMEnvelopeFlags::Sustain) != 0);
 
-			if ((flags & XMEnvelopeFlags::Loop) != 0)
+			if (ret.enabled)
 			{
-				if ((loop_start_point < 0) || (loop_start_point >= num_points))
-					throw "Does not appear to be an XM file";
-				if ((loop_end_point < 0) || (loop_end_point >= num_points))
-					throw "Does not appear to be an XM file";
+				if ((flags & XMEnvelopeFlags::Loop) != 0)
+				{
+					if ((loop_start_point < 0) || (loop_start_point >= num_points))
+						throw "Does not appear to be an XM file";
+					if ((loop_end_point < 0) || (loop_end_point >= num_points))
+						throw "Does not appear to be an XM file";
 
-				ret.loop_begin_tick = points[loop_start_point].frame;
-				ret.loop_end_tick = points[loop_end_point].frame;
-			}
-			else
-			{
-				ret.loop_begin_tick = points[num_points - 1].frame;
-				ret.loop_end_tick = points[num_points - 1].frame;
-			}
-
-			if (ret.sustain_loop)
-			{
-				if ((sustain_point < 0) && (sustain_point >= num_points))
-					throw "Does not appear to be an XM file";
-
-				ret.sustain_loop_begin_tick = points[sustain_point].frame;
-				ret.sustain_loop_end_tick = points[sustain_point].frame;
-			}
-
-			for (int i=0; i < num_points; i++)
-			{
-				if (signed_values)
-					ret.node.push_back(instrument_envelope_node(points[i].frame, (points[i].value - 32) / 32.0));
+					ret.loop_begin_tick = points[loop_start_point].frame;
+					ret.loop_end_tick = points[loop_end_point].frame;
+				}
 				else
-					ret.node.push_back(instrument_envelope_node(points[i].frame, points[i].value / 64.0));
+				{
+					ret.loop_begin_tick = points[num_points - 1].frame;
+					ret.loop_end_tick = points[num_points - 1].frame;
+				}
+
+				if (ret.sustain_loop)
+				{
+					if ((sustain_point < 0) && (sustain_point >= num_points))
+						throw "Does not appear to be an XM file";
+
+					ret.sustain_loop_begin_tick = points[sustain_point].frame;
+					ret.sustain_loop_end_tick = points[sustain_point].frame;
+				}
+
+				for (int i=0; i < num_points; i++)
+				{
+					if (signed_values)
+						ret.node.push_back(instrument_envelope_node(points[i].frame, (points[i].value - 32) / 32.0));
+					else
+						ret.node.push_back(instrument_envelope_node(points[i].frame, points[i].value / 64.0));
+				}
 			}
 
 			return ret;
@@ -946,30 +949,33 @@ namespace MultiPLAY
 
 				instrument->fade_out = xm_header.fade_out / 32768.0;
 
-				instrument->volume_envelope = convert_xm_envelope(
-					xm_header.num_volume_envelope_points,
-					xm_header.volume_envelope_points,
-					xm_header.volume_sustain_point,
-					xm_header.volume_loop_start_point,
-					xm_header.volume_loop_end_point,
-					xm_header.volume_envelope_flags,
-					false); // unsigned values
-
-				instrument->panning_envelope = convert_xm_envelope(
-					xm_header.num_panning_envelope_points,
-					xm_header.panning_envelope_points,
-					xm_header.panning_sustain_point,
-					xm_header.panning_loop_start_point,
-					xm_header.panning_loop_end_point,
-					xm_header.panning_envelope_flags,
-					true); // signed values
-
-				for (int i=0; i < 96; i++)
+				if (xm_instrument.samples.size() > 0)
 				{
-					unsigned mapped_sample_index = xm_header.keymap[i];
+					instrument->volume_envelope = convert_xm_envelope(
+						xm_header.num_volume_envelope_points,
+						xm_header.volume_envelope_points,
+						xm_header.volume_sustain_point,
+						xm_header.volume_loop_start_point,
+						xm_header.volume_loop_end_point,
+						xm_header.volume_envelope_flags,
+						false); // unsigned values
 
-					if (mapped_sample_index < converted_samples.size())
-						instrument->note_sample[i] = converted_samples[mapped_sample_index];
+					instrument->panning_envelope = convert_xm_envelope(
+						xm_header.num_panning_envelope_points,
+						xm_header.panning_envelope_points,
+						xm_header.panning_sustain_point,
+						xm_header.panning_loop_start_point,
+						xm_header.panning_loop_end_point,
+						xm_header.panning_envelope_flags,
+						true); // signed values
+
+					for (int i=0; i < 96; i++)
+					{
+						unsigned mapped_sample_index = xm_header.keymap[i];
+
+						if (mapped_sample_index < converted_samples.size())
+							instrument->note_sample[i] = converted_samples[mapped_sample_index];
+					}
 				}
 
 				ret.push_back(instrument);

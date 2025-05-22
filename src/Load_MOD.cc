@@ -56,6 +56,10 @@ namespace MultiPLAY
 			file->read((char *)msb_chars, 2);
 			sample_description[i].repeat_length = 2 * from_msb2_u(msb_chars);
 		}
+
+		if (!file->good())
+			throw "File does not appear to be a MOD file";
+
 		unsigned int num_samples = 31, num_channels;
 
 	reinterpret:
@@ -70,32 +74,46 @@ namespace MultiPLAY
 		unsigned char order_table[128];
 		file->read((char *)&order_table[0], 128);
 
-		char magic_str[4];
-		file->read(magic_str, 4);
-		string magic(magic_str, 4);
-
+		// FLT8 mods store 8-channel patterns as two consecutive 4-channel patterns.
 		bool weird_channel_format = false;
 
-		if (isdigit(magic[0]) && (magic.substr(1, 3) == "CHN"))
-			num_channels = unsigned(magic[0] - '0');
-		else if (isdigit(magic[0]) && isdigit(magic[1]) && (magic.substr(2, 2) == "CH"))
-			num_channels = unsigned(10 * (magic[0] - '0') + (magic[1] - '0'));
-		else if ((magic == "M.K.") || (magic == "M!K!") || (magic == "FLT4"))
-			num_channels = 4;
-		else if ((magic == "OCTA") || (magic == "CD81"))
-			num_channels = 8;
-		else if (magic == "FLT8")
-			num_channels = 8, weird_channel_format = true;
-		else if ((magic.substr(0, 3) == "TDZ") && isdigit(magic[3]))
-			num_channels = unsigned(magic[3] - '0');
-		else if (num_samples == 31)
+		int tag_bytes;
+
+		if (num_samples == 15)
 		{
-			num_samples = 15;
-			file->seekg(int(file_base_offset + 470));
-			goto reinterpret;
+			// 15-sample MODs don't have a 4-byte tag */
+			tag_bytes = 0;
+			num_channels = 4;
 		}
 		else
-			throw "unable to deduce MOD file format";
+		{
+			tag_bytes = 4;
+
+			char magic_str[4];
+			file->read(magic_str, 4);
+			string magic(magic_str, 4);
+
+			if (isdigit(magic[0]) && (magic.substr(1, 3) == "CHN"))
+				num_channels = unsigned(magic[0] - '0');
+			else if (isdigit(magic[0]) && isdigit(magic[1]) && (magic.substr(2, 2) == "CH"))
+				num_channels = unsigned(10 * (magic[0] - '0') + (magic[1] - '0'));
+			else if ((magic == "M.K.") || (magic == "M!K!") || (magic == "FLT4"))
+				num_channels = 4;
+			else if ((magic == "OCTA") || (magic == "CD81"))
+				num_channels = 8;
+			else if (magic == "FLT8")
+				num_channels = 8, weird_channel_format = true;
+			else if ((magic.substr(0, 3) == "TDZ") && isdigit(magic[3]))
+				num_channels = unsigned(magic[3] - '0');
+			else if (num_samples == 31)
+			{
+				num_samples = 15;
+				file->seekg(int(file_base_offset + 470));
+				goto reinterpret;
+			}
+			else
+				throw "unable to deduce MOD file format";
+		}
 
 		unsigned max_pattern_index = 0;
 		for (int i=0; i<order_list_length; i++)
@@ -111,7 +129,7 @@ namespace MultiPLAY
 			file->seekg(tmp, ios::beg);
 		}
 
-		unsigned header_bytes = 154 + num_samples * 30;
+		unsigned header_bytes = 150 + num_samples * 30 + tag_bytes;
 		unsigned pattern_bytes = 256 * num_channels;
 		unsigned sample_bytes = 0;
 
@@ -121,6 +139,9 @@ namespace MultiPLAY
 		unsigned bytes_left_over = (file_length - (header_bytes + sample_bytes));
 
 		unsigned num_patterns = bytes_left_over / pattern_bytes;
+
+		if (num_patterns > 255)
+			throw "Does not appear to be a MOD file";
 
 		if ((bytes_left_over % pattern_bytes) == 0)
 		{
@@ -304,8 +325,11 @@ namespace MultiPLAY
 			if (sample_description[i].repeat_length > 2)
 			{
 				smp->loop_begin = sample_description[i].repeat_start;
-				smp->loop_end = sample_description[i].repeat_start
-											+ sample_description[i].repeat_length - 1;
+
+				if (smp->loop_begin > smp->num_samples)
+					smp->loop_begin = 0;
+
+				smp->loop_end = smp->loop_begin + sample_description[i].repeat_length - 1;
 			}
 
 			smp->sample_data[0] = new signed char[smp->num_samples];

@@ -175,7 +175,7 @@ namespace MultiPLAY
 				delete *context;
 			}
 
-			if (is_primary)
+			if (is_primary && (p != NULL))
 				p->current_sample = this;
 
 			sample_instrument_context *c = new sample_instrument_context(this);

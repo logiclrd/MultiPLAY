@@ -102,7 +102,7 @@ namespace MultiPLAY
 				delete *c;
 			}
 
-			if (is_primary)
+			if (is_primary && (p != NULL))
 				p->current_sample = this;
 
 			*c = new sample_builtintype_context(this);

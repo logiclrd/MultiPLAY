@@ -262,6 +262,7 @@
     <ClCompile Include="src\sample_instrument.cc" />
     <ClCompile Include="src\uLaw-aLaw.cc" />
     <ClCompile Include="src\wave_file.cc" />
+    <ClCompile Include="src\wave_header.cc" />
     <ClCompile Include="src\win32_break_handler.cc" />
   </ItemGroup>
 
@@ -304,6 +305,7 @@
     <ClInclude Include="src\sample_instrument.h" />
     <ClInclude Include="src\uLaw-aLaw.h" />
     <ClInclude Include="src\wave_file.h" />
+    <ClInclude Include="src\wave_header.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 

@@ -1,6 +1,8 @@
 #ifndef MULTIPLAY_H
 #define MULTIPLAY_H
 
+#include "wave_header.h"
+
 #include <string>
 #include <vector>
 

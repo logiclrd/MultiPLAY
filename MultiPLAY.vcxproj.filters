@@ -96,6 +96,9 @@
     <ClCompile Include="src\wave_file.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\wave_header.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\win32_break_handler.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -207,6 +210,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\wave_file.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wave_header.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Channel_DYNAMIC.h">

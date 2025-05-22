@@ -82,6 +82,19 @@ namespace MultiPLAY
 
 namespace MultiPLAY
 {
+	namespace
+	{
+		string get_extension_from_filename(const string &filename)
+		{
+			size_t offset = filename.find_last_of('.');
+			string extension(filename.substr(offset + 1));
+
+			make_lowercase(extension);
+
+			return extension;
+		}
+	}
+
 	module_struct *load_module(const string &filename)
 	{
 		ifstream input(filename.c_str(), ios::binary);
@@ -90,10 +103,7 @@ namespace MultiPLAY
 		if (!input.is_open())
 			throw "Failed to open file";
 
-		size_t offset = filename.find_last_of('.');
-		string extension(filename.substr(offset + 1));
-
-		make_lowercase(extension);
+		string extension = get_extension_from_filename(filename);
 
 		try
 		{
@@ -175,7 +185,7 @@ namespace MultiPLAY
 				<< "specified after." << endl
 				<< endl
 				<< "8- and 16-bit sample sizes are integers, -32 and -64 are floating-point (IEEE" << endl
-				<< "standard). The default output filename is 'output.raw'. The default byte order" << endl
+				<< "standard). The default output filename is 'output.wav'. The default byte order" << endl
 				<< "is system; -lsb and -msb force Intel and Motorola endianness, respectively." << endl
 				<< "The byte order setting applies only to integer output (8- and 16-bit samples)." << endl;
 	}
@@ -233,6 +243,8 @@ namespace MultiPLAY
 		ofstream output;
 		int output_file_number = 0;
 		bool output_per_pattern_row = false;
+		string output_extension;
+		wave_header wav_file_header;
 
 		void start_new_output_file(const char *name)
 		{
@@ -242,10 +254,14 @@ namespace MultiPLAY
 				{
 					stringstream ss;
 
-					ss << "dump_" << setw(4) << setfill('0') << output_file_number++ << '_' << name << ".raw";
+					ss << "dump_" << setw(4) << setfill('0') << output_file_number++ << '_' << name << "." << output_extension;
+
+					wav_file_header.finalize();
 
 					output.close();
 					output.open(ss.str(), ios::binary | ios::trunc);
+
+					wav_file_header.begin(&output);
 				}
 			}
 		}
@@ -263,7 +279,7 @@ int main(int argc, char *argv[])
 {
 	double max_time = -1.0;
 	long max_ticks = -1;
-	string output_filename("output.raw");
+	string output_filename("output.wav");
 	bool output_file = false;
 	int bits = 16;
 	bool unsigned_samples = false, ulaw = false, alaw = false;
@@ -456,6 +472,27 @@ int main(int argc, char *argv[])
 
 	output_channels = stereo_output ? 2 : 1;
 
+	output_extension = get_extension_from_filename(output_filename);
+
+	if (output_extension == "wav")
+	{
+		if (bits == 8)
+			unsigned_samples = true;
+		else if (bits == 16)
+		{
+			if (unsigned_samples)
+			{
+				cerr << "ignoring -unsigned because 16-bit WAV files always use signed samples" << endl;
+				unsigned_samples = false;
+			}
+		}
+
+		wav_file_header.enable();
+		wav_file_header.set_bits_per_sample(bits);
+		wav_file_header.set_num_channels(output_channels);
+		wav_file_header.set_samples_per_second(ticks_per_second);
+	}
+
 	try
 	{
 		for (vector<string>::size_type i=0; i < module_filenames.size(); i++)
@@ -576,6 +613,7 @@ int main(int argc, char *argv[])
 		switch (direct_output_type)
 		{
 			case direct_output::none:
+			{
 				if (!output_file)
 				{
 	#if defined(SDL) && defined(SDL_DEFAULT)
@@ -597,23 +635,34 @@ int main(int argc, char *argv[])
 					cerr << argv[0] << ": unable to open output file: " << output_filename << endl;
 					return 1;
 				}
+
+				wav_file_header.begin(&output);
+
 				status = 0; // squelch warning if no direct output modes are enabled
+
 				break;
+			}
 	#ifdef DIRECTX
 			case direct_output::directx:
+			{
 				status = init_directx(ticks_per_second, output_channels, bits);
 
 				if (status)
 					return status;
+
 				break;
+			}
 	#endif
 	#ifdef SDL
 			case direct_output::sdl:
+			{
 				status = init_sdl(ticks_per_second, output_channels, bits);
 
 				if (status)
 					return status;
+
 				break;
+			}
 	#endif
 		}
 
@@ -934,6 +983,7 @@ int main(int argc, char *argv[])
 		switch (direct_output_type)
 		{
 			case direct_output::none:
+				wav_file_header.finalize();
 				output.close();
 				break;
 	#ifdef DIRECTX

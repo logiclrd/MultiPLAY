@@ -45,7 +45,7 @@ namespace MultiPLAY
 
 		if ((znote != 0) || (!zero_means_no_note))
 		{
-			if ((current_waveform == Waveform::Sample) && (current_sample != NULL))
+			if ((current_waveform == Waveform::Sample) && (current_sample != nullptr))
 				note_frequency = current_sample_context->samples_per_second * 2;
 			else
 				note_frequency = 987.766603;
@@ -117,30 +117,30 @@ namespace MultiPLAY
 
 	void channel::note_cut()
 	{
-		current_sample = NULL;
+		current_sample = nullptr;
 
-		if (current_sample_context != NULL)
+		if (current_sample_context != nullptr)
 		{
 			delete current_sample_context;
-			current_sample_context = NULL;
+			current_sample_context = nullptr;
 		}
 
-		if (volume_envelope != NULL)
+		if (volume_envelope != nullptr)
 		{
 			delete volume_envelope;
-			volume_envelope = NULL;
+			volume_envelope = nullptr;
 		}
 
-		if (panning_envelope != NULL)
+		if (panning_envelope != nullptr)
 		{
 			delete panning_envelope;
-			panning_envelope = NULL;
+			panning_envelope = nullptr;
 		}
 
-		if (pitch_envelope != NULL)
+		if (pitch_envelope != nullptr)
 		{
 			delete pitch_envelope;
-			pitch_envelope = NULL;
+			pitch_envelope = nullptr;
 		}
 	}
 
@@ -153,21 +153,21 @@ namespace MultiPLAY
 	{
 		if (exit_sustain_loop)
 		{
-			if (current_sample != NULL)
+			if (current_sample != nullptr)
 				current_sample->exit_sustain_loop(current_sample_context);
 		}
 
 		if (exit_envelope_loops)
 		{
-			if (volume_envelope != NULL)
+			if (volume_envelope != nullptr)
 				volume_envelope->note_off(envelope_offset);
-			if (panning_envelope != NULL)
+			if (panning_envelope != nullptr)
 				panning_envelope->note_off(envelope_offset);
-			if (pitch_envelope != NULL)
+			if (pitch_envelope != nullptr)
 				pitch_envelope->note_off(envelope_offset);
 		}
 
-		if ((volume_envelope == NULL) || volume_envelope->looping || (current_sample->fade_out > 0))
+		if ((volume_envelope == nullptr) || volume_envelope->looping || (current_sample->fade_out > 0))
 		{
 			if (!fading)
 			{
@@ -183,7 +183,7 @@ namespace MultiPLAY
 		{
 			double fade_duration_ticks;
 
-			if ((current_sample != NULL) && (current_sample->fade_out > 0) && (ticks_per_fade_out_frame > 0))
+			if ((current_sample != nullptr) && (current_sample->fade_out > 0) && (ticks_per_fade_out_frame > 0))
 				fade_duration_ticks = ticks_per_fade_out_frame / current_sample->fade_out;
 			else
 			{
@@ -210,7 +210,7 @@ namespace MultiPLAY
 
 	bool channel::is_at_end_of_volume_envelope()
 	{
-		if (volume_envelope == NULL)
+		if (volume_envelope == nullptr)
 			return false;
 
 		return volume_envelope->past_end(envelope_offset);
@@ -337,7 +337,7 @@ namespace MultiPLAY
 					fade_value -= fade_per_tick;
 				}
 
-				if (volume_envelope != NULL)
+				if (volume_envelope != nullptr)
 				{
 					profile.push_back("perform volume_envelope calculations");
 
@@ -355,13 +355,13 @@ namespace MultiPLAY
 					}
 				}
 
-				if (panning_envelope != NULL)
+				if (panning_envelope != nullptr)
 				{
 					profile.push_back("perform panning_envelope calculations");
 					return_sample *= pan_value(panning_envelope->get_value_at(envelope_offset));
 				}
 
-				if (pitch_envelope != NULL)
+				if (pitch_envelope != nullptr)
 				{
 					profile.push_back("perform pitch_envelope calculations");
 
@@ -475,11 +475,11 @@ namespace MultiPLAY
 		intensity = 5000.0 / 32767.0;
 		channel_volume = 1.0;
 		current_waveform = default_waveform;
-		current_sample = NULL;
-		current_sample_context = NULL;
-		volume_envelope = NULL;
-		panning_envelope = NULL;
-		pitch_envelope = NULL;
+		current_sample = nullptr;
+		current_sample_context = nullptr;
+		volume_envelope = nullptr;
+		panning_envelope = nullptr;
+		pitch_envelope = nullptr;
 		fading = false;
 		have_fade_per_tick = false;
 		fade_per_tick = 0;
@@ -506,11 +506,11 @@ namespace MultiPLAY
 		offset_major = 0;
 		offset = 0;
 		current_waveform = default_waveform;
-		current_sample = NULL;
-		current_sample_context = NULL;
-		volume_envelope = NULL;
-		panning_envelope = NULL;
-		pitch_envelope = NULL;
+		current_sample = nullptr;
+		current_sample_context = nullptr;
+		volume_envelope = nullptr;
+		panning_envelope = nullptr;
+		pitch_envelope = nullptr;
 		fading = false;
 		finish_with_fade = false;
 		have_fade_per_tick = false;

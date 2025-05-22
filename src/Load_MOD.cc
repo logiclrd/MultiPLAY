@@ -230,7 +230,7 @@ namespace MultiPLAY
 						if ((instrument > 0) && (instrument <= samps.size()))
 							r.instrument = samps[instrument - 1];
 						else
-							r.instrument = NULL;
+							r.instrument = nullptr;
 
 						r.effect.init(
 							(MODEffect::Type)(pattern_data_buffer[o + 2] & 0xF),
@@ -269,7 +269,7 @@ namespace MultiPLAY
 							if ((instrument > 0) && (instrument <= samps.size()))
 								r.instrument = samps[instrument - 1];
 							else
-								r.instrument = NULL;
+								r.instrument = nullptr;
 
 							r.effect.init(
 								(MODEffect::Type)(pattern_data_buffer[o + 2] & 0xF),
@@ -298,7 +298,7 @@ namespace MultiPLAY
 							if ((instrument > 0) && (instrument <= samps.size()))
 								r.instrument = samps[instrument - 1];
 							else
-								r.instrument = NULL;
+								r.instrument = nullptr;
 
 							r.effect.init(
 								(MODEffect::Type)(pattern_data_buffer[o + 2] & 0xF),

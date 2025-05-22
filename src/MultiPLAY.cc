@@ -124,7 +124,7 @@ namespace MultiPLAY
 
 		input.close();
 
-		if (module != NULL)
+		if (module != nullptr)
 		{
 			module->filename = filename;
 
@@ -334,7 +334,7 @@ int main(int argc, char *argv[])
 			if (i >= argc)
 				cerr << argv[0] << ": missing argument for parameter " << arg << endl;
 			else
-				module_start_pattern = strtoul(argv[i], NULL, 10);
+				module_start_pattern = strtoul(argv[i], nullptr, 10);
 		}
 		else if ((arg == "-module") || (arg == "-modules"))
 		{
@@ -702,7 +702,7 @@ int main(int argc, char *argv[])
 				{
 					auto dynamic_chan = dynamic_cast<channel_DYNAMIC *>(chan);
 
-					if (dynamic_chan != NULL)
+					if (dynamic_chan != nullptr)
 						dynamic_chan->parent_channel->remove_ancillary_channel(chan);
 
 					delete chan;

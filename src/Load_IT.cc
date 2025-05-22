@@ -976,7 +976,7 @@ namespace MultiPLAY
 					if ((c.instrument > 0) && (c.instrument <= samps.size()))
 						r.instrument = samps[c.instrument - 1];
 					else
-						r.instrument = NULL;
+						r.instrument = nullptr;
 					
 					if (c.volume_panning >= 0)
 					{
@@ -1261,7 +1261,7 @@ namespace MultiPLAY
 					if (id.note_sample[note_index])
 						is->note_sample[note_index] = samps[unsigned(id.note_sample[note_index] - 1)];
 					else
-						is->note_sample[note_index] = NULL;
+						is->note_sample[note_index] = nullptr;
 				}
 
 				load_it_convert_envelope(is->volume_envelope, id.volume_envelope);

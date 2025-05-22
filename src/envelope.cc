@@ -127,7 +127,7 @@ namespace MultiPLAY
 
 	// struct playback_envelope
 	playback_envelope::playback_envelope(const playback_envelope &other)
-		: wrap(other.wrap ? new playback_envelope(*other.wrap) : NULL),
+		: wrap(other.wrap ? new playback_envelope(*other.wrap) : nullptr),
 			sample_ticks_per_envelope_tick(other.sample_ticks_per_envelope_tick),
 			envelope_ticks_per_sample_tick(other.envelope_ticks_per_sample_tick),
 			susloop(other.susloop), scale(other.scale), env(other.env),
@@ -136,7 +136,7 @@ namespace MultiPLAY
 	}
 
 	playback_envelope::playback_envelope(instrument_envelope &e, double ticks)
-		: wrap(NULL), env(e), sample_ticks_per_envelope_tick(ticks),
+		: wrap(nullptr), env(e), sample_ticks_per_envelope_tick(ticks),
 			envelope_ticks_per_sample_tick(1.0 / ticks),
 			looping(e.looping || e.sustain_loop)
 	{

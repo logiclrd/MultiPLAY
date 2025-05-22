@@ -53,12 +53,12 @@ namespace MultiPLAY
 
 		sample_instrument(int idx);
 
-		virtual void occlude_note(channel *p = NULL, sample_context **context = NULL, sample *new_sample = NULL, row *r = NULL);
-		virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **context = NULL, double effect_tick_length = 0, bool top_level = true, int *znote = NULL, bool is_primary = true);
-		virtual void kill_note(sample_context *c = NULL);
-		virtual void exit_sustain_loop(sample_context *c = NULL);
-		virtual bool past_end(unsigned int sample, double offset, sample_context *c = NULL);
-		virtual one_sample get_sample(unsigned int sample, double offset, sample_context *c = NULL);
+		virtual void occlude_note(channel *p = nullptr, sample_context **context = nullptr, sample *new_sample = nullptr, row *r = nullptr);
+		virtual void begin_new_note(row *r = nullptr, channel *p = nullptr, sample_context **context = nullptr, double effect_tick_length = 0, bool top_level = true, int *znote = nullptr, bool is_primary = true);
+		virtual void kill_note(sample_context *c = nullptr);
+		virtual void exit_sustain_loop(sample_context *c = nullptr);
+		virtual bool past_end(unsigned int sample, double offset, sample_context *c = nullptr);
+		virtual one_sample get_sample(unsigned int sample, double offset, sample_context *c = nullptr);
 	};
 }
 

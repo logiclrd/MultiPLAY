@@ -164,10 +164,10 @@ namespace MultiPLAY
 		effect_struct(EffectType::Type type, Effect::Type command, unsigned char info);
 		effect_struct(EffectType::Type type, Effect::Type command, unsigned char high_nybble, unsigned char low_nybble);
 
-		void init(EffectType::Type type, Effect::Type command, unsigned char info, row *r = NULL);
-		void init(EffectType::Type type, Effect::Type command, unsigned char high_nybble, unsigned char low_nybble, row *r = NULL);
-		void init(EffectType::Type type, MODEffect::Type command, unsigned char info, row *r = NULL);
-		void init(MODEffect::Type command, unsigned char info, row *r = NULL);
+		void init(EffectType::Type type, Effect::Type command, unsigned char info, row *r = nullptr);
+		void init(EffectType::Type type, Effect::Type command, unsigned char high_nybble, unsigned char low_nybble, row *r = nullptr);
+		void init(EffectType::Type type, MODEffect::Type command, unsigned char info, row *r = nullptr);
+		void init(MODEffect::Type command, unsigned char info, row *r = nullptr);
 
 		bool keepNote();
 		bool isnt(Effect::Type effect, signed char high_nybble = -1, signed char low_nybble = -1);

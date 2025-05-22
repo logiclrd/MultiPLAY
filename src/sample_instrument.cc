@@ -20,30 +20,30 @@ namespace MultiPLAY
 	/*virtual*/ sample_instrument_context::~sample_instrument_context()
 	{
 		sample_context::~sample_context();
-		if (cur_sample_context != NULL)
+		if (cur_sample_context != nullptr)
 			delete cur_sample_context;
 	}
 
 	/*virtual*/ sample_context *sample_instrument_context::create_new()
 	{
-		return new sample_instrument_context(NULL);
+		return new sample_instrument_context(nullptr);
 	}
 
 	/*virtual*/ void sample_instrument_context::copy_to(sample_context *other)
 	{
 		sample_instrument_context *target = dynamic_cast<sample_instrument_context *>(other);
 
-		if (target == NULL)
+		if (target == nullptr)
 			throw "Copy sample context to wrong type";
 
 		sample_context::copy_to(target);
 
 		target->cur_sample = this->cur_sample;
 		target->num_samples = this->num_samples;
-		if (this->cur_sample_context != NULL)
+		if (this->cur_sample_context != nullptr)
 			target->cur_sample_context = this->cur_sample_context->clone();
 		else
-			target->cur_sample_context = NULL;
+			target->cur_sample_context = nullptr;
 		target->cur_volume = this->cur_volume;
 		target->sustain_loop_state = this->sustain_loop_state;
 		target->owner_channel = this->owner_channel;
@@ -64,10 +64,10 @@ namespace MultiPLAY
 	}
 
 	/*virtual*/ void sample_instrument::occlude_note(
-		channel *p/* = NULL*/,
-		sample_context **context_ref/* = NULL*/,
-		sample *new_sample/* = NULL*/,
-		row *r/* = NULL*/)
+		channel *p/* = nullptr*/,
+		sample_context **context_ref/* = nullptr*/,
+		sample *new_sample/* = nullptr*/,
+		row *r/* = nullptr*/)
 	{
 		NewNoteAction::Type effective_nna = new_note_action;
 
@@ -82,13 +82,13 @@ namespace MultiPLAY
 			}
 		}
 
-		if (*context_ref != NULL)
+		if (*context_ref != nullptr)
 		{
 			sample_context *context = *context_ref;
 
 			sample_instrument_context *c_ptr = dynamic_cast<sample_instrument_context *>(context);
 
-			if (c_ptr != NULL)
+			if (c_ptr != nullptr)
 			{
 				sample_instrument_context &c = *c_ptr;
 
@@ -156,15 +156,15 @@ namespace MultiPLAY
 	}
 
 	/*virtual*/ void sample_instrument::begin_new_note(
-		row *r/* = NULL*/,
-		channel *p/* = NULL*/,
-		sample_context **context/* = NULL*/,
+		row *r/* = nullptr*/,
+		channel *p/* = nullptr*/,
+		sample_context **context/* = nullptr*/,
 		double effect_tick_length/* = 0*/,
 		bool top_level/* = true*/,
-		int *znote/* = NULL*/,
+		int *znote/* = nullptr*/,
 		bool is_primary/* = true*/)
 	{
-		if (context == NULL)
+		if (context == nullptr)
 			throw "need context for instrument";
 
 		if (r->snote >= 0)
@@ -175,7 +175,7 @@ namespace MultiPLAY
 				delete *context;
 			}
 
-			if (is_primary && (p != NULL))
+			if (is_primary && (p != nullptr))
 				p->current_sample = this;
 
 			sample_instrument_context *c = new sample_instrument_context(this);
@@ -185,7 +185,7 @@ namespace MultiPLAY
 			c->inote = inote;
 			c->cur_sample = note_sample[inote];
 			c->num_samples = c->cur_sample->num_samples;
-			c->cur_sample_context = NULL;
+			c->cur_sample_context = nullptr;
 			c->effect_tick_length = effect_tick_length;
 			(*znote) += tone_offset[inote];
 
@@ -198,16 +198,16 @@ namespace MultiPLAY
 				volume_envelope_override_on = (r->effect.info.low_nybble == 8);
 			}
 
-			if (c->cur_sample != NULL)
+			if (c->cur_sample != nullptr)
 			{
-				if (p != NULL)
+				if (p != nullptr)
 				{
 					if (top_level)
 					{
-						if (p->volume_envelope != NULL)
+						if (p->volume_envelope != nullptr)
 						{
 							delete p->volume_envelope;
-							p->volume_envelope = NULL;
+							p->volume_envelope = nullptr;
 						}
 						if (volume_envelope_override_on || (volume_envelope.enabled && (!volume_envelope_override_off)))
 						{
@@ -215,10 +215,10 @@ namespace MultiPLAY
 							p->volume_envelope->begin_note();
 						}
 
-						if (p->panning_envelope != NULL)
+						if (p->panning_envelope != nullptr)
 						{
 							delete p->panning_envelope;
-							p->panning_envelope = NULL;
+							p->panning_envelope = nullptr;
 						}
 						if (panning_envelope.enabled)
 						{
@@ -226,10 +226,10 @@ namespace MultiPLAY
 							p->panning_envelope->begin_note();
 						}
 
-						if (p->pitch_envelope != NULL)
+						if (p->pitch_envelope != nullptr)
 						{
 							delete p->pitch_envelope;
-							p->pitch_envelope = NULL;
+							p->pitch_envelope = nullptr;
 						}
 						if (pitch_envelope.enabled)
 						{
@@ -266,45 +266,45 @@ namespace MultiPLAY
 			}
 		}
 
-		if (p != NULL)
+		if (p != nullptr)
 		{
 			p->samples_this_note = 0;
 			p->envelope_offset = 0;
 		}
 	}
 
-	/*virtual*/ void sample_instrument::kill_note(sample_context *c/* = NULL*/)
+	/*virtual*/ void sample_instrument::kill_note(sample_context *c/* = nullptr*/)
 	{
-		if (c == NULL)
+		if (c == nullptr)
 			throw "need context for instrument";
 
 		sample_instrument_context *context_ptr = dynamic_cast<sample_instrument_context *>(c);
 
-		if (context_ptr == NULL)
+		if (context_ptr == nullptr)
 			throw "INTERNAL ERROR: sample/context type mismatch";
 
 		sample_instrument_context &context = *context_ptr;
 
-		if (context.cur_sample != NULL)
+		if (context.cur_sample != nullptr)
 		{
 			context.cur_sample->kill_note(context.cur_sample_context);
-			context.cur_sample = NULL; // doesn't get much more killed than this
+			context.cur_sample = nullptr; // doesn't get much more killed than this
 		}
 	}
 
-	/*virtual*/ void sample_instrument::exit_sustain_loop(sample_context *c/* = NULL*/)
+	/*virtual*/ void sample_instrument::exit_sustain_loop(sample_context *c/* = nullptr*/)
 	{
-		if (c == NULL)
+		if (c == nullptr)
 			throw "need context for instrument";
 
 		sample_instrument_context *context_ptr = dynamic_cast<sample_instrument_context *>(c);
 
-		if (context_ptr == NULL)
+		if (context_ptr == nullptr)
 			throw "INTERNAL ERROR: sample/context type mismatch";
 
 		sample_instrument_context &context = *context_ptr;
 
-		if (context.cur_sample != NULL)
+		if (context.cur_sample != nullptr)
 		{
 			context.cur_sample->exit_sustain_loop(context.cur_sample_context);
 
@@ -312,39 +312,39 @@ namespace MultiPLAY
 		}
 	}
 
-	/*virtual*/ bool sample_instrument::past_end(unsigned int sample, double offset, sample_context *c/* = NULL*/)
+	/*virtual*/ bool sample_instrument::past_end(unsigned int sample, double offset, sample_context *c/* = nullptr*/)
 	{
-		if (c == NULL)
+		if (c == nullptr)
 			throw "need context for instrument";
 
 		sample_instrument_context *context_ptr = dynamic_cast<sample_instrument_context *>(c);
 
-		if (context_ptr == NULL)
+		if (context_ptr == nullptr)
 			throw "INTERNAL ERROR: sample/context type mismatch";
 
 		sample_instrument_context &context = *context_ptr;
 
-		if (context.cur_sample != NULL)
+		if (context.cur_sample != nullptr)
 			return context.cur_sample->past_end(sample, offset, context.cur_sample_context);
 		else
 			return true;
 	}
 
-	/*virtual*/ one_sample sample_instrument::get_sample(unsigned int sample, double offset, sample_context *c/* = NULL*/)
+	/*virtual*/ one_sample sample_instrument::get_sample(unsigned int sample, double offset, sample_context *c/* = nullptr*/)
 	{
-		if (c == NULL)
+		if (c == nullptr)
 			throw "need context for instrument";
 
 		sample_instrument_context *context_ptr = dynamic_cast<sample_instrument_context *>(c);
 
-		if (context_ptr == NULL)
+		if (context_ptr == nullptr)
 			throw "INTERNAL ERROR: sample/context type mismatch";
 
 		sample_instrument_context &context = *context_ptr;
 
 		one_sample ret(output_channels);
 
-		if (context.cur_sample != NULL)
+		if (context.cur_sample != nullptr)
 			ret = global_volume * context.cur_sample->get_sample(sample, offset, context.cur_sample_context);
 
 		if (use_dsp)

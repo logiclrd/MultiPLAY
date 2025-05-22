@@ -65,7 +65,7 @@ namespace MultiPLAY
 		vibrato_waveform = Waveform::Sine;
 		tremolo_waveform = Waveform::Sine;
 		current_waveform = Waveform::Sample;
-		current_sample = NULL;
+		current_sample = nullptr;
 		original_intensity = intensity;
 		target_volume = -1;
 		volume = channel_volume;
@@ -100,7 +100,7 @@ namespace MultiPLAY
 			fading = true;
 			fade_value = 1.0;
 
-			if (current_sample != NULL)
+			if (current_sample != nullptr)
 				fade_per_tick = current_sample->fade_out / ticks_per_fade_out_frame;
 		}
 	}
@@ -395,7 +395,7 @@ namespace MultiPLAY
 						note_fade();
 					else
 					{
-						if ((delayed_note->instrument != NULL) || module->it_module)
+						if ((delayed_note->instrument != nullptr) || module->it_module)
 						{
 							if (!delayed_note->effect.keepNote())
 							{
@@ -412,7 +412,7 @@ namespace MultiPLAY
 
 							if (delayed_note->volume < 0)
 							{
-								if (current_sample_context != NULL)
+								if (current_sample_context != nullptr)
 									volume = (int)(current_sample_context->default_volume * 64.0);
 								else
 									volume = 64;
@@ -882,9 +882,9 @@ namespace MultiPLAY
 
 						add_ancillary_channel(ancillary);
 
-						volume_envelope = NULL;
-						panning_envelope = NULL;
-						pitch_envelope = NULL;
+						volume_envelope = nullptr;
+						panning_envelope = nullptr;
+						pitch_envelope = nullptr;
 
 						ancillary_channels.push_back(ancillary);
 					}
@@ -897,9 +897,9 @@ namespace MultiPLAY
 					note_fade();
 				else
 				{
-					if ((row.instrument != NULL) || module->channel_remember_note)
+					if ((row.instrument != nullptr) || module->channel_remember_note)
 					{
-						if (!row.effect.keepNote() || (current_sample == NULL))
+						if (!row.effect.keepNote() || (current_sample == nullptr))
 						{
 							if (anticlick && current_sample)
 							{
@@ -917,22 +917,22 @@ namespace MultiPLAY
 							if (row.instrument)
 								note_sample = row.instrument;
 
-							if (note_sample != NULL)
+							if (note_sample != nullptr)
 							{
 								int translated_znote = row.znote;
 								note_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
 								fading = false;
 								recalc(translated_znote, 1.0, false);
 							}
-							else if (current_sample_context != NULL)
+							else if (current_sample_context != nullptr)
 							{
 								delete current_sample_context;
-								current_sample_context = NULL;
+								current_sample_context = nullptr;
 							}
 						}
 						if (row.volume < 0)
 						{
-							if (current_sample_context != NULL)
+							if (current_sample_context != nullptr)
 								volume = (int)(current_sample_context->default_volume * 64.0);
 							else
 								volume = 64;
@@ -942,7 +942,7 @@ namespace MultiPLAY
 					}
 				}
 			}
-			else if (row.instrument != NULL)
+			else if (row.instrument != nullptr)
 			{
 				if (anticlick && current_sample)
 				{
@@ -952,9 +952,9 @@ namespace MultiPLAY
 
 					add_ancillary_channel(ancillary);
 
-					volume_envelope = NULL;
-					panning_envelope = NULL;
-					pitch_envelope = NULL;
+					volume_envelope = nullptr;
+					panning_envelope = nullptr;
+					pitch_envelope = nullptr;
 
 					ancillary_channels.push_back(ancillary);
 				}
@@ -969,7 +969,7 @@ namespace MultiPLAY
 				}
 				if (row.volume < 0)
 				{
-					if (current_sample_context != NULL)
+					if (current_sample_context != nullptr)
 						volume = (int)(current_sample_context->default_volume * 64.0);
 					else
 						volume = 64;
@@ -1288,7 +1288,7 @@ namespace MultiPLAY
 					if (row.snote >= 0)
 						portamento_target_znote = row.znote;
 
-					if (it_portamento_link && (row.instrument != NULL))
+					if (it_portamento_link && (row.instrument != nullptr))
 					{
 						if (current_sample != row.instrument)
 						{
@@ -1543,31 +1543,31 @@ namespace MultiPLAY
 				else
 					arpeggio_tick_offset = 0;
 
-				if (current_sample == NULL)
+				if (current_sample == nullptr)
 					break;
 
 				sample_context *temp_sc = current_sample_context;
-				current_sample_context = NULL; // protect the existing context
+				current_sample_context = nullptr; // protect the existing context
 
 				arpeggio_first_delta_offset = delta_offset_per_tick;
 
 				int second_note = row.znote + info.high_nybble;
-				current_sample->begin_new_note(&row, NULL, &current_sample_context, module->ticks_per_frame, true, &second_note, false);
+				current_sample->begin_new_note(&row, nullptr, &current_sample_context, module->ticks_per_frame, true, &second_note, false);
 				recalc(second_note, 1.0, false);
 				if (current_sample_context)
 				{
 					delete current_sample_context;
-					current_sample_context = NULL;
+					current_sample_context = nullptr;
 				}
 				arpeggio_second_delta_offset = delta_offset_per_tick;
 
 				int third_note = row.znote + info.low_nybble;
-				current_sample->begin_new_note(&row, NULL, &current_sample_context, module->ticks_per_frame, true, &third_note, false);
+				current_sample->begin_new_note(&row, nullptr, &current_sample_context, module->ticks_per_frame, true, &third_note, false);
 				recalc(third_note, 1.0, false);
 				if (current_sample_context)
 				{
 					delete current_sample_context;
-					current_sample_context = NULL;
+					current_sample_context = nullptr;
 				}
 				arpeggio_third_delta_offset = delta_offset_per_tick;
 
@@ -1602,15 +1602,15 @@ namespace MultiPLAY
 				int old_current_znote = current_znote;
 
 				sample_context *temp_sc = current_sample_context;
-				current_sample_context = NULL; // protect the existing context
+				current_sample_context = nullptr; // protect the existing context
 
-				current_sample->begin_new_note(&row, NULL, &current_sample_context, module->ticks_per_frame, true, &portamento_target_znote);
+				current_sample->begin_new_note(&row, nullptr, &current_sample_context, module->ticks_per_frame, true, &portamento_target_znote);
 				fading = false;
 				recalc(portamento_target_znote, 1.0, false, false);
 				if (current_sample_context)
 				{
 					delete current_sample_context;
-					current_sample_context = NULL;
+					current_sample_context = nullptr;
 				}
 
 				current_sample_context = temp_sc;
@@ -1811,7 +1811,7 @@ namespace MultiPLAY
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << ")" << endl;
 						break;
 					case ExtendedEffect::SetFineTune: // 0x2
-						if (current_sample == NULL)
+						if (current_sample == nullptr)
 							cerr << "No instrument for set finetune effect" << endl;
 						else
 						{

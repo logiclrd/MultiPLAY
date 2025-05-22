@@ -382,7 +382,7 @@ namespace MultiPLAY
 						file->read((char *)data, streamsize(2 * length));
 
 					unsigned char *uc_data = (unsigned char *)&data[0];
-					unsigned char *uc_data_right = NULL;
+					unsigned char *uc_data_right = nullptr;
 					if (sample_flags.stereo())
 						uc_data_right = (unsigned char *)&data_right[0];
 
@@ -442,7 +442,7 @@ namespace MultiPLAY
 						file->read((char *)data, streamsize(2 * length));
 
 					unsigned char *uc_data = (unsigned char *)&data[0];
-					unsigned char *uc_data_right = NULL;
+					unsigned char *uc_data_right = nullptr;
 					if (sample_flags.stereo())
 						uc_data_right = (unsigned char *)&data_right[0];
 
@@ -597,7 +597,7 @@ namespace MultiPLAY
 						if ((instrument > 0) && (instrument <= samps.size()))
 							rowdata[channel].instrument = samps[instrument - 1];
 						else
-							rowdata[channel].instrument = NULL;
+							rowdata[channel].instrument = nullptr;
 						if (!--bytes_left) break;
 					}
 

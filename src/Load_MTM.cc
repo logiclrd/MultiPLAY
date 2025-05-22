@@ -184,7 +184,7 @@ namespace MultiPLAY
 				if (track > 0)
 					pattern.channel[j] = &tracks[unsigned(track - 1)];
 				else
-					pattern.channel[j] = NULL;
+					pattern.channel[j] = nullptr;
 			}
 
 			patterns.push_back(pattern);
@@ -308,7 +308,7 @@ namespace MultiPLAY
 						if ((m.instrument > 0) && (m.instrument < int(samps.size())))
 							r.instrument = samps[m.instrument - 1];
 						else
-							r.instrument = NULL;
+							r.instrument = nullptr;
 
 						r.effect.init(m.effect, m.effect_param, &r);
 					}

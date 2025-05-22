@@ -50,7 +50,7 @@ namespace MultiPLAY
 
 		sample_builtintype(
 			int index, int sample_channels, double default_volume,
-			T **data = NULL, unsigned int num_samples = 0,
+			T **data = nullptr, unsigned int num_samples = 0,
 			LoopStyle::Type loop_style = LoopStyle::Forward,
 			LoopStyle::Type sustain_loop_style = LoopStyle::Forward,
 			unsigned loop_begin = 0, unsigned loop_end = LOOP_END_NO_LOOP,
@@ -74,7 +74,7 @@ namespace MultiPLAY
 					this->sample_data[i] = data[i];
 			else
 				for (int i=0; i<sample_channels; i++)
-					this->sample_data[i] = NULL;
+					this->sample_data[i] = nullptr;
 
 			this->num_samples = num_samples;
 			this->default_volume = default_volume;
@@ -91,9 +91,9 @@ namespace MultiPLAY
 			use_sustain_loop = (susloop_end != LOOP_END_NO_LOOP);
 		}
 
-		virtual void begin_new_note(row *r = NULL, channel *p = NULL, sample_context **c = NULL, double effect_tick_length = 0, bool top_level = true, int */*znote*/ = NULL, bool is_primary = true)
+		virtual void begin_new_note(row *r = nullptr, channel *p = nullptr, sample_context **c = nullptr, double effect_tick_length = 0, bool top_level = true, int */*znote*/ = nullptr, bool is_primary = true)
 		{
-			if (c == NULL)
+			if (c == nullptr)
 				throw "need sample context";
 
 			if (*c)
@@ -102,7 +102,7 @@ namespace MultiPLAY
 				delete *c;
 			}
 
-			if (is_primary && (p != NULL))
+			if (is_primary && (p != nullptr))
 				p->current_sample = this;
 
 			sample_builtintype_context *context_ptr = new sample_builtintype_context(this);
@@ -128,9 +128,9 @@ namespace MultiPLAY
 			{
 				if (top_level)
 				{
-					p->volume_envelope = NULL;
-					p->panning_envelope = NULL;
-					p->pitch_envelope = NULL;
+					p->volume_envelope = nullptr;
+					p->panning_envelope = nullptr;
+					p->pitch_envelope = nullptr;
 				}
 
 				p->samples_this_note = 0;
@@ -138,7 +138,7 @@ namespace MultiPLAY
 			}
 		}
 
-		virtual void occlude_note(channel */*p*/ = NULL, sample_context **/*c*/ = NULL, sample */*new_sample*/ = NULL, row */*r*/ = NULL)
+		virtual void occlude_note(channel */*p*/ = nullptr, sample_context **/*c*/ = nullptr, sample */*new_sample*/ = nullptr, row */*r*/ = nullptr)
 		{ // do nothing
 		}
 
@@ -146,7 +146,7 @@ namespace MultiPLAY
 		{
 			sample_builtintype_context *context_ptr = dynamic_cast<sample_builtintype_context *>(c);
 
-			if (context_ptr == NULL)
+			if (context_ptr == nullptr)
 				throw "INTERNAL ERROR: sample/context type mismatch";
 
 			sample_builtintype_context &context = *context_ptr;
@@ -155,14 +155,14 @@ namespace MultiPLAY
 				context.sustain_loop_state = SustainLoopState::Finishing;
 		}
 
-		virtual void kill_note(sample_context */*c = NULL*/)
+		virtual void kill_note(sample_context */*c = nullptr*/)
 		{
 			// no implementation required
 		}
 
-		virtual bool past_end(unsigned int sample, double /*offset*/, sample_context *c = NULL)
+		virtual bool past_end(unsigned int sample, double /*offset*/, sample_context *c = nullptr)
 		{
-			if (c == NULL)
+			if (c == nullptr)
 				throw "need context for instrument";
 
 			if (loop_end != LOOP_END_NO_LOOP)
@@ -170,7 +170,7 @@ namespace MultiPLAY
 
 			sample_builtintype_context *context_ptr = dynamic_cast<sample_builtintype_context *>(c);
 
-			if (context_ptr == NULL)
+			if (context_ptr == nullptr)
 				throw "INTERNAL ERROR: sample/context type mismatch";
 
 			sample_builtintype_context &context = *context_ptr;
@@ -190,15 +190,15 @@ namespace MultiPLAY
 			return (sample >= num_samples);
 		}
 
-		virtual one_sample get_sample(unsigned int sample, double offset, sample_context *c = NULL)
+		virtual one_sample get_sample(unsigned int sample, double offset, sample_context *c = nullptr)
 		{
 
-			if (c == NULL)
+			if (c == nullptr)
 				throw "need a sample context";
 
 			sample_builtintype_context *context_ptr = dynamic_cast<sample_builtintype_context *>(c);
 
-			if (context_ptr == NULL)
+			if (context_ptr == nullptr)
 				throw "INTERNAL ERROR: sample/context type mismatch";
 
 			sample_builtintype_context &context = *context_ptr;

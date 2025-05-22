@@ -126,7 +126,7 @@ namespace MultiPLAY
 			return 1;
 		}
 
-		if (FAILED(DirectSoundCreate8(NULL, &dsHandle, NULL)))
+		if (FAILED(DirectSoundCreate8(nullptr, &dsHandle, nullptr)))
 		{
 			cerr << "Unable to initialize DirectSound" << endl;
 			return 1;
@@ -170,13 +170,13 @@ namespace MultiPLAY
 		bufferDesc.lpwfxFormat = &waveFormat;
 		bufferDesc.guid3DAlgorithm = DS3DALG_DEFAULT;
 
-		if (FAILED(dsHandle->CreateSoundBuffer(&bufferDesc, &dsBuffer, NULL)))
+		if (FAILED(dsHandle->CreateSoundBuffer(&bufferDesc, &dsBuffer, nullptr)))
 		{
 			cerr << "Unable to create output buffer" << endl;
 			return 1;
 		}
 
-		dsNotifyEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+		dsNotifyEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
 
 		DSBPOSITIONNOTIFY positionNotify[4];
 		positionNotify[0].dwOffset = 0 * directx_quarter_buffer_size;

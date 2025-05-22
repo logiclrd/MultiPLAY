@@ -15,7 +15,7 @@ namespace MultiPLAY
 	void PlaybackPosition::clear()
 	{
 		Order = OrderCount = Pattern = PatternCount = Row = RowCount = Offset = OffsetCount = 0;
-		FormatString = NULL;
+		FormatString = nullptr;
 	}
 
 	bool PlaybackPosition::is_changed(const PlaybackPosition &reference, const PlaybackPosition &relevant_fields)

@@ -132,14 +132,14 @@ namespace MultiPLAY
 		return 0;
 	}
 
-	double channel_PLAY::expect_duration(int *note_length_denominator/* = NULL*/)
+	double channel_PLAY::expect_duration(int *note_length_denominator/* = nullptr*/)
 	{
 		double duration = 1.0;
 		double duration_add = 0.5;
 
 		int ch = pull_char();
 
-		if (isdigit(ch) && (note_length_denominator != NULL))
+		if (isdigit(ch) && (note_length_denominator != nullptr))
 		{
 			push_char(ch);
 			*note_length_denominator = expect_int();
@@ -238,13 +238,13 @@ namespace MultiPLAY
 						this_note_length_denominator = note_length_denominator;
 					}
 
-					bool use_sample = (current_waveform == Waveform::Sample) && (current_sample != NULL);
+					bool use_sample = (current_waveform == Waveform::Sample) && (current_sample != nullptr);
 
 					if (!use_sample)
 						recalc(znote, duration_scale);
 					else
 					{
-						current_sample->begin_new_note(NULL, this, &current_sample_context, 0.02 * ticks_per_second, true, &znote);
+						current_sample->begin_new_note(nullptr, this, &current_sample_context, 0.02 * ticks_per_second, true, &znote);
 
 						recalc(znote, duration_scale);
 
@@ -268,8 +268,8 @@ namespace MultiPLAY
 						cerr << "Warning: Syntax error in input: N" << znote << endl;
 						znote = 84;
 					}
-					if ((znote != 0) && (current_waveform == Waveform::Sample) && (current_sample != NULL))
-						current_sample->begin_new_note(NULL, this, &current_sample_context, 0.02 * ticks_per_second, true, &znote);
+					if ((znote != 0) && (current_waveform == Waveform::Sample) && (current_sample != nullptr))
+						current_sample->begin_new_note(nullptr, this, &current_sample_context, 0.02 * ticks_per_second, true, &znote);
 					recalc(znote, duration_scale);
 					break;
 				case 'l':
@@ -409,8 +409,8 @@ namespace MultiPLAY
 							else
 							{
 								current_sample = samples[sample_number];
-								if (current_sample == NULL)
-									current_sample_context = NULL;
+								if (current_sample == nullptr)
+									current_sample_context = nullptr;
 								current_waveform = Waveform::Sample;
 							}
 							

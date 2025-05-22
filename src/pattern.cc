@@ -11,7 +11,7 @@ namespace MultiPLAY
 	{
 		snote = -1;
 		volume = -1;
-		instrument = NULL;
+		instrument = nullptr;
 	}
 
 	// struct pattern

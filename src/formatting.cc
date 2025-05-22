@@ -16,7 +16,7 @@ namespace MultiPLAY
 		d << string("C-C#D-D#E-F-F#G-G#A-A#B-?\?==^^--").substr((row.snote & 15) * 2, 2)
 			<< char((row.snote >= 0) ? (48 + (row.snote >> 4)) : '-') << " ";
 
-		if (row.instrument == NULL)
+		if (row.instrument == nullptr)
 			d << "-- ";
 		else
 			d << setfill('0') << setw(2) << row.instrument->index << " ";
@@ -61,7 +61,7 @@ namespace MultiPLAY
 
 	void format_pattern(ostream &d, const pattern *pattern_ptr)
 	{
-		if (pattern_ptr == NULL)
+		if (pattern_ptr == nullptr)
 		{
 			d << "NULL POINTER" << endl;
 			return;
@@ -82,7 +82,7 @@ namespace MultiPLAY
 
 	extern void format_sample(ostream &d, const sample *sample)
 	{
-		if (sample == NULL)
+		if (sample == nullptr)
 			d << "NULL POINTER" << endl;
 		else
 			d << sample->num_samples << " @" << sample->samples_per_second << "Hz" << endl;
@@ -90,7 +90,7 @@ namespace MultiPLAY
 
 	extern void format_module(ostream &d, const module_struct *mod)
 	{
-		if (mod == NULL)
+		if (mod == nullptr)
 			d << "NULL" << endl;
 		else
 		{

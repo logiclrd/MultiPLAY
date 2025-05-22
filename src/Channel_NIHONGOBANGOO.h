@@ -113,7 +113,7 @@ struct channel_NIHONGOBANGOO : channel
 #ifdef WIN32
 			DWORD thread_id;
 			new_thread_instance_queue.push_back(this);
-			CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)nhb_thread_start_trampoline, NULL, 0, &thread_id);
+			CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)nhb_thread_start_trampoline, nullptr, 0, &thread_id);
 #else
 			cerr << "UNIX input thread startup not implemented" << endl;
 			finished = true;
@@ -146,7 +146,7 @@ struct channel_NIHONGOBANGOO : channel
 		remaining.erase(remaining.begin(), remaining.begin() + length);
 
 		current_sample = voice_samples[filename];
-		current_sample->begin_new_note(NULL, this, &current_sample_context);
+		current_sample->begin_new_note(nullptr, this, &current_sample_context);
 
 		offset_major = 0;
 		offset = 0;
@@ -195,15 +195,15 @@ struct channel_NIHONGOBANGOO : channel
 						voice_samples[filename.substr(0, filename.size() - 4)] = voice_sample;
 					}
 				} while (FindNextFile(hFindFile, &find_data));
-				hFindFile = NULL; // apparently, the handle is invalid after FindNextFile returns false
+				hFindFile = nullptr; // apparently, the handle is invalid after FindNextFile returns false
 			}
 			catch (...)
 			{
-				if ((hFindFile != NULL) && (hFindFile != INVALID_HANDLE_VALUE))
+				if ((hFindFile != nullptr) && (hFindFile != INVALID_HANDLE_VALUE))
 					CloseHandle(hFindFile);
 				throw;
 			}
-			if ((hFindFile != NULL) && (hFindFile != INVALID_HANDLE_VALUE))
+			if ((hFindFile != nullptr) && (hFindFile != INVALID_HANDLE_VALUE))
 				CloseHandle(hFindFile);
 		}
 		catch (...)

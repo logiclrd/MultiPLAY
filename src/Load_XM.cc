@@ -320,7 +320,7 @@ namespace MultiPLAY
 				this->header = other.header;
 				this->encoded_sample_data = other.encoded_sample_data;
 
-				other.encoded_sample_data = NULL;
+				other.encoded_sample_data = nullptr;
 			}
 
 			template <typename SampleType>
@@ -423,7 +423,7 @@ namespace MultiPLAY
 
 			~xm_sample()
 			{
-				if (encoded_sample_data != NULL)
+				if (encoded_sample_data != nullptr)
 					delete[] encoded_sample_data;
 			}
 		};
@@ -681,7 +681,7 @@ namespace MultiPLAY
 							if ((xm_note.instrument > 0) && (xm_note.instrument <= converted_instruments.size()))
 								note.instrument = converted_instruments[xm_note.instrument - 1];
 							else
-								note.instrument = NULL;
+								note.instrument = nullptr;
 
 							switch (xm_note.command)
 							{
@@ -1296,8 +1296,8 @@ namespace MultiPLAY
 			unsigned samples_per_col = samples_in_view / WAVEFORM_COLS;
 
 			// If the sample is stereo, only the left channel is rendered presently.
-			char *sample_data_8bit = NULL;
-			short *sample_data_16bit = NULL;
+			char *sample_data_8bit = nullptr;
+			short *sample_data_16bit = nullptr;
 
 			bool is_16bit = (sample.header.flags & XMSampleFlags::SampleSize16bit) != 0;
 

@@ -26,7 +26,7 @@ namespace MultiPLAY
 
 	/*virtual*/ sample_context *sample_context::create_new()
 	{
-		return new sample_context(NULL);
+		return new sample_context(nullptr);
 	}
 
 	/*virtual*/ void sample_context::copy_to(sample_context *other)

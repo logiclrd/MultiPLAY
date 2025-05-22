@@ -7,14 +7,14 @@ namespace MultiPLAY
 
 	/*virtual*/ sample_context *sample_builtintype_context::create_new()
 	{
-		return new sample_builtintype_context(NULL);
+		return new sample_builtintype_context(nullptr);
 	}
 
 	/*virtual*/ void sample_builtintype_context::copy_to(sample_context *other)
 	{
 		sample_builtintype_context *target = dynamic_cast<sample_builtintype_context *>(other);
 
-		if (target == NULL)
+		if (target == nullptr)
 			throw "Copy sample context to wrong type";
 
 		sample_context::copy_to(target);

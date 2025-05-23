@@ -1614,7 +1614,6 @@ namespace MultiPLAY
 				current_sample_context = nullptr; // protect the existing context
 
 				current_sample->begin_new_note(&row, nullptr, &current_sample_context, module->ticks_per_frame, true, &portamento_target_znote);
-				fading = false;
 				recalc(portamento_target_znote, 1.0, false, false);
 				if (current_sample_context)
 				{

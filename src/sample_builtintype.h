@@ -14,6 +14,7 @@ using namespace std;
 namespace MultiPLAY
 {
 	#define LOOP_END_NO_LOOP 0xFFFFFFFF
+	#define SOFT_START_SAMPLES 10
 
 	struct sample_builtintype_context : sample_context
 	{
@@ -192,7 +193,6 @@ namespace MultiPLAY
 
 		virtual one_sample get_sample(unsigned int sample, double offset, sample_context *c = nullptr)
 		{
-
 			if (c == nullptr)
 				throw "need a sample context";
 
@@ -376,6 +376,14 @@ namespace MultiPLAY
 					after = 0.0;
 
 				ret.next_sample() = bilinear(before, after, offset);
+			}
+
+			if (sample < SOFT_START_SAMPLES)
+			{
+				double sample_offset = sample + offset;
+
+				if (sample_offset < SOFT_START_SAMPLES)
+					ret *= (sample_offset / SOFT_START_SAMPLES);
 			}
 
 			return ret.scale(sample_scale).set_channels(output_channels);

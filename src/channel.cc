@@ -117,6 +117,9 @@ namespace MultiPLAY
 
 	void channel::note_cut()
 	{
+		residue = last_return_sample;
+		residue_inertia = residue - last_last_return_sample;
+
 		current_sample = nullptr;
 
 		if (current_sample_context != nullptr)
@@ -237,7 +240,7 @@ namespace MultiPLAY
 		position.FormatString = "{Offset}/{OffsetCount}";
 	}
 
-	one_sample &channel::calculate_next_tick()
+	one_sample &channel::calculate_next_tick_core()
 	{
 		Profile profile;
 
@@ -452,6 +455,28 @@ namespace MultiPLAY
 		}
 
 		profile.push_back("return");
+
+		return return_sample;
+	}
+
+	one_sample &channel::calculate_next_tick()
+	{
+		last_last_return_sample = last_return_sample;
+		last_return_sample = return_sample;
+
+		calculate_next_tick_core();
+
+		if (residue.num_samples != return_sample.num_samples)
+			residue.set_channels(return_sample.num_samples);
+		if (residue_inertia.num_samples != return_sample.num_samples)
+			residue_inertia.set_channels(return_sample.num_samples);
+
+		return_sample += residue;
+
+		residue += residue_inertia;
+
+		residue *= RESIDUE_FADE;
+		residue_inertia *= RESIDUE_FADE;
 
 		return return_sample;
 	}

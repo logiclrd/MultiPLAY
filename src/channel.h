@@ -23,6 +23,8 @@ namespace MultiPLAY
 		};
 	}
 
+	#define RESIDUE_FADE 0.93
+
 	struct channel
 	{
 		std::string identity;
@@ -38,7 +40,8 @@ namespace MultiPLAY
 		Waveform::Type current_waveform;
 		sample *current_sample;
 		sample_context *current_sample_context;
-		one_sample return_sample;
+		one_sample return_sample, last_return_sample, last_last_return_sample;
+		one_sample residue, residue_inertia;
 		pan_value panning;
 		bool looping;
 		long samples_this_note;
@@ -78,6 +81,7 @@ namespace MultiPLAY
 		virtual void get_playback_position(PlaybackPosition &position);
 
 		one_sample &calculate_next_tick();
+		one_sample &calculate_next_tick_core();
 	};
 }
 

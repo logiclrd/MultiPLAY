@@ -335,6 +335,19 @@ namespace MultiPLAY
 			return ret;
 		}
 
+		inline one_sample operator -(const one_sample &other) const
+		{
+			one_sample ret(*this);
+
+			if (ret.num_samples != num_samples)
+				ret.set_channels(num_samples);
+
+			for (int i=0, l=min(num_samples, other.num_samples); i<l; i++)
+				ret.sample[i] -= other.sample[i];
+
+			return ret;
+		}
+
 		inline one_sample &operator =(double sample_value)
 		{
 			for (int i=0; i<num_samples; i++)

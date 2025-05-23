@@ -920,8 +920,11 @@ namespace MultiPLAY
 							if (note_sample != nullptr)
 							{
 								int translated_znote = row.znote;
+
 								note_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
+
 								fading = false;
+
 								recalc(translated_znote, 1.0, false);
 							}
 							else if (current_sample_context != nullptr)
@@ -962,9 +965,13 @@ namespace MultiPLAY
 				if (!row.effect.keepNote())
 				{
 					current_sample = row.instrument;
+
 					int translated_znote = current_znote;
+
 					current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
+
 					fading = false;
+
 					recalc(translated_znote, 1.0, false);
 				}
 				if (row.volume < 0)
@@ -1298,8 +1305,11 @@ namespace MultiPLAY
 						}
 
 						current_sample = row.instrument;
+
 						int ignored;
+
 						current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &ignored);
+
 						fading = false;
 					}
 

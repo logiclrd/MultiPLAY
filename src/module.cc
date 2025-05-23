@@ -41,5 +41,8 @@ namespace MultiPLAY
 		memset(&channel_enabled, 0, sizeof(channel_enabled));
 		memset(&channel_map, 0, sizeof(channel_map));
 		memset(&base_pan, 0, sizeof(base_pan));
+
+		for (int i=0; i < MAX_MODULE_CHANNELS; i++)
+			initial_panning[i].set_channels(output_channels);
 	}
 }

@@ -53,6 +53,7 @@ namespace MultiPLAY
 
 		sample_instrument(int idx);
 
+		virtual const pan_value &get_default_pan(const pan_value &channel_default);
 		virtual void occlude_note(channel *p = nullptr, sample_context **context = nullptr, sample *new_sample = nullptr, row *r = nullptr);
 		virtual void begin_new_note(row *r = nullptr, channel *p = nullptr, sample_context **context = nullptr, double effect_tick_length = 0, bool top_level = true, int *znote = nullptr, bool is_primary = true);
 		virtual void kill_note(sample_context *c = nullptr);

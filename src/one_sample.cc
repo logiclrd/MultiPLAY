@@ -16,18 +16,7 @@ namespace MultiPLAY
 	{
 		num_scales = 2;
 
-		if (position > 0)
-			sample_scale[0] = 1.0 - position;
-		else
-			sample_scale[0] = 1.0;
-
-		if (position < 0)
-			sample_scale[1] = 1.0 + position;
-		else
-			sample_scale[1] = 1.0;
-
-		for (int i=2; i<MAX_CHANNELS; i++)
-			sample_scale[i] = 0.0;
+		from_linear_pan(position, -1.0, +1.0);
 	}
 
 	/*static*/ pan_value pan_value::from_exponential(double position)

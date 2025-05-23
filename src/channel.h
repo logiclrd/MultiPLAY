@@ -42,7 +42,7 @@ namespace MultiPLAY
 		sample_context *current_sample_context;
 		one_sample return_sample, last_return_sample, last_last_return_sample;
 		one_sample residue, residue_inertia;
-		pan_value panning;
+		pan_value default_panning, panning;
 		bool looping;
 		long samples_this_note;
 		long envelope_offset;

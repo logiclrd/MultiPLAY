@@ -43,12 +43,12 @@ namespace MultiPLAY
 				double half_range = (upper_limit - lower_limit) / 2.0;
 
 				if (linear_pan_value > middle)
-					sample_scale[0] = exp((middle - linear_pan_value) / half_range);
+					sample_scale[0] = (upper_limit - linear_pan_value) / half_range;
 				else
 					sample_scale[0] = 1.0;
 
 				if (linear_pan_value < middle)
-					sample_scale[1] = exp((linear_pan_value - middle) / half_range);
+					sample_scale[1] = (linear_pan_value - lower_limit) / half_range;
 				else
 					sample_scale[1] = 1.0;
 
@@ -67,9 +67,9 @@ namespace MultiPLAY
 			double value;
 
 			if (tmp.sample_scale[0] < 1.0)
-				value = -log(tmp.sample_scale[0]);
+				value = 1.0 - tmp.sample_scale[0];
 			else
-				value = log(tmp.sample_scale[1]);
+				value = tmp.sample_scale[1] - 1.0;
 
 			double middle     = (upper_limit + lower_limit) / 2.0;
 			double half_range = (upper_limit - lower_limit) / 2.0;

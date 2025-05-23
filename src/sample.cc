@@ -43,4 +43,9 @@ namespace MultiPLAY
 		: use_vibrato(false), index(idx + 1)
 	{
 	}
+
+	/*virtual*/ const pan_value &sample::get_default_pan(const pan_value &channel_default)
+	{
+		return channel_default;
+	}
 }

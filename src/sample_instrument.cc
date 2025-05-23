@@ -330,6 +330,14 @@ namespace MultiPLAY
 			return true;
 	}
 
+	/*virtual*/ const pan_value &sample_instrument::get_default_pan(const pan_value &channel_default)
+	{
+		if (use_default_pan)
+			return default_pan;
+		else
+			return channel_default;
+	}
+
 	/*virtual*/ one_sample sample_instrument::get_sample(unsigned int sample, double offset, sample_context *c/* = nullptr*/)
 	{
 		if (c == nullptr)

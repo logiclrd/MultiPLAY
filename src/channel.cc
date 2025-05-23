@@ -248,12 +248,16 @@ namespace MultiPLAY
 
 		return_sample.clear(output_channels);
 
-		if (finished)
-			return return_sample;
+		bool finish_exit = finished;
 
-		profile.push_back("call advance_pattern");
+		if (!finish_exit)
+		{
+			profile.push_back("call advance_pattern");
 
-		if (advance_pattern(return_sample, profile) == ChannelPlaybackState::Finished)
+			finish_exit = (finished || (advance_pattern(return_sample, profile) == ChannelPlaybackState::Finished));
+		}
+
+		if (finish_exit)
 		{
 			return_sample = panning * (channel_volume * return_sample);
 			return return_sample;
@@ -512,6 +516,7 @@ namespace MultiPLAY
 
 	channel::channel(pan_value &default_panning, bool looping, bool enabled)
 		: return_sample(output_channels),
+			default_panning(default_panning),
 			panning(default_panning),
 			looping(looping),
 			enabled(enabled)

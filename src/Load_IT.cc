@@ -1309,7 +1309,10 @@ namespace MultiPLAY
 			if (order_table[i] == 255) //  -- (end of tune)
 				break;
 
-			ret->pattern_list.push_back(&ret->patterns[order_table[i]]);
+			if (order_table[i] < ret->patterns.size())
+				ret->pattern_list.push_back(&ret->patterns[order_table[i]]);
+			else
+				ret->pattern_list.push_back(&pattern::skip_marker);
 		}
 
 		memset(ret->base_pan, 0, sizeof(ret->base_pan));
@@ -1330,9 +1333,10 @@ namespace MultiPLAY
 					int initial_pan = initial_channel_pan[i] & 127;
 
 					if (initial_pan <= 64)
+					{
 						ret->base_pan[i] = initial_pan;
-
-					ret->initial_panning[i].from_amiga_pan(ret->base_pan[i]);
+						ret->initial_panning[i].from_linear_pan(ret->base_pan[i], 0, 64);
+					}
 				}
 			}
 			else

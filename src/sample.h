@@ -63,6 +63,7 @@ namespace MultiPLAY
 		double vibrato_cycle_frequency; // frequency relative to samples with samples_per_second per second
 		int vibrato_sweep_frames;
 
+		virtual const pan_value &get_default_pan(const pan_value &channel_default);
 		virtual one_sample get_sample(unsigned int sample, double offset, sample_context *c = nullptr) = 0;
 		virtual void begin_new_note(row *r = nullptr, channel *p = nullptr, sample_context **c = nullptr, double effect_tick_length = 0.0, bool top_level = true, int *znote = nullptr, bool is_primary = true) = 0;
 		virtual void occlude_note(channel *p = nullptr, sample_context **c = nullptr, sample *new_sample = nullptr, row *r = nullptr) = 0;

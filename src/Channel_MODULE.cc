@@ -118,8 +118,25 @@ namespace MultiPLAY
 		position.FormatString = "order {Order}/{OrderCount} - {Pattern}:{Row:2}";
 	}
 
+	void channel_MODULE::terminate_playback()
+	{
+		finished = true;
+
+		for (size_t i=0; i < ancillary_channels.size(); i++)
+			ancillary_channels[i]->finished = true;
+	}
+
 	/*virtual*/ ChannelPlaybackState::Type channel_MODULE::advance_pattern(one_sample &sample, Profile &profile)
 	{
+		if (module->pattern_list[module->current_pattern]->is_end_marker && !looping)
+		{
+			module->finished = true;
+
+			terminate_playback();
+
+			return ChannelPlaybackState::Finished;
+		}
+
 		if (volume_slide)
 		{
 			profile.push_back("start volume_slide");
@@ -402,11 +419,16 @@ namespace MultiPLAY
 								current_sample = delayed_note->instrument;
 
 								int translated_znote = delayed_note->znote;
+
 								profile.push_back("note_delay: call begin_new_note");
 								current_sample->begin_new_note(delayed_note, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
+
 								fading = false;
+								panning = current_sample->get_default_pan(this->default_panning);
+
 								profile.push_back("note_delay: call recalc");
 								recalc(translated_znote, 1.0, false);
+
 								profile.push_back("note_delay: call recalc returned");
 							}
 
@@ -433,14 +455,21 @@ namespace MultiPLAY
 			{
 				offset = 0.0;
 				offset_major = 0;
+
 				int ignored = 0;
+
 				current_sample->begin_new_note(&module->pattern_list[module->current_pattern]->row_list[unsigned(module->current_row)][unsigned(unmapped_channel_number)], this, &current_sample_context, module->ticks_per_frame, true, &ignored);
+
 				fading = false;
+				panning = current_sample->get_default_pan(this->default_panning);
+
 				intensity = intensity * retrigger_factor + retrigger_bias;
+
 				if (intensity > original_intensity)
 					intensity = original_intensity;
 				if (intensity < 0.0)
 					intensity = 0.0;
+
 				volume = int(intensity * 64.0 / original_intensity);
 			}
 
@@ -652,10 +681,7 @@ namespace MultiPLAY
 
 		if (module->finished)
 		{
-			finished = true;
-
-			for (size_t i=0; i < ancillary_channels.size(); i++)
-				ancillary_channels[i]->finished = true;
+			terminate_playback();
 
 			return ChannelPlaybackState::Finished;
 		}
@@ -924,6 +950,7 @@ namespace MultiPLAY
 								note_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
 
 								fading = false;
+								panning = current_sample->get_default_pan(this->default_panning);
 
 								recalc(translated_znote, 1.0, false);
 							}
@@ -971,6 +998,7 @@ namespace MultiPLAY
 					current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
 
 					fading = false;
+					panning = current_sample->get_default_pan(this->default_panning);
 
 					recalc(translated_znote, 1.0, false);
 				}
@@ -1311,6 +1339,7 @@ namespace MultiPLAY
 						current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &ignored);
 
 						fading = false;
+						panning = current_sample->get_default_pan(this->default_panning);
 					}
 
 					if ((portamento_target_znote > 0) && (portamento_target_znote <= 120))

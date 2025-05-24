@@ -269,6 +269,9 @@ namespace MultiPLAY
 
 			int num_node_points = file->get();
 
+			if (num_node_points < 2)
+				num_node_points = 2;
+
 			unsigned loop_begin, loop_end;
 			unsigned sustain_loop_begin, sustain_loop_end;
 

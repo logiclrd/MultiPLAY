@@ -872,7 +872,7 @@ namespace MultiPLAY
 			};
 		}
 
-		Effect::Type translate_it_effect_command(ITEffect::Type it_command)
+		Effect::Type translate_it_effect_command(ITEffect::Type it_command, int data)
 		{
 			switch (it_command)
 			{
@@ -894,13 +894,18 @@ namespace MultiPLAY
 				case ITEffect::PanSlide: return Effect::PanSlide;
 				case ITEffect::Retrigger: return Effect::Retrigger;
 				case ITEffect::Tremolo: return Effect::Tremolo;
-				case ITEffect::ExtendedEffect: return Effect::ExtendedEffect;
 				case ITEffect::Tempo: return Effect::Tempo;
 				case ITEffect::FineVibrato: return Effect::FineVibrato;
 				case ITEffect::GlobalVolume: return Effect::GlobalVolume;
 				case ITEffect::GlobalVolumeSlide: return Effect::GlobalVolumeSlide;
 				case ITEffect::Panning: return Effect::Panning;
 				case ITEffect::Panbrello: return Effect::Panbrello;
+
+				case ITEffect::ExtendedEffect:
+					if (data == 0x00)
+						return Effect::None;
+					else
+						return Effect::ExtendedEffect;
 
 				default:
 					return Effect::None;
@@ -1016,7 +1021,7 @@ namespace MultiPLAY
 						r.instrument = samps[c.instrument - 1];
 					else
 						r.instrument = nullptr;
-					
+
 					if (c.volume_panning >= 0)
 					{
 						if (c.volume_panning <= 64)
@@ -1073,7 +1078,7 @@ namespace MultiPLAY
 
 					if (c.effect_command != -1) // no data read
 					{
-						Effect::Type command = translate_it_effect_command(c.effect_command);
+						Effect::Type command = translate_it_effect_command(c.effect_command, c.effect_data);
 
 						if (command != Effect::None)
 							r.effect = effect_struct(EffectType::IT, command, (unsigned char)(c.effect_data));

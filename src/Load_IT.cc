@@ -1080,17 +1080,17 @@ namespace MultiPLAY
 						has_note_events[channel] = true;
 				}
 
-				for (int row_index=0; row_index<64; row_index++)
+				for (int channel_number=0; channel_number<64; channel_number++)
 				{
-					if (cur_row[row_index].note != -1)
-						last_row[row_index].note = cur_row[row_index].note;
-					if (cur_row[row_index].instrument != it_pattern_slot::NoInstrument)
-						last_row[row_index].instrument = cur_row[row_index].instrument;
-					if (cur_row[row_index].volume_panning != -1)
-						last_row[row_index].volume_panning = cur_row[row_index].volume_panning;
-					if (cur_row[row_index].effect_command != -1)
-						last_row[row_index].effect_command = cur_row[row_index].effect_command,
-						last_row[row_index].effect_data = cur_row[row_index].effect_data;
+					if (cur_row[channel_number].note != -1)
+						last_row[channel_number].note = cur_row[channel_number].note;
+					if (cur_row[channel_number].instrument != it_pattern_slot::NoInstrument)
+						last_row[channel_number].instrument = cur_row[channel_number].instrument;
+					if (cur_row[channel_number].volume_panning != -1)
+						last_row[channel_number].volume_panning = cur_row[channel_number].volume_panning;
+					if (cur_row[channel_number].effect_command != -1)
+						last_row[channel_number].effect_command = cur_row[channel_number].effect_command,
+						last_row[channel_number].effect_data = cur_row[channel_number].effect_data;
 				}
 
 				p.row_list.push_back(rowdata);

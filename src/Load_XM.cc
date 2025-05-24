@@ -935,6 +935,8 @@ namespace MultiPLAY
 
 				sample_instrument *instrument = new sample_instrument(sample_index);
 
+				instrument->name = xm_instrument.header.instrument_name;
+
 				// vibrato_type is ignored, because who would use square wave or ramp down vibrato shapes?
 				// maybe I'll bump into someone using them and have to add it later.
 

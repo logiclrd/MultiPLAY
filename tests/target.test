@@ -22,6 +22,7 @@ test: release removebackupfiles $(RESULTS) FORCE
 
 tests/actual/%.raw: tests/input/% release
 	rm -f $@
+	@mkdir -p tests/actual
 	$(MULTIPLAY) -module $< -output $@
 
 tests/result/%.result: BASE=$(shell echo $@ | sed -e 's:^tests/result/\(.*\).result$$:\1:')

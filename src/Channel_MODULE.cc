@@ -424,7 +424,7 @@ namespace MultiPLAY
 								current_sample->begin_new_note(delayed_note, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
 
 								fading = false;
-								panning = current_sample->get_default_pan(this->default_panning);
+								panning = current_sample->get_default_pan(this->panning);
 
 								profile.push_back("note_delay: call recalc");
 								recalc(translated_znote, 1.0, false);
@@ -461,7 +461,7 @@ namespace MultiPLAY
 				current_sample->begin_new_note(&module->pattern_list[module->current_pattern]->row_list[unsigned(module->current_row)][unsigned(unmapped_channel_number)], this, &current_sample_context, module->ticks_per_frame, true, &ignored);
 
 				fading = false;
-				panning = current_sample->get_default_pan(this->default_panning);
+				panning = current_sample->get_default_pan(this->panning);
 
 				intensity = intensity * retrigger_factor + retrigger_bias;
 
@@ -950,7 +950,7 @@ namespace MultiPLAY
 								note_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
 
 								fading = false;
-								panning = current_sample->get_default_pan(this->default_panning);
+								panning = current_sample->get_default_pan(this->panning);
 
 								recalc(translated_znote, 1.0, false);
 							}
@@ -998,7 +998,7 @@ namespace MultiPLAY
 					current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &translated_znote);
 
 					fading = false;
-					panning = current_sample->get_default_pan(this->default_panning);
+					panning = current_sample->get_default_pan(this->panning);
 
 					recalc(translated_znote, 1.0, false);
 				}
@@ -1339,7 +1339,7 @@ namespace MultiPLAY
 						current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &ignored);
 
 						fading = false;
-						panning = current_sample->get_default_pan(this->default_panning);
+						panning = current_sample->get_default_pan(this->panning);
 					}
 
 					if ((portamento_target_znote > 0) && (portamento_target_znote <= 120))

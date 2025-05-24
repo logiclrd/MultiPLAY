@@ -42,6 +42,12 @@ namespace MultiPLAY
 	sample::sample(int idx)
 		: use_vibrato(false), index(idx + 1)
 	{
+		global_volume = 1.0;
+	}
+
+	/*virtual*/ void sample::set_global_volume(double new_global_volume)
+	{
+		global_volume = new_global_volume;
 	}
 
 	/*virtual*/ const pan_value &sample::get_default_pan(const pan_value &channel_default)

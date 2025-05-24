@@ -624,7 +624,7 @@ namespace MultiPLAY
 				cerr << "Warning: DOS filename not properly null-terminated in sample #" << i << endl;
 			}
 
-			file->get(); // global volume -- TODO?
+			unsigned char global_volume = (unsigned char)file->get();
 
 			it_sample_flags flags;
 			flags.value = char(file->get());
@@ -775,6 +775,7 @@ namespace MultiPLAY
 			ret->samples_per_second = c5spd / 2.0; // impulse tracker octaves go lower than we can display!
 
 			ret->name = sample_name;
+			ret->set_global_volume(global_volume / 64.0);
 
 			return ret;
 		}
@@ -1239,7 +1240,8 @@ namespace MultiPLAY
 				
 				sample_instrument *is = new sample_instrument(int(i));
 
-				is->global_volume = id.global_volume;
+				is->set_global_volume(id.global_volume);
+
 				is->default_pan.set_channels(channel_count).from_linear_pan(id.default_pan, 0, 64);
 				is->use_default_pan = id.use_default_pan;
 

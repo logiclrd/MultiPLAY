@@ -30,8 +30,6 @@ namespace MultiPLAY
 
 	struct sample_instrument : sample
 	{
-		double global_volume;
-
 		pan_value default_pan;
 		bool use_default_pan;
 

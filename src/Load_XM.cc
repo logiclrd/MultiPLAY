@@ -938,7 +938,7 @@ namespace MultiPLAY
 				// vibrato_type is ignored, because who would use square wave or ramp down vibrato shapes?
 				// maybe I'll bump into someone using them and have to add it later.
 
-				instrument->global_volume = 1.0;
+				instrument->set_global_volume(1.0);
 
 				instrument->use_vibrato = (xm_header.vibrato_depth > 0);
 

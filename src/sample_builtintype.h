@@ -60,13 +60,7 @@ namespace MultiPLAY
 		{
 			include_loop_end_sample = 1;
 
-			switch (sizeof(T))
-			{
-				case 1: sample_scale = 1.0 / 127.5;        break;
-				case 2: sample_scale = 1.0 / 32767.5;      break;
-				case 4: sample_scale = 1.0 / 2147483647.5; break;
-				default: throw "could not deduce sample scale";
-			}
+			initialize_sample_scale();
 
 			this->sample_channels = sample_channels;
 
@@ -90,6 +84,24 @@ namespace MultiPLAY
 			this->sustain_loop_style = sustain_loop_style;
 
 			use_sustain_loop = (susloop_end != LOOP_END_NO_LOOP);
+		}
+
+		void initialize_sample_scale()
+		{
+			switch (sizeof(T))
+			{
+				case 1: sample_scale = global_volume / 127.5;        break;
+				case 2: sample_scale = global_volume / 32767.5;      break;
+				case 4: sample_scale = global_volume / 2147483647.5; break;
+				default: throw "could not deduce sample scale";
+			}
+		}
+
+		virtual void set_global_volume(double new_global_volume)
+		{
+			sample::set_global_volume(new_global_volume);
+
+			initialize_sample_scale();
 		}
 
 		virtual void begin_new_note(row *r = nullptr, channel *p = nullptr, sample_context **c = nullptr, double effect_tick_length = 0, bool top_level = true, int */*znote*/ = nullptr, bool is_primary = true)

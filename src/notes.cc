@@ -10,17 +10,27 @@ namespace MultiPLAY
 {
 	extern int znote_from_snote(int snote)
 	{
-		// middle C is z=39
-		// snote middle C is high nybble = 4, low nybble = 0 -> 64
-		return (12 * (snote >> 4)) + (snote & 15) - 11;
+		if (snote < 0)
+			return -1;
+		else
+		{
+			// middle C is z=39
+			// snote middle C is high nybble = 4, low nybble = 0 -> 64
+			return (12 * (snote >> 4)) + (snote & 15) - 11;
+		}
 	}
 
 	extern int snote_from_znote(int znote)
 	{
-		int octave = (znote + 9) / 12;
-		int note = (znote + 9) - 12 * octave;
+		if (znote < 0)
+			return -1;
+		else
+		{
+			int octave = (znote + 9) / 12;
+			int note = (znote + 9) - 12 * octave;
 
-		return (octave << 4) | note;
+			return (octave << 4) | note;
+		}
 	}
 
 	extern int snote_from_period(int period)
@@ -29,24 +39,5 @@ namespace MultiPLAY
 		int qnote = int(floor(12 * lg(frequency)));
 
 		return (qnote % 12) | (((qnote / 12) - 9) << 4);
-	}
-
-	extern int snote_from_inote(int inote)
-	{
-		if (inote < 120)
-		{
-			int octave = inote / 12;
-			int note = inote % 12;
-
-			return (octave << 4) | note;
-		}
-
-		if (inote == INOTE_NOTE_CUT)
-			return SNOTE_NOTE_CUT;
-
-		if (inote == INOTE_NOTE_OFF)
-			return SNOTE_NOTE_OFF;
-
-		return SNOTE_NOTE_FADE;
 	}
 }

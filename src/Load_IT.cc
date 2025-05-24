@@ -21,6 +21,39 @@ namespace MultiPLAY
 {
 	namespace
 	{
+#define IT_MAX_PATTERNS            240
+#define IT_MAX_SAMPLES             236
+#define IT_MAX_INSTRUMENTS         IT_MAX_SAMPLES
+#define IT_MAX_ORDERS              256
+#define IT_ORDER_SKIP              254 // +++
+#define IT_ORDER_LAST              255 // ---
+
+#define INOTE_NOTE_OFF  255
+#define INOTE_NOTE_CUT  254
+#define INOTE_NOTE_FADE 246
+
+		int snote_from_inote(int inote)
+		{
+			if (inote < 120)
+			{
+				int octave = inote / 12;
+				int note = inote % 12;
+
+				return (octave << 4) | note;
+			}
+
+			if (inote == INOTE_NOTE_CUT)
+				return SNOTE_NOTE_CUT;
+
+			if (inote == INOTE_NOTE_OFF)
+				return SNOTE_NOTE_OFF;
+
+			if (inote == INOTE_NOTE_FADE)
+				return SNOTE_NOTE_FADE;
+
+			return -1;
+		}
+
 		struct it_created_with_tracker
 		{
 			int major_version, minor_version;
@@ -406,12 +439,12 @@ namespace MultiPLAY
 		{
 			char value;
 
-			bool signed_samples()    { return (0 != (value &  1)); }
-			bool msb_order()         { return (0 != (value &  2)); }
-			bool delta_values()      { return (0 != (value &  4)); }
-			bool byte_delta_values() { return (0 != (value &  8)); }
-			bool tx_wave_12bit()     { return (0 != (value & 16)); }
-			bool stereo_prompt()     { return (0 != (value & 32)); }
+			bool signed_samples()         { return (0 != (value &  1)); }
+			bool msb_order()              { return (0 != (value &  2)); }
+			bool two_level_delta_values() { return (0 != (value &  4)); }
+			bool byte_delta_values()      { return (0 != (value &  8)); }
+			bool tx_wave_12bit()          { return (0 != (value & 16)); }
+			bool stereo_prompt()          { return (0 != (value & 32)); }
 		};
 
 		template <class T>
@@ -604,8 +637,6 @@ namespace MultiPLAY
 
 		sample *load_it_sample(istream *file, unsigned int file_base_offset, int i, it_created_with_tracker &cwt)
 		{
-			bool new_format = cwt.compatible_exceeds(2.15);
-
 			char magic[4];
 
 			file->read(magic, 4);
@@ -718,7 +749,7 @@ namespace MultiPLAY
 					signed short *data;
 					try
 					{
-						data = load_it_sample_compressed<signed short>(file, sample_length, new_format, conversion.signed_samples());
+						data = load_it_sample_compressed<signed short>(file, sample_length, conversion.two_level_delta_values(), conversion.signed_samples());
 					}
 					catch (const char *msg)
 					{
@@ -737,7 +768,7 @@ namespace MultiPLAY
 					signed char *data;
 					try
 					{
-						data = load_it_sample_compressed<signed char>(file, sample_length, new_format, conversion.signed_samples());
+						data = load_it_sample_compressed<signed char>(file, sample_length, conversion.two_level_delta_values(), conversion.signed_samples());
 					}
 					catch (const char *msg)
 					{
@@ -1129,6 +1160,11 @@ namespace MultiPLAY
 		file->read((char *)&lsb_bytes[0], 2);
 		unsigned num_patterns = from_lsb2_u(lsb_bytes);
 
+		if ((num_instruments > IT_MAX_INSTRUMENTS)
+		 || (num_samples > IT_MAX_SAMPLES)
+		 || (num_patterns > IT_MAX_PATTERNS))
+			throw "Does not appear to be a valid .IT file";
+
 		it_created_with_tracker cwt;
 
 		file->read((char *)&lsb_bytes[0], 4);
@@ -1175,6 +1211,23 @@ namespace MultiPLAY
 
 			file->read((char *)&this_order, 1);
 			order_table[i] = this_order;
+		}
+
+		if (order_list_length > IT_MAX_ORDERS)
+		{
+			bool okay = false;
+
+			if (order_list_length == IT_MAX_ORDERS + 1)
+			{
+				if (order_table[IT_MAX_ORDERS] == IT_ORDER_LAST)
+					okay = true;
+			}
+
+			if (!okay)
+				cerr << "WARNING: File has " << order_list_length << " order table entries, but the IT format only allows up to " << IT_MAX_ORDERS << "." << endl;
+
+			order_list_length = IT_MAX_ORDERS;
+			order_table.erase(order_table.begin() + order_list_length, order_table.end());
 		}
 		
 		vector<unsigned int> instrument_offset(num_instruments);
@@ -1302,13 +1355,13 @@ namespace MultiPLAY
 
 		for (unsigned i=0; i<order_list_length; i++)
 		{
-			if (order_table[i] == 254) //  ++ (skip)
+			if (order_table[i] == IT_ORDER_SKIP) // +++
 			{
 				ret->pattern_list.push_back(&pattern::skip_marker);
 				continue;
 			}
 
-			if (order_table[i] == 255) //  -- (end of tune)
+			if (order_table[i] == IT_ORDER_LAST) // ---
 				break;
 
 			if (order_table[i] < ret->patterns.size())

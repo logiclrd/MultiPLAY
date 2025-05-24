@@ -1347,6 +1347,8 @@ namespace MultiPLAY
 		cerr << '.' << string(num_patterns, '-') << '.' << endl << ' ';
 		for (unsigned i=0; i<num_patterns; i++)
 		{
+			pattern pat((int)i);
+
 			if (pattern_offset[i] == 0)
 				cerr << ' ';
 			else
@@ -1355,10 +1357,10 @@ namespace MultiPLAY
 
 				file->seekg(file_base_offset + pattern_offset[i]);
 
-				pattern pat((int)i);
 				load_it_pattern(file, pat, samps, has_note_events);
-				pats.push_back(pat);
 			}
+
+			pats.push_back(pat);
 		}
 		cerr << endl << endl;
 

@@ -265,6 +265,49 @@ namespace MultiPLAY
 				}
 			}
 		}
+
+		bool is_empty(const string &str)
+		{
+			return trim(str) == "";
+		}
+
+		void output_module_summary(const module_struct *module)
+		{
+			string header_line = string("\"") + module->name + "\" (" + module->filename + ")";
+
+			cout << header_line << endl;
+			for (string::size_type j=0, l=header_line.length(); j < l; j++)
+				cout.put('=');
+			cout << endl;
+
+			if (module->samples.size() > 0)
+			{
+				auto &info_text = module->information_text;
+
+				auto last_specified_sample_name_index = info_text.size() - 1;
+
+				while ((last_specified_sample_name_index > 0)
+						&& is_empty(info_text[last_specified_sample_name_index]))
+					last_specified_sample_name_index--;
+
+				int num_consecutive_empty = 0;
+
+				for (vector<string>::size_type j=0; j <= last_specified_sample_name_index; j++)
+				{
+					const string &line = info_text[j];
+
+					if (is_empty(line))
+						num_consecutive_empty++;
+					else
+						num_consecutive_empty = 0;
+					
+					if ((num_consecutive_empty < 3) || (num_consecutive_empty == 10))
+						cout << line << endl;
+				}
+			}
+
+			cout << endl;
+		}
 	}
 
 	extern void notify_new_pattern_row_started(const char *name)
@@ -518,26 +561,7 @@ int main(int argc, char *argv[])
 				if (module->current_pattern >= module->pattern_list.size())
 					module->finished = true;
 
-				string header_line = string("\"") + module->name + "\" (" + module->filename + ")";
-
-				cout << header_line << endl;
-				for (string::size_type j=0, l=header_line.length(); j < l; j++)
-					cout.put('=');
-				cout << endl;
-
-				if (module->samples.size() > 0)
-				{
-					auto last_specified_sample_name_index = module->samples.size() - 1;
-
-					while ((last_specified_sample_name_index > 0)
-					    && (trim(module->samples[last_specified_sample_name_index]->name) == ""))
-						last_specified_sample_name_index--;
-
-					for (vector<string>::size_type j=0; j <= last_specified_sample_name_index; j++)
-						cout << module->samples[j]->name << endl;
-				}
-
-				cout << endl;
+				output_module_summary(module);
 
 				auto channel_group = new vector<channel_MODULE *>();
 

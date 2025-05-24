@@ -631,6 +631,9 @@ namespace MultiPLAY
 
 		ret->stereo = ((settings.master_volume & 128) != 0);
 
+		for (size_t i=0; i < samps.size(); i++)
+			ret->information_text.push_back(samps[i]->name);
+
 		ret->patterns = pats;
 		ret->samples = samps;
 

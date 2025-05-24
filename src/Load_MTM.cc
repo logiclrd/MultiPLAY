@@ -341,6 +341,9 @@ namespace MultiPLAY
 
 		ret->speed_change();
 
+		for (size_t i=0; i < samps.size(); i++)
+			ret->information_text.push_back(samps[i]->name);
+
 		ret->samples = samps;
 		ret->patterns = pats;
 

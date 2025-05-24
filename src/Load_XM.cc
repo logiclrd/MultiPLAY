@@ -1003,6 +1003,9 @@ namespace MultiPLAY
 			ret->samples = convert_samples();
 			ret->patterns = convert_patterns(ret->samples, has_note_events);
 
+			for (size_t i=0, l=ret->samples.size(); i < l; i++)
+				ret->information_text.push_back(ret->samples[i]->name);
+
 			for (unsigned i=0; i<header.pattern_list_length; i++)
 			{
 				unsigned pattern_number = header.pattern_list[i];

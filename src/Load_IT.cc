@@ -1348,6 +1348,9 @@ namespace MultiPLAY
 
 		ret->name = songname;
 
+		for (size_t i=0; i < samps.size(); i++)
+			ret->information_text.push_back(samps[i]->name);
+
 		ret->stereo = flags.stereo();
 
 		ret->patterns = pats;

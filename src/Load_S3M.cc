@@ -9,10 +9,11 @@ using namespace std;
 
 using namespace RAII;
 
+#include "sample_builtintype.h"
 #include "conversion.h"
 #include "module.h"
+#include "string.h"
 #include "notes.h"
-#include "sample_builtintype.h"
 
 namespace MultiPLAY
 {
@@ -344,8 +345,7 @@ namespace MultiPLAY
 			file->ignore(2); // soundblaster loop expansion
 			file->ignore(4); // soundblaster 'last used' position
 
-			char sample_name[29];
-			sample_name[28] = 0;
+			char sample_name[28];
 			file->read(sample_name, 28);
 
 			char sample_magic[4];
@@ -407,7 +407,9 @@ namespace MultiPLAY
 
 					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), sample_flags.stereo() ? 2 : 1, volume / 64.0);
 
-					smp->name = sample_name;
+					ASSIGN_STRING_FROM_STRUCTURE_FIELD(
+						smp->name,
+						sample_name);
 
 					smp->num_samples = length;
 					smp->sample_data[0] = data_sgn;
@@ -454,7 +456,9 @@ namespace MultiPLAY
 
 					sample_builtintype<signed short> *smp = new sample_builtintype<signed short>(int(i), sample_flags.stereo() ? 2 : 1, volume / 64.0);
 
-					smp->name = sample_name;
+					ASSIGN_STRING_FROM_STRUCTURE_FIELD(
+						smp->name,
+						sample_name);
 
 					smp->num_samples = length;
 					smp->sample_data[0] = data;
@@ -505,7 +509,9 @@ namespace MultiPLAY
 
 					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), sample_flags.stereo() ? 2 : 1, volume / 64.0);
 
-					smp->name = sample_name;
+					ASSIGN_STRING_FROM_STRUCTURE_FIELD(
+						smp->name,
+						sample_name);
 
 					smp->num_samples = length;
 					smp->sample_data[0] = data_sgn;
@@ -540,7 +546,9 @@ namespace MultiPLAY
 
 					sample_builtintype<signed char> *smp = new sample_builtintype<signed char>(int(i), sample_flags.stereo() ? 2 : 1, volume / 64.0);
 
-					smp->name = sample_name;
+					ASSIGN_STRING_FROM_STRUCTURE_FIELD(
+						smp->name,
+						sample_name);
 
 					smp->num_samples = length;
 					smp->sample_data[0] = data;
@@ -627,7 +635,9 @@ namespace MultiPLAY
 
 		module_struct *ret = new module_struct();
 
-		ret->name = songname;
+		ASSIGN_STRING_FROM_STRUCTURE_FIELD(
+			ret->name,
+			songname);
 
 		ret->stereo = ((settings.master_volume & 128) != 0);
 

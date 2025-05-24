@@ -14,6 +14,7 @@ using namespace std;
 #include "sample_instrument.h"
 #include "mod_finetune.h"
 #include "module.h"
+#include "string.h"
 #include "notes.h"
 
 namespace MultiPLAY
@@ -935,7 +936,9 @@ namespace MultiPLAY
 
 				sample_instrument *instrument = new sample_instrument(sample_index);
 
-				instrument->name = xm_instrument.header.instrument_name;
+				ASSIGN_STRING_FROM_STRUCTURE_FIELD(
+					instrument->name,
+					xm_instrument.header.instrument_name);
 
 				// vibrato_type is ignored, because who would use square wave or ramp down vibrato shapes?
 				// maybe I'll bump into someone using them and have to add it later.
@@ -992,7 +995,9 @@ namespace MultiPLAY
 		{
 			module_struct *ret = new module_struct();
 
-			ret->name = preamble.module_name;
+			ASSIGN_STRING_FROM_STRUCTURE_FIELD(
+				ret->name,
+				preamble.module_name);
 
 			ret->stereo = true;
 

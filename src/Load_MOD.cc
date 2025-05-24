@@ -8,11 +8,12 @@ using namespace std;
 
 using namespace RAII;
 
+#include "sample_builtintype.h"
+#include "mod_finetune.h"
 #include "conversion.h"
 #include "module.h"
-#include "mod_finetune.h"
+#include "string.h"
 #include "notes.h"
-#include "sample_builtintype.h"
 
 namespace MultiPLAY
 {
@@ -320,7 +321,9 @@ namespace MultiPLAY
 
 			smp->num_samples = sample_description[i].byte_length;
 
-			smp->name = sample_description[i].name;
+			ASSIGN_STRING_FROM_STRUCTURE_FIELD(
+				smp->name,
+				sample_description[i].name);
 
 			if (sample_description[i].repeat_length > 2)
 			{
@@ -341,7 +344,10 @@ namespace MultiPLAY
 
 		module_struct *ret = new module_struct();
 
-		ret->name = songname;
+		ASSIGN_STRING_FROM_STRUCTURE_FIELD(
+			ret->name,
+			songname);
+
 		ret->num_channels = num_channels;
 		ret->speed = 6;
 		ret->tempo = 125;

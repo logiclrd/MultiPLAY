@@ -9,13 +9,14 @@ using namespace std;
 
 using namespace RAII;
 
-#include "bit_memory_stream.h"
-#include "bit_value.h"
-#include "conversion.h"
-#include "module.h"
-#include "notes.h"
 #include "sample_builtintype.h"
+#include "bit_memory_stream.h"
 #include "sample_instrument.h"
+#include "conversion.h"
+#include "bit_value.h"
+#include "module.h"
+#include "string.h"
+#include "notes.h"
 
 namespace MultiPLAY
 {
@@ -187,9 +188,8 @@ namespace MultiPLAY
 
 			file->ignore(3);
 
-			char instrument_name[27];
+			char instrument_name[26];
 			file->read(instrument_name, 26);
-			instrument_name[26] = 0;
 
 			file->ignore(6);
 
@@ -357,9 +357,8 @@ namespace MultiPLAY
 
 			file->ignore(4); // TrkVers (2), NoS and an unused byte
 
-			char instrument_name[27];
+			char instrument_name[26];
 			file->read(instrument_name, 26);
-			instrument_name[26] = 0;
 
 			char ipc, ipr;
 			ipc = char(file->get());
@@ -665,9 +664,8 @@ namespace MultiPLAY
 
 			double default_volume = file->get();
 
-			char sample_name[27];
+			char sample_name[26];
 			file->read(sample_name, 26);
-			sample_name[26] = 0;
 
 			it_sample_conversion_flags conversion;
 			conversion.value = char(file->get());
@@ -805,7 +803,10 @@ namespace MultiPLAY
 
 			ret->samples_per_second = c5spd / 2.0; // impulse tracker octaves go lower than we can display!
 
-			ret->name = sample_name;
+			ASSIGN_STRING_FROM_STRUCTURE_FIELD(
+				ret->name,
+				sample_name);
+
 			ret->set_global_volume(global_volume / 64.0);
 
 			return ret;
@@ -1140,9 +1141,8 @@ namespace MultiPLAY
 		if (string(magic, 4) != "IMPM")
 			throw "invalid file format (missing 'IMPM' at start of file)";
 
-		char songname[27];
+		char songname[26];
 		file->read(songname, 26);
-		songname[26] = 0;
 
 		file->ignore(2); // pattern highlight info
 
@@ -1346,7 +1346,9 @@ namespace MultiPLAY
 
 		module_struct *ret = new module_struct();
 
-		ret->name = songname;
+		ASSIGN_STRING_FROM_STRUCTURE_FIELD(
+			ret->name,
+			songname);
 
 		for (size_t i=0; i < samps.size(); i++)
 			ret->information_text.push_back(samps[i]->name);

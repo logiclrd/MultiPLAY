@@ -23,6 +23,8 @@ namespace MultiPLAY
 	namespace
 	{
 #define IT_MAX_PATTERNS            240
+#define IT_MIN_PATTERN_ROWS        32
+#define IT_MAX_PATTERN_ROWS        200
 #define IT_MAX_SAMPLES             236
 #define IT_MAX_INSTRUMENTS         IT_MAX_SAMPLES
 #define IT_MAX_ORDERS              256
@@ -934,6 +936,9 @@ namespace MultiPLAY
 
 			file->read((char *)&lsb_data[0], 2);
 			unsigned pattern_rows = from_lsb2_u(lsb_data);
+
+			if ((pattern_rows < IT_MIN_PATTERN_ROWS) || (pattern_rows > IT_MAX_PATTERN_ROWS))
+				throw "Does not appear to be a valid .IT file";
 
 			file->ignore(4);
 

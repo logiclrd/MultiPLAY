@@ -946,8 +946,6 @@ namespace MultiPLAY
 
 			it_pattern_slot last_row[64], cur_row[64];
 
-			cerr << ".";
-
 			for (unsigned i=0; i<pattern_rows; i++)
 			{
 				vector<row> rowdata(64);
@@ -1336,11 +1334,18 @@ namespace MultiPLAY
 		cerr << '.' << string(num_patterns, '-') << '.' << endl << ' ';
 		for (unsigned i=0; i<num_patterns; i++)
 		{
-			file->seekg(file_base_offset + pattern_offset[i]);
+			if (pattern_offset[i] == 0)
+				cerr << ' ';
+			else
+			{
+				cerr << '.';
 
-			pattern pat((int)i);
-			load_it_pattern(file, pat, samps, has_note_events);
-			pats.push_back(pat);
+				file->seekg(file_base_offset + pattern_offset[i]);
+
+				pattern pat((int)i);
+				load_it_pattern(file, pat, samps, has_note_events);
+				pats.push_back(pat);
+			}
 		}
 		cerr << endl << endl;
 

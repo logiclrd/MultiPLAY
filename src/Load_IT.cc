@@ -31,27 +31,27 @@ namespace MultiPLAY
 #define IT_ORDER_SKIP              254 // +++
 #define IT_ORDER_LAST              255 // ---
 
-#define INOTE_NOTE_OFF  255
-#define INOTE_NOTE_CUT  254
-#define INOTE_NOTE_FADE 246
+#define IT_NOTE_NOTE_OFF  255
+#define IT_NOTE_NOTE_CUT  254
+#define IT_NOTE_NOTE_FADE 246
 
-		int snote_from_inote(int inote)
+		int snote_from_it_note(int it_note)
 		{
-			if (inote < 120)
+			if (it_note < 120)
 			{
-				int octave = inote / 12;
-				int note = inote % 12;
+				int octave = it_note / 12;
+				int note = it_note % 12;
 
 				return (octave << 4) | note;
 			}
 
-			if (inote == INOTE_NOTE_CUT)
+			if (it_note == IT_NOTE_NOTE_CUT)
 				return SNOTE_NOTE_CUT;
 
-			if (inote == INOTE_NOTE_OFF)
+			if (it_note == IT_NOTE_NOTE_OFF)
 				return SNOTE_NOTE_OFF;
 
-			if (inote == INOTE_NOTE_FADE)
+			if (it_note == IT_NOTE_NOTE_FADE)
 				return SNOTE_NOTE_FADE;
 
 			return -1;
@@ -124,7 +124,7 @@ namespace MultiPLAY
 			unsigned int fade_out;
 
 			DuplicateCheck::Type duplicate_note_check;
-			DuplicateCheckAction::Type duplicate_check_action;
+			DuplicateCheckAction::Type duplicate_note_action;
 			NewNoteAction::Type new_note_action;
 
 			int note_sample[120];
@@ -238,7 +238,7 @@ namespace MultiPLAY
 				desc.duplicate_note_check = DuplicateCheck::Instrument;
 			else
 				desc.duplicate_note_check = DuplicateCheck::Off;
-			desc.duplicate_check_action = DuplicateCheckAction::Cut;
+			desc.duplicate_note_action = DuplicateCheckAction::Cut;
 
 			for (int note_index=0; note_index<120; note_index++)
 			{
@@ -339,8 +339,8 @@ namespace MultiPLAY
 			}
 
 			char new_note_action = char(file->get());
-			char duplicate_check_type = char(file->get());
-			char duplicate_check_action = char(file->get());
+			char duplicate_note_check_type = char(file->get());
+			char duplicate_note_action = char(file->get());
 
 			unsigned char lsb_bytes[2];
 
@@ -411,8 +411,8 @@ namespace MultiPLAY
 			desc.pitch_pan_center = pitch_pan_center;
 
 			desc.new_note_action = (NewNoteAction::Type)new_note_action;
-			desc.duplicate_note_check = (DuplicateCheck::Type)duplicate_check_type;
-			desc.duplicate_check_action = (DuplicateCheckAction::Type)duplicate_check_action;
+			desc.duplicate_note_check = (DuplicateCheck::Type)duplicate_note_check_type;
+			desc.duplicate_note_action = (DuplicateCheckAction::Type)duplicate_note_action;
 
 			for (int note_index=0; note_index<120; note_index++)
 			{
@@ -1011,7 +1011,7 @@ namespace MultiPLAY
 
 					row &r = rowdata[channel];
 
-					r.snote = snote_from_inote(c.note);
+					r.snote = snote_from_it_note(c.note);
 					r.znote = znote_from_snote(r.snote);
 
 					if (r.snote >= 0)
@@ -1318,7 +1318,7 @@ namespace MultiPLAY
 				is->fade_out = id.fade_out / 1024.0;
 
 				is->duplicate_note_check = id.duplicate_note_check;
-				is->duplicate_check_action = id.duplicate_check_action;
+				is->duplicate_note_action = id.duplicate_note_action;
 				is->new_note_action = id.new_note_action;
 
 				for (unsigned note_index=0; note_index<120; note_index++)

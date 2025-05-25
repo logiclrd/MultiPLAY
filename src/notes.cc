@@ -8,6 +8,16 @@ using namespace std;
 
 namespace MultiPLAY
 {
+	extern int inote_from_znote(int znote)
+	{
+		int inote = znote + 11;
+
+		if ((inote >= 0) && (inote < 120))
+			return inote;
+		else
+			return -1;
+	}
+
 	extern int znote_from_snote(int snote)
 	{
 		if (snote < 0)

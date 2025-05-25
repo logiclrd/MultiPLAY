@@ -61,7 +61,7 @@ namespace MultiPLAY
 		channel_DYNAMIC *ret = new channel_DYNAMIC(spawner, spawner->current_sample, spawner->current_sample_context);
 
 		if (spawner_note_cut)
-			spawner->note_cut();
+			spawner->note_cut(false);
 
 		return ret;
 	}

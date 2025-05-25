@@ -8,6 +8,8 @@ using namespace std;
 
 #include "MultiPLAY.h"
 
+#include "Channel_DYNAMIC.h"
+
 #include "Profile.h"
 
 #include "one_sample.h"
@@ -115,10 +117,13 @@ namespace MultiPLAY
 			}
 	}
 
-	void channel::note_cut()
+	void channel::note_cut(bool capture_residue/* = true*/)
 	{
-		residue = last_return_sample;
-		residue_inertia = residue - last_last_return_sample;
+		if (capture_residue)
+		{
+			residue += last_return_sample;
+			residue_inertia += last_return_sample - last_last_return_sample;
+		}
 
 		current_sample = nullptr;
 
@@ -209,6 +214,73 @@ namespace MultiPLAY
 	/*virtual*/ void channel::note_fade()
 	{
 		base_note_off(true, false, false);
+	}
+
+	void channel::occlude_note(
+		sample *new_sample/* = nullptr*/,
+		int new_znote/* = -1*/)
+	{
+		if (current_sample_context != nullptr)
+		{
+			NewNoteAction::Type effective_nna = new_note_action;
+
+			bool is_duplicate = false;
+
+			switch (duplicate_note_check)
+			{
+				case DuplicateCheck::Off:
+					// Do nothing
+					break;
+				case DuplicateCheck::Note:
+					is_duplicate = (current_sample_context->znote == new_znote);
+					break;
+				case DuplicateCheck::Sample:
+					is_duplicate = current_sample_context->is_sample_match(new_sample->get_root_sample(inote_from_znote(new_znote)));
+					break;
+				case DuplicateCheck::Instrument:
+					is_duplicate = (current_sample == new_sample);
+					break;
+			}
+
+			if (is_duplicate)
+			{
+				switch (duplicate_note_action)
+				{
+					case DuplicateCheckAction::Cut:
+						effective_nna = NewNoteAction::Cut;
+						break;
+					case DuplicateCheckAction::NoteFade:
+						effective_nna = NewNoteAction::NoteFade;
+						break;
+					case DuplicateCheckAction::NoteOff:
+						effective_nna = NewNoteAction::NoteOff;
+						break;
+				}
+			}
+
+			if (effective_nna == NewNoteAction::Cut)
+				note_cut();
+			else
+			{
+				switch (effective_nna)
+				{
+					case NewNoteAction::ContinueNote:
+						// Do nothing.
+						break;
+					case NewNoteAction::NoteOff:
+						note_off();
+						break;
+					case NewNoteAction::NoteFade:
+						note_fade();
+						break;
+				}
+
+				channel_DYNAMIC *ancillary = channel_DYNAMIC::assume_note(this);
+
+				ancillary_channels.push_back(ancillary);
+				add_ancillary_channel(ancillary);
+			}
+		}
 	}
 
 	bool channel::is_at_end_of_volume_envelope()
@@ -329,6 +401,7 @@ namespace MultiPLAY
 
 					if (fade_value <= 0)
 					{
+						fading = false;
 						fade_value = 0;
 						fade_per_tick = 0;
 						have_fade_per_tick = false;
@@ -344,7 +417,7 @@ namespace MultiPLAY
 					fade_value -= fade_per_tick;
 				}
 
-				if (volume_envelope != nullptr)
+				if (enable_volume_envelope && (volume_envelope != nullptr))
 				{
 					profile.push_back("perform volume_envelope calculations");
 
@@ -362,13 +435,13 @@ namespace MultiPLAY
 					}
 				}
 
-				if (panning_envelope != nullptr)
+				if (enable_panning_envelope && (panning_envelope != nullptr))
 				{
 					profile.push_back("perform panning_envelope calculations");
 					return_sample *= pan_value(panning_envelope->get_value_at(envelope_offset));
 				}
 
-				if (pitch_envelope != nullptr)
+				if (enable_pitch_envelope && (pitch_envelope != nullptr))
 				{
 					profile.push_back("perform pitch_envelope calculations");
 
@@ -538,9 +611,15 @@ namespace MultiPLAY
 		current_waveform = default_waveform;
 		current_sample = nullptr;
 		current_sample_context = nullptr;
+		enable_volume_envelope = true;
+		enable_panning_envelope = true;
+		enable_pitch_envelope = true;
 		volume_envelope = nullptr;
 		panning_envelope = nullptr;
 		pitch_envelope = nullptr;
+		new_note_action = NewNoteAction::Cut;
+		duplicate_note_check = DuplicateCheck::Off;
+		duplicate_note_action = DuplicateCheckAction::Cut;
 		fading = false;
 		finish_with_fade = false;
 		have_fade_per_tick = false;

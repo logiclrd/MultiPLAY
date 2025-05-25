@@ -12,7 +12,7 @@ using namespace std;
 namespace MultiPLAY
 {
 	// struct sample_context
-	sample_context::sample_context(sample *cw) : created_with(cw) { }
+	sample_context::sample_context(sample *cw) : created_with(cw) { znote = -1; }
 	/*virtual*/ sample_context::~sample_context() {}
 
 	sample_context *sample_context::clone()
@@ -22,6 +22,11 @@ namespace MultiPLAY
 		copy_to(ret);
 
 		return ret;
+	}
+
+	/*virtual*/ bool sample_context::is_sample_match(sample *other)
+	{
+		return (other == created_with);
 	}
 
 	/*virtual*/ sample_context *sample_context::create_new()
@@ -43,6 +48,14 @@ namespace MultiPLAY
 		: use_vibrato(false), index(idx + 1)
 	{
 		global_volume = 1.0;
+
+		duplicate_note_check = DuplicateCheck::Off;
+		duplicate_note_action = DuplicateCheckAction::Cut;
+	}
+
+	/*virtual*/ sample *sample::get_root_sample(int inote)
+	{
+		return this;
 	}
 
 	/*virtual*/ void sample::set_global_volume(double new_global_volume)

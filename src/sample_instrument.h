@@ -24,6 +24,8 @@ namespace MultiPLAY
 		sample_instrument_context(sample *cw);
 		virtual ~sample_instrument_context();
 
+		virtual bool is_sample_match(sample *other);
+
 		virtual sample_context *create_new();
 		virtual void copy_to(sample_context *other);
 	};
@@ -40,8 +42,6 @@ namespace MultiPLAY
 
 		double volume_variation_pctg, panning_variation;
 
-		DuplicateCheck::Type duplicate_note_check;
-		DuplicateCheckAction::Type duplicate_check_action;
 		NewNoteAction::Type new_note_action;
 
 		sample *note_sample[120];
@@ -51,8 +51,9 @@ namespace MultiPLAY
 
 		sample_instrument(int idx);
 
+		virtual sample *get_root_sample(int inote);
+
 		virtual const pan_value &get_default_pan(const pan_value &channel_default);
-		virtual void occlude_note(channel *p = nullptr, sample_context **context = nullptr, sample *new_sample = nullptr, row *r = nullptr);
 		virtual void begin_new_note(row *r = nullptr, channel *p = nullptr, sample_context **context = nullptr, double effect_tick_length = 0, bool top_level = true, int *znote = nullptr, bool is_primary = true);
 		virtual void kill_note(sample_context *c = nullptr);
 		virtual void exit_sustain_loop(sample_context *c = nullptr);

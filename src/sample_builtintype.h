@@ -9,6 +9,7 @@ using namespace std;
 #include "one_sample.h"
 #include "envelope.h"
 #include "channel.h"
+#include "pattern.h"
 #include "sample.h"
 
 namespace MultiPLAY
@@ -109,14 +110,16 @@ namespace MultiPLAY
 			if (c == nullptr)
 				throw "need sample context";
 
-			if (*c)
+			if ((p != nullptr) && is_primary)
 			{
-				(*c)->created_with->occlude_note(p, c, this, r);
-				delete *c;
+				if (r != nullptr)
+					p->occlude_note(this, r->znote);
+
+				p->current_sample = this;
 			}
 
-			if (is_primary && (p != nullptr))
-				p->current_sample = this;
+			if (*c)
+				delete *c;
 
 			sample_builtintype_context *context_ptr = new sample_builtintype_context(this);
 
@@ -129,6 +132,7 @@ namespace MultiPLAY
 			else
 				context.sustain_loop_state = SustainLoopState::Off;
 
+			context.znote = r->znote;
 			context.last_looped_sample = 0;
 			context.sustain_loop_exit_difference = 0;
 			context.sustain_loop_exit_sample = LOOP_END_NO_LOOP;
@@ -149,10 +153,6 @@ namespace MultiPLAY
 				p->samples_this_note = 0;
 				p->envelope_offset = 0;
 			}
-		}
-
-		virtual void occlude_note(channel */*p*/ = nullptr, sample_context **/*c*/ = nullptr, sample */*new_sample*/ = nullptr, row */*r*/ = nullptr)
-		{ // do nothing
 		}
 
 		virtual void exit_sustain_loop(sample_context *c)

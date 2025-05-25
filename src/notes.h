@@ -40,6 +40,7 @@ namespace MultiPLAY
 	#define SNOTE_NOTE_CUT  -2
 	#define SNOTE_EMPTY     -1
 
+	extern int inote_from_znote(int znote);
 	extern int znote_from_snote(int snote);
 	extern int snote_from_znote(int znote);
 	extern int snote_from_period(int period);

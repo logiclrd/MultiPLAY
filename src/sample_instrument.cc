@@ -24,6 +24,17 @@ namespace MultiPLAY
 			delete cur_sample_context;
 	}
 
+	/*virtual*/ bool sample_instrument_context::is_sample_match(sample *other)
+	{
+		if (other == created_with)
+			return true;
+
+		if (cur_sample_context != nullptr)
+			return cur_sample_context->is_sample_match(other);
+
+		return false;
+	}
+
 	/*virtual*/ sample_context *sample_instrument_context::create_new()
 	{
 		return new sample_instrument_context(nullptr);
@@ -63,96 +74,12 @@ namespace MultiPLAY
 		num_samples = 0;
 	}
 
-	/*virtual*/ void sample_instrument::occlude_note(
-		channel *p/* = nullptr*/,
-		sample_context **context_ref/* = nullptr*/,
-		sample *new_sample/* = nullptr*/,
-		row *r/* = nullptr*/)
+	/*virtual*/ sample *sample_instrument::get_root_sample(int inote)
 	{
-		NewNoteAction::Type effective_nna = new_note_action;
-
-		if (r->effect.present && (r->effect.is(Effect::ExtendedEffect, 7)))
-		{
-			switch (r->effect.info.low_nybble)
-			{
-				case 3: effective_nna = NewNoteAction::Cut;          break;
-				case 4: effective_nna = NewNoteAction::ContinueNote; break;
-				case 5: effective_nna = NewNoteAction::NoteOff;      break;
-				case 6: effective_nna = NewNoteAction::NoteFade;     break;
-			}
-		}
-
-		if (*context_ref != nullptr)
-		{
-			sample_context *context = *context_ref;
-
-			sample_instrument_context *c_ptr = dynamic_cast<sample_instrument_context *>(context);
-
-			if (c_ptr != nullptr)
-			{
-				sample_instrument_context &c = *c_ptr;
-
-				bool is_duplicate = false;
-				int new_inote = (r->snote >> 4) * 12 + (r->snote & 15);
-
-				if (this == new_sample)
-				{
-					switch (duplicate_note_check)
-					{
-						case DuplicateCheck::Off:
-							// Do nothing
-							break;
-						case DuplicateCheck::Note:
-							is_duplicate = (c.inote == new_inote);
-							break;
-						case DuplicateCheck::Sample:
-							is_duplicate = (c.cur_sample == note_sample[new_inote]);
-							break;
-						case DuplicateCheck::Instrument:
-							is_duplicate = true;
-							break;
-					}
-
-					if (is_duplicate)
-					{
-						switch (duplicate_check_action)
-						{
-							case DuplicateCheckAction::Cut:
-								return; // let the note get cut off
-							case DuplicateCheckAction::NoteFade:
-								effective_nna = NewNoteAction::NoteFade;
-								break;
-							case DuplicateCheckAction::NoteOff:
-								effective_nna = NewNoteAction::NoteOff;
-								break;
-						}
-					}
-				}
-
-				if (effective_nna == NewNoteAction::Cut)
-					p->note_cut();
-				else
-				{
-					switch (effective_nna)
-					{
-						case NewNoteAction::ContinueNote:
-							// Do nothing.
-							break;
-						case NewNoteAction::NoteOff:
-							p->note_off();
-							break;
-						case NewNoteAction::NoteFade:
-							p->note_fade();
-							break;
-					}
-
-					channel_DYNAMIC *ancillary = channel_DYNAMIC::assume_note(p);
-
-					ancillary_channels.push_back(ancillary);
-					p->add_ancillary_channel(ancillary);
-				}
-			}
-		}
+		if (inote < 120)
+			return note_sample[inote];
+		else
+			return nullptr;
 	}
 
 	/*virtual*/ void sample_instrument::begin_new_note(
@@ -169,21 +96,27 @@ namespace MultiPLAY
 
 		if (r->snote >= 0)
 		{
-			if (*context)
+			if ((p != nullptr) && is_primary)
 			{
-				(*context)->created_with->occlude_note(p, context, this, r);
-				delete *context;
+				if (r != nullptr)
+					p->occlude_note(this, r->znote);
+
+				p->current_sample = this;
 			}
 
-			if (is_primary && (p != nullptr))
-				p->current_sample = this;
+			if (*context)
+				delete *context;
 
 			sample_instrument_context *c = new sample_instrument_context(this);
 
 			*context = c;
-			int inote = (r->snote >> 4) * 12 + (r->snote & 15);
+
+			c->znote = znote_from_snote(r->snote);
+
+			int inote = inote_from_znote(c->znote);
+
 			c->inote = inote;
-			c->cur_sample = note_sample[inote];
+			c->cur_sample = ((inote >= 0) && (inote < 120)) ? note_sample[inote] : nullptr;
 			c->num_samples = c->cur_sample->num_samples;
 			c->cur_sample_context = nullptr;
 			c->effect_tick_length = effect_tick_length;
@@ -241,23 +174,30 @@ namespace MultiPLAY
 					{
 						if (volume_envelope.enabled)
 						{
+							p->enable_volume_envelope = true;
 							p->volume_envelope = new playback_envelope(p->volume_envelope, volume_envelope, effect_tick_length, true);
 							p->volume_envelope->begin_note(false);
 						}
 
 						if (panning_envelope.enabled)
 						{
+							p->enable_panning_envelope = true;
 							p->panning_envelope = new playback_envelope(p->panning_envelope, panning_envelope, effect_tick_length, false);
 							p->panning_envelope->begin_note(false);
 						}
 
 						if (pitch_envelope.enabled)
 						{
+							p->enable_pitch_envelope = true;
 							p->pitch_envelope = new playback_envelope(p->pitch_envelope, pitch_envelope, effect_tick_length, false);
 							p->pitch_envelope->begin_note(false);
 						}
 					}
 				}
+
+				p->new_note_action = this->new_note_action;
+				p->duplicate_note_check = this->duplicate_note_check;
+				p->duplicate_note_action = this->duplicate_note_action;
 
 				c->cur_sample->begin_new_note(r, p, &c->cur_sample_context, effect_tick_length, false, znote, false);
 				c->samples_per_second = c->cur_sample_context->samples_per_second;

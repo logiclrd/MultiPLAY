@@ -1934,12 +1934,36 @@ namespace MultiPLAY
 							switch (extended_effect_info->low_nybble)
 							{
 								case 3: // set NNA to cut       ignore instrument-interpreted values
-								case 4: // set NNA to continue 
-								case 5: // set NNA to note off
-								case 6: // set NNA to fade
-								case 7: // disable volume envelope for this note
-								case 8: // disable volume envelope for this note
+									new_note_action = NewNoteAction::Cut;
 									break;
+								case 4: // set NNA to continue 
+									new_note_action = NewNoteAction::ContinueNote;
+									break;
+								case 5: // set NNA to note off
+									new_note_action = NewNoteAction::NoteOff;
+									break;
+								case 6: // set NNA to fade
+									new_note_action = NewNoteAction::NoteFade;
+									break;
+								case 7: // disable volume envelope for this note
+									enable_volume_envelope = false;
+									break;
+								case 8: // enable volume envelope for this note
+									enable_volume_envelope = true;
+									break;
+								case 9: // disable panning envelope for this note
+									enable_panning_envelope = false;
+									break;
+								case 10: // enable panning envelope for this note
+									enable_panning_envelope = true;
+									break;
+								case 11: // disable pitch envelope for this note
+									enable_pitch_envelope = false;
+									break;
+								case 12: // enable pitch envelope for this note
+									enable_pitch_envelope = true;
+									break;
+
 								case 0: // note cut
 									for (int i = int(ancillary_channels.size() - 1); i >= 0; i--)
 									{

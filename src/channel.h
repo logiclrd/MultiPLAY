@@ -8,9 +8,10 @@
 
 #include "Profile.h"
 
-#include "math.h"
 #include "progress.h"
 #include "sample.h"
+#include "notes.h"
+#include "math.h"
 
 namespace MultiPLAY
 {
@@ -46,7 +47,11 @@ namespace MultiPLAY
 		bool looping;
 		long samples_this_note;
 		long envelope_offset;
+		bool enable_volume_envelope, enable_panning_envelope, enable_pitch_envelope;
 		playback_envelope *volume_envelope, *panning_envelope, *pitch_envelope;
+		NewNoteAction::Type new_note_action;
+		DuplicateCheck::Type duplicate_note_check;
+		DuplicateCheckAction::Type duplicate_note_action;
 
 		std::vector<channel *> my_ancillary_channels;
 
@@ -70,10 +75,12 @@ namespace MultiPLAY
 		void add_ancillary_channel(channel *channel);
 		void remove_ancillary_channel(channel *channel);
 
-		void note_cut();
+		void note_cut(bool capture_residue = true);
 		virtual void note_off(bool calc_fade_per_tick = true, bool all_notes_off = true);
 		void base_note_off(bool calc_fade_per_tick = true, bool exit_sustain_loop = true, bool exit_envelope_loops = true);
 		virtual void note_fade();
+
+		void occlude_note(sample *new_sample = nullptr, int znote = -1);
 
 		bool is_at_end_of_volume_envelope();
 		bool is_on_final_zero_volume_from_volume_envelope();

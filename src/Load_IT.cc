@@ -1342,7 +1342,7 @@ namespace MultiPLAY
 				is->filter_cutoff = id.filter_cutoff / 128.0;
 
 				is->enable_filter_resonance = (id.filter_resonance >= 0);
-				is->filter_resonance = id.filter_resonance / 127.0;
+				is->filter_resonance = id.filter_resonance / 128.0;
 
 				instruments.push_back(is);
 			}

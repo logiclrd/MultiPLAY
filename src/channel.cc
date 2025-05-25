@@ -29,9 +29,11 @@ namespace MultiPLAY
 
 	namespace
 	{
+		#define RESONANCE_FACTOR 1.2
+
 		double resonance_coefficient(double x)
 		{
-			return 1.0 / pow(1 + x / 26.29, 72.73);
+			return pow(10.0, x * RESONANCE_FACTOR);
 		}
 	}
 

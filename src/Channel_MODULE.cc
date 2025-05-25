@@ -1928,43 +1928,44 @@ namespace MultiPLAY
 							cerr << "Ignoring pre-IT command: S5"
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 						break;
-					case ExtendedEffect::OverrideNewNoteAction: // 0x7, past note cut/off/fade, temporary new note action
+					case ExtendedEffect::ConfigureNote: // 0x7, past note cut/off/fade, temporary new note action
 						if (row.effect.type == EffectType::IT)
 						{
+							// override instrument-interpreted values
 							switch (extended_effect_info->low_nybble)
 							{
-								case 3: // set NNA to cut       override instrument-interpreted values
+								case NoteConfiguration::NewNote_NoteCut:
 									new_note_action = NewNoteAction::Cut;
 									break;
-								case 4: // set NNA to continue 
+								case NoteConfiguration::NewNote_Continue:
 									new_note_action = NewNoteAction::ContinueNote;
 									break;
-								case 5: // set NNA to note off
+								case NoteConfiguration::NewNote_NoteOff:
 									new_note_action = NewNoteAction::NoteOff;
 									break;
-								case 6: // set NNA to fade
+								case NoteConfiguration::NewNote_NoteFade:
 									new_note_action = NewNoteAction::NoteFade;
 									break;
-								case 7: // disable volume envelope for this note
+								case NoteConfiguration::VolumeEnvelope_Disable:
 									enable_volume_envelope = false;
 									break;
-								case 8: // enable volume envelope for this note
+								case NoteConfiguration::VolumeEnvelope_Enable:
 									enable_volume_envelope = true;
 									break;
-								case 9: // disable panning envelope for this note
+								case NoteConfiguration::PanningEnvelope_Disable:
 									enable_panning_envelope = false;
 									break;
-								case 10: // enable panning envelope for this note
+								case NoteConfiguration::PanningEnvelope_Enable:
 									enable_panning_envelope = true;
 									break;
-								case 11: // disable pitch envelope for this note
+								case NoteConfiguration::PitchEnvelope_Disable:
 									enable_pitch_envelope = false;
 									break;
-								case 12: // enable pitch envelope for this note
+								case NoteConfiguration::PitchEnvelope_Enable:
 									enable_pitch_envelope = true;
 									break;
 
-								case 0: // note cut
+								case NoteConfiguration::CurrentNotes_NoteCut:
 									for (int i = int(ancillary_channels.size() - 1); i >= 0; i--)
 									{
 										auto my_own = find(my_ancillary_channels.begin(), my_ancillary_channels.end(), ancillary_channels[unsigned(i)]);
@@ -1977,11 +1978,11 @@ namespace MultiPLAY
 										}
 									}
 									break;
-								case 1: // note off
+								case NoteConfiguration::CurrentNotes_NoteOff:
 									for (auto i = my_ancillary_channels.begin(), l = my_ancillary_channels.end(); i != l; ++i)
 										(*i)->note_off();
 									break;
-								case 2: // fade
+								case NoteConfiguration::CurrentNotes_NoteFade:
 									for (auto i = my_ancillary_channels.begin(), l = my_ancillary_channels.end(); i != l; ++i)
 									{
 										channel &t = **i;

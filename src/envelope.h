@@ -38,6 +38,8 @@ namespace MultiPLAY
 
 		instrument_envelope();
 
+		void detect_false_looping();
+
 		void begin_sustain_loop(sustain_loop_position &susloop);
 		void exit_sustain_loop(double tick, sustain_loop_position &susloop);
 		double get_value_at(double tick, sustain_loop_position &susloop);

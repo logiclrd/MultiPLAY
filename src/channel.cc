@@ -402,6 +402,7 @@ namespace MultiPLAY
 					if (fade_value <= 0)
 					{
 						fading = false;
+						fade_complete = true;
 						fade_value = 0;
 						fade_per_tick = 0;
 						have_fade_per_tick = false;
@@ -566,25 +567,7 @@ namespace MultiPLAY
 	{
 		identity = "UNINITIALIZED";
 
-		finished = false;
-		note_frequency = 1;
-		ticks_left = 0;
-		octave = 4;
-		tempo = 120;
-		note_length_denominator = 4;
-		rest_ticks_proportion = 1.0 / 8.0;
-		play_full_sample = false;
-		intensity = 5000.0 / 32767.0;
-		channel_volume = 1.0;
-		current_waveform = default_waveform;
-		current_sample = nullptr;
-		current_sample_context = nullptr;
-		volume_envelope = nullptr;
-		panning_envelope = nullptr;
-		pitch_envelope = nullptr;
-		fading = false;
-		have_fade_per_tick = false;
-		fade_per_tick = 0;
+		init_fields();
 	}
 
 	channel::channel(pan_value &default_panning, bool looping, bool enabled)
@@ -596,6 +579,11 @@ namespace MultiPLAY
 	{
 		identity = "UNINITIALIZED";
 
+		init_fields();
+	}
+
+	void channel::init_fields()
+	{
 		finished = false;
 		note_frequency = 1;
 		ticks_left = 0;
@@ -621,6 +609,7 @@ namespace MultiPLAY
 		duplicate_note_check = DuplicateCheck::Off;
 		duplicate_note_action = DuplicateCheckAction::Cut;
 		fading = false;
+		fade_complete = false;
 		finish_with_fade = false;
 		have_fade_per_tick = false;
 		fade_per_tick = 0;

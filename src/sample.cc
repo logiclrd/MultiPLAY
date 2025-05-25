@@ -53,6 +53,10 @@ namespace MultiPLAY
 		duplicate_note_action = DuplicateCheckAction::Cut;
 	}
 
+	/*virtual*/ void sample::detect_false_looping()
+	{
+	}
+
 	/*virtual*/ sample *sample::get_root_sample(int inote)
 	{
 		return this;

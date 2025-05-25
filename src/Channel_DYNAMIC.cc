@@ -39,6 +39,7 @@ namespace MultiPLAY
 		this->delta_offset_per_tick = spawner->delta_offset_per_tick;
 		this->intensity = spawner->intensity;
 		this->fading = spawner->fading;
+		this->fade_complete = spawner->fade_complete;
 		this->fade_value = spawner->fade_value;
 		this->fade_per_tick = spawner->fade_per_tick;
 		this->have_fade_per_tick = spawner->have_fade_per_tick;
@@ -72,7 +73,7 @@ namespace MultiPLAY
 		rest_ticks = 0;
 		dropoff_start = 0;
 		finished = finished
-						|| (fading && (fade_value <= 0.0))
+						|| fade_complete
 						|| (current_sample == nullptr)
 						|| current_sample->past_end(offset_major, offset, current_sample_context);
 

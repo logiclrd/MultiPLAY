@@ -71,6 +71,8 @@ namespace MultiPLAY
 		DuplicateCheck::Type duplicate_note_check;
 		DuplicateCheckAction::Type duplicate_note_action;
 
+		virtual void detect_false_looping();
+
 		virtual sample *get_root_sample(int inote);
 
 		virtual void set_global_volume(double new_global_volume);

@@ -51,6 +51,8 @@ namespace MultiPLAY
 
 		sample_instrument(int idx);
 
+		virtual void detect_false_looping();
+
 		virtual sample *get_root_sample(int inote);
 
 		virtual const pan_value &get_default_pan(const pan_value &channel_default);

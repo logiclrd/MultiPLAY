@@ -75,6 +75,15 @@ namespace MultiPLAY
 		num_samples = 0;
 	}
 
+	/*virtual*/ void sample_instrument::detect_false_looping()
+	{
+		for (int i=0; i < 120; i++)
+			if (note_sample[i])
+				note_sample[i]->detect_false_looping();
+
+		volume_envelope.detect_false_looping();
+	}
+
 	/*virtual*/ sample *sample_instrument::get_root_sample(int inote)
 	{
 		if (inote < 120)

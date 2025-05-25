@@ -55,7 +55,7 @@ namespace MultiPLAY
 
 		std::vector<channel *> my_ancillary_channels;
 
-		bool fading, have_fade_per_tick, finish_with_fade;
+		bool fading, fade_complete, have_fade_per_tick, finish_with_fade;
 		int ticks_per_fade_out_frame;
 		double fade_per_tick, fade_value;
 
@@ -66,6 +66,7 @@ namespace MultiPLAY
 
 		channel(bool looping, bool enabled);
 		channel(pan_value &default_panning, bool looping, bool enabled);
+		void init_fields();
 		virtual ~channel();
 
 		void recalc(int znote, double duration_scale, bool calculate_length = true, bool reset_sample_offset = true, bool zero_means_no_note = true);

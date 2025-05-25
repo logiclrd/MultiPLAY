@@ -23,6 +23,9 @@ namespace MultiPLAY
 		speed_change();
 		current_row = -1;
 		finished = false;
+
+		for (auto i=samples.begin(), l=samples.end(); i != l; ++i)
+			(*i)->detect_false_looping();
 	}
 
 	module_struct::module_struct()

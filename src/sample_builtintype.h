@@ -87,6 +87,12 @@ namespace MultiPLAY
 			use_sustain_loop = (susloop_end != LOOP_END_NO_LOOP);
 		}
 
+		virtual void detect_false_looping()
+		{
+			if (loop_begin == loop_end)
+				loop_end = LOOP_END_NO_LOOP;
+		}
+
 		void initialize_sample_scale()
 		{
 			switch (sizeof(T))

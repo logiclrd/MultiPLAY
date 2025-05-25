@@ -20,6 +20,30 @@ namespace MultiPLAY
 		enabled = false;
 	}
 
+	void instrument_envelope::detect_false_looping()
+	{
+		if (looping)
+		{
+			int idx = 0;
+			int node_count = int(node.size());
+
+			while ((idx + 1 < node_count) && (node[idx + 1].tick <= loop_begin_tick))
+				idx++;
+
+			while ((idx < node_count) && (node[idx].tick <= loop_end_tick))
+			{
+				if (node[idx].value != 0)
+					return;
+
+				idx++;
+			}
+
+			// All nodes involved in the loop have value 0, so when we hit
+			// that point, we're effectively done the note.
+			looping = false;
+		}
+	}
+
 	void instrument_envelope::begin_sustain_loop(sustain_loop_position &susloop)
 	{
 		loop_length = loop_end_tick - loop_begin_tick; // have to calc this somewhere

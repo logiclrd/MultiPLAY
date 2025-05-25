@@ -87,7 +87,7 @@ namespace MultiPLAY
 	void DSP::setup_filter(double cutoff_frequency, double reverb_response)
 	{
 		static double samples_per_sec = ticks_per_second;
-		static double frequency_to_radians = (3.14159265358979323 * 2.0) / samples_per_sec;
+		static double frequency_to_radians = TWO_PI / samples_per_sec;
 
 		double cutoff_radian = cutoff_frequency * frequency_to_radians;
 

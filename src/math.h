@@ -3,6 +3,9 @@
 
 namespace MultiPLAY
 {
+	#define PI 3.14159265358979323
+	#define TWO_PI (2.0 * PI)
+
 	#define LOG2 0.6931471805599453
 
 	extern double lg(double x);

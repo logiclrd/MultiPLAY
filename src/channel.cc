@@ -27,7 +27,65 @@ namespace MultiPLAY
 
 	double inter_note = p2(1.0 / 12.0);
 
+	namespace
+	{
+		double resonance_coefficient(double x)
+		{
+			return 1.0 / pow(1 + x / 26.29, 72.73);
+		}
+	}
+
 	// struct channel
+	void channel::clear_filter()
+	{
+		set_filter(1.0, 0.0);
+	}
+
+	void channel::set_filter(double cutoff, double resonance)
+	{
+		this->filter_cutoff = cutoff;
+		this->filter_resonance = resonance;
+
+		cutoff *= 2.0;
+
+		if (cutoff > 1.0)
+			cutoff = 1.0;
+		if (resonance > 1.0)
+			resonance = 1.0;
+
+		if ((resonance == 0.0) && (cutoff >= 0.996))
+		{
+			enable_filter = false;
+
+			filter_y[0].clear();
+			filter_y[1].clear();
+		}
+		else
+		{
+			enable_filter = true;
+
+			// 2 ^ (i / 24 * 256)
+			double frequency = 110.0 * pow(2.0, cutoff * 8.0 / 3.0 + 0.25);
+
+			frequency = min(frequency, ticks_per_second * 0.5);
+
+			double r = ticks_per_second / (frequency * TWO_PI);
+
+			double d = resonance_coefficient(resonance) * (r + 1.0) - 1.0;
+			double e = r * r;
+
+			double denominator = 1.0 + d + e;
+
+			filter_a0 = 1.0 / denominator;
+			filter_b0 = (d + e + e) / denominator;
+			filter_b1 = -e / denominator;
+
+			LINT_DOUBLE(filter_a0);
+			LINT_DOUBLE(filter_b0);
+			LINT_DOUBLE(filter_b1);
+		}
+	}
+
 	void channel::recalc(
 		int znote,
 		double duration_scale,
@@ -354,7 +412,7 @@ namespace MultiPLAY
 				switch (current_waveform)
 				{
 					case Waveform::Sine:
-						return_sample = panning * (channel_volume * sin(6.283185 * offset));
+						return_sample = panning * (channel_volume * sin(TWO_PI * offset));
 						break;
 					case Waveform::Square:
 						return_sample = panning * (channel_volume * ((offset > 0.5) * 2 - 1));
@@ -455,7 +513,7 @@ namespace MultiPLAY
 
 					exponent += pitch_envelope->get_value_at(envelope_offset) * (16.0 / 12.0);
 					if ((current_waveform == Waveform::Sample) && (current_sample->use_vibrato))
-						exponent += sweep * current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
+						exponent += sweep * current_sample->vibrato_depth * sin(TWO_PI * samples_this_note * current_sample->vibrato_cycle_frequency);
 
 					frequency = p2(exponent);
 					offset += (frequency / ticks_per_second);
@@ -469,7 +527,7 @@ namespace MultiPLAY
 						double frequency = delta_offset_per_tick * ticks_per_second;
 						double exponent = lg(frequency);
 
-						exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
+						exponent += current_sample->vibrato_depth * sin(TWO_PI * samples_this_note * current_sample->vibrato_cycle_frequency);
 
 						frequency = p2(exponent);
 						offset += (frequency / ticks_per_second);
@@ -482,7 +540,7 @@ namespace MultiPLAY
 							frequency = delta_offset_per_tick * ticks_per_second;
 							exponent = lg(frequency);
 							
-							exponent += current_sample->vibrato_depth * sin(6.283185 * samples_this_note * current_sample->vibrato_cycle_frequency);
+							exponent += current_sample->vibrato_depth * sin(TWO_PI * samples_this_note * current_sample->vibrato_cycle_frequency);
 
 							frequency = p2(exponent);
 							offset += (frequency / ticks_per_second);
@@ -551,10 +609,27 @@ namespace MultiPLAY
 
 		return_sample += residue;
 
+		LINT_DOUBLE(return_sample.sample[0]);
+		LINT_DOUBLE(return_sample.sample[1]);
+
 		residue += residue_inertia;
 
 		residue *= RESIDUE_FADE;
 		residue_inertia *= RESIDUE_FADE;
+
+		if (enable_filter)
+		{
+			return_sample =
+				filter_a0 * return_sample +
+				filter_b0 * filter_y[0] +
+				filter_b1 * filter_y[1];
+
+			filter_y[1] = filter_y[0];
+			filter_y[0] = return_sample;
+
+			LINT_DOUBLE(return_sample.sample[0]);
+			LINT_DOUBLE(return_sample.sample[1]);
+		}
 
 		return return_sample;
 	}
@@ -613,6 +688,10 @@ namespace MultiPLAY
 		finish_with_fade = false;
 		have_fade_per_tick = false;
 		fade_per_tick = 0;
+		enable_filter = false;
+		filter_a0 = 1.0;
+		filter_b0 = 0.0;
+		filter_b1 = 0.0;
 	}
 
 	/*virtual*/ channel::~channel()

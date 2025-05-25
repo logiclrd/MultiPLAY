@@ -53,6 +53,11 @@ namespace MultiPLAY
 		DuplicateCheck::Type duplicate_note_check;
 		DuplicateCheckAction::Type duplicate_note_action;
 
+		bool enable_filter;
+		double filter_cutoff, filter_resonance;
+		one_sample filter_y[2];
+		double filter_a0, filter_b0, filter_b1;
+
 		std::vector<channel *> my_ancillary_channels;
 
 		bool fading, fade_complete, have_fade_per_tick, finish_with_fade;
@@ -68,6 +73,9 @@ namespace MultiPLAY
 		channel(pan_value &default_panning, bool looping, bool enabled);
 		void init_fields();
 		virtual ~channel();
+
+		void clear_filter();
+		void set_filter(double cutoff, double resonance);
 
 		void recalc(int znote, double duration_scale, bool calculate_length = true, bool reset_sample_offset = true, bool zero_means_no_note = true);
 

@@ -131,6 +131,8 @@ namespace MultiPLAY
 			int tone_offset[120];
 
 			it_envelope_description volume_envelope, pan_envelope, pitch_envelope;
+
+			char filter_cutoff, filter_resonance;
 		};
 
 		struct it_instrument_flags
@@ -365,9 +367,9 @@ namespace MultiPLAY
 			char instrument_name[26];
 			file->read(instrument_name, 26);
 
-			char ipc, ipr;
-			ipc = char(file->get());
-			ipr = char(file->get());
+			char ifc, ifr;
+			ifc = char(file->get());
+			ifr = char(file->get());
 
 			char midi_channel, midi_program;
 			unsigned midi_bank;
@@ -423,6 +425,9 @@ namespace MultiPLAY
 			desc.volume_envelope = volume_envelope;
 			desc.pan_envelope = pan_envelope;
 			desc.pitch_envelope = pitch_envelope;
+
+			desc.filter_cutoff = ifc + 128;
+			desc.filter_resonance = ifr;
 		}
 
 		struct it_sample_flags
@@ -1333,6 +1338,12 @@ namespace MultiPLAY
 				load_it_convert_envelope(is->volume_envelope, id.volume_envelope);
 				load_it_convert_envelope(is->panning_envelope, id.pan_envelope);
 				load_it_convert_envelope(is->pitch_envelope, id.pitch_envelope);
+
+				is->enable_filter_cutoff = (id.filter_cutoff >= 0);
+				is->filter_cutoff = id.filter_cutoff / 128.0;
+
+				is->enable_filter_resonance = (id.filter_resonance >= 0);
+				is->filter_resonance = id.filter_resonance / 127.0;
 
 				instruments.push_back(is);
 			}

@@ -134,6 +134,8 @@ namespace MultiPLAY
 				p->panning_envelope = nullptr;
 				p->pitch_envelope = nullptr;
 
+				p->clear_filter();
+
 				p->samples_this_note = 0;
 				p->envelope_offset = 0;
 			}

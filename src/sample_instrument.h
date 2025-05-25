@@ -49,6 +49,9 @@ namespace MultiPLAY
 
 		instrument_envelope volume_envelope, panning_envelope, pitch_envelope;
 
+		bool enable_filter_cutoff, enable_filter_resonance;
+		double filter_cutoff, filter_resonance;
+
 		sample_instrument(int idx);
 
 		virtual void detect_false_looping();

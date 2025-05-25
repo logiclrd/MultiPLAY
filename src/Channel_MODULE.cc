@@ -283,7 +283,7 @@ namespace MultiPLAY
 						// Undefined.
 						break;
 					case Waveform::Sine:
-						value += vibrato_depth * sin(t_vibrato * 6.283185);
+						value += vibrato_depth * sin(t_vibrato * TWO_PI);
 						break;
 					case Waveform::RampDown:
 						if (t_offset < 0.5)
@@ -334,7 +334,7 @@ namespace MultiPLAY
 					// Undefined.
 					break;
 				case Waveform::Sine:
-					value += panbrello_depth * sin(t_panbrello * 6.283185);
+					value += panbrello_depth * sin(t_panbrello * TWO_PI);
 					break;
 				case Waveform::RampDown:
 					if (t_offset < 0.5)
@@ -498,7 +498,7 @@ namespace MultiPLAY
 						break;
 
 					case Waveform::Sine:
-						intensity += tremolo_depth * sin(t_tremolo * 6.283185);
+						intensity += tremolo_depth * sin(t_tremolo * TWO_PI);
 						break;
 					case Waveform::RampDown:
 						if (t_offset < 0.5)

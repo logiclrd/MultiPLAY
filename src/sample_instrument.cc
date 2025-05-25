@@ -199,6 +199,10 @@ namespace MultiPLAY
 						p->duplicate_note_check = this->duplicate_note_check;
 						p->duplicate_note_action = this->duplicate_note_action;
 
+						p->set_filter(
+							this->enable_filter_cutoff ? this->filter_cutoff : 1.0,
+							this->enable_filter_resonance ? this->filter_resonance : 0.0);
+
 						p->samples_this_note = 0;
 						p->envelope_offset = 0;
 					}

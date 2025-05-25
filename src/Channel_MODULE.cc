@@ -1933,7 +1933,7 @@ namespace MultiPLAY
 						{
 							switch (extended_effect_info->low_nybble)
 							{
-								case 3: // set NNA to cut       ignore instrument-interpreted values
+								case 3: // set NNA to cut       override instrument-interpreted values
 									new_note_action = NewNoteAction::Cut;
 									break;
 								case 4: // set NNA to continue 

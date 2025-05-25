@@ -1329,17 +1329,17 @@ namespace MultiPLAY
 							double ratio = row.instrument->samples_per_second / current_sample->samples_per_second;
 							note_frequency *= ratio;
 							delta_offset_per_tick /= ratio;
-							current_sample->kill_note(current_sample_context);
 						}
 
-						current_sample = row.instrument;
+						// Retrigger envelopes.
+						envelope_offset = 0;
 
-						int ignored;
-
-						current_sample->begin_new_note(&row, this, &current_sample_context, module->ticks_per_frame, true, &ignored);
-
-						fading = false;
-						panning = current_sample->get_default_pan(this->panning);
+						if (volume_envelope)
+							volume_envelope->begin_note();
+						if (panning_envelope)
+							panning_envelope->begin_note();
+						if (pitch_envelope)
+							pitch_envelope->begin_note();
 					}
 
 					if ((portamento_target_znote > 0) && (portamento_target_znote <= 120))

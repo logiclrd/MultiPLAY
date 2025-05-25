@@ -712,13 +712,17 @@ namespace MultiPLAY
 						break;
 					case Effect::OrderJump: // 'B'
 						pattern_jump_target = row_list[i].effect.info.data;
+						row_jump_target = -1;
 						break;
 					case Effect::PatternJump: // 'C'
-						pattern_jump_target = int(module->current_pattern + 1);
+						if (pattern_jump_target < 0)
+							pattern_jump_target = int(module->current_pattern + 1);
+
 						if (row_list[i].effect.type == EffectType::IT)
 							row_jump_target = row_list[i].effect.info;
 						else
 							row_jump_target = row_list[i].effect.info.high_nybble * 10 + row_list[i].effect.info.low_nybble;
+
 						while (row_jump_target >= 64)
 						{
 							pattern_jump_target++;

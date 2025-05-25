@@ -611,6 +611,9 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		if (channels.size() == 0)
+			return 1;
+
 		if (ulaw || alaw)
 		{
 			if (direct_output_type == direct_output::none)

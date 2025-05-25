@@ -1590,7 +1590,7 @@ namespace MultiPLAY
 				arpeggio_first_delta_offset = delta_offset_per_tick;
 
 				int second_note = row.znote + info.high_nybble;
-				current_sample->begin_new_note(&row, nullptr, &current_sample_context, module->ticks_per_frame, true, &second_note, false);
+				current_sample->begin_new_note(&row, nullptr, &current_sample_context, module->ticks_per_frame, false, &second_note);
 				recalc(second_note, 1.0, false);
 				if (current_sample_context)
 				{
@@ -1600,7 +1600,7 @@ namespace MultiPLAY
 				arpeggio_second_delta_offset = delta_offset_per_tick;
 
 				int third_note = row.znote + info.low_nybble;
-				current_sample->begin_new_note(&row, nullptr, &current_sample_context, module->ticks_per_frame, true, &third_note, false);
+				current_sample->begin_new_note(&row, nullptr, &current_sample_context, module->ticks_per_frame, false, &third_note);
 				recalc(third_note, 1.0, false);
 				if (current_sample_context)
 				{

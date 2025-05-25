@@ -15,7 +15,12 @@ using namespace std;
 namespace MultiPLAY
 {
 	// struct sample_instrument_context
-	sample_instrument_context::sample_instrument_context(sample *cw) : sample_context(cw) {}
+	sample_instrument_context::sample_instrument_context(sample *cw)
+		: sample_context(cw)
+	{
+		cur_sample = nullptr;
+		cur_sample_context = nullptr;
+	}
 
 	/*virtual*/ sample_instrument_context::~sample_instrument_context()
 	{
@@ -97,30 +102,29 @@ namespace MultiPLAY
 		channel *p/* = nullptr*/,
 		sample_context **context/* = nullptr*/,
 		double effect_tick_length/* = 0*/,
-		bool top_level/* = true*/,
-		int *znote/* = nullptr*/,
-		bool is_primary/* = true*/)
+		bool update_channel/* = true*/,
+		int *znote/* = nullptr*/)
 	{
 		if (context == nullptr)
 			throw "need context for instrument";
 
+		if ((p != nullptr) && update_channel)
+		{
+			if (r != nullptr)
+				p->occlude_note(this, r->znote);
+
+			p->current_sample = this;
+		}
+
+		if (*context)
+			delete *context;
+
+		sample_instrument_context *c = new sample_instrument_context(this);
+
+		*context = c;
+
 		if (r->snote >= 0)
 		{
-			if ((p != nullptr) && is_primary)
-			{
-				if (r != nullptr)
-					p->occlude_note(this, r->znote);
-
-				p->current_sample = this;
-			}
-
-			if (*context)
-				delete *context;
-
-			sample_instrument_context *c = new sample_instrument_context(this);
-
-			*context = c;
-
 			c->znote = znote_from_snote(r->snote);
 
 			int inote = inote_from_znote(c->znote);
@@ -134,26 +138,35 @@ namespace MultiPLAY
 
 			bool volume_envelope_override_on = false;
 			bool volume_envelope_override_off = false;
+			bool panning_envelope_override_on = false;
+			bool panning_envelope_override_off = false;
+			bool pitch_envelope_override_on = false;
+			bool pitch_envelope_override_off = false;
 
 			if (r->effect.is(Effect::ExtendedEffect, 7))
 			{
-				volume_envelope_override_off = (r->effect.info.low_nybble == 7);
-				volume_envelope_override_on = (r->effect.info.low_nybble == 8);
+				volume_envelope_override_off = (r->effect.info.low_nybble == NoteConfiguration::VolumeEnvelope_Disable);
+				volume_envelope_override_on = (r->effect.info.low_nybble == NoteConfiguration::VolumeEnvelope_Enable);
+				panning_envelope_override_off = (r->effect.info.low_nybble == NoteConfiguration::PanningEnvelope_Disable);
+				panning_envelope_override_on = (r->effect.info.low_nybble == NoteConfiguration::PanningEnvelope_Enable);
+				pitch_envelope_override_off = (r->effect.info.low_nybble == NoteConfiguration::PitchEnvelope_Disable);
+				pitch_envelope_override_on = (r->effect.info.low_nybble == NoteConfiguration::PitchEnvelope_Enable);
 			}
 
 			if (c->cur_sample != nullptr)
 			{
 				if (p != nullptr)
 				{
-					if (top_level)
+					if (update_channel)
 					{
 						if (p->volume_envelope != nullptr)
 						{
 							delete p->volume_envelope;
 							p->volume_envelope = nullptr;
 						}
-						if (volume_envelope_override_on || (volume_envelope.enabled && (!volume_envelope_override_off)))
+						if (volume_envelope_override_on || (volume_envelope.enabled && !volume_envelope_override_off))
 						{
+							p->enable_volume_envelope = true;
 							p->volume_envelope = new playback_envelope(volume_envelope, effect_tick_length);
 							p->volume_envelope->begin_note();
 						}
@@ -163,8 +176,9 @@ namespace MultiPLAY
 							delete p->panning_envelope;
 							p->panning_envelope = nullptr;
 						}
-						if (panning_envelope.enabled)
+						if (panning_envelope_override_on || (panning_envelope.enabled && !panning_envelope_override_off))
 						{
+							p->enable_panning_envelope = true;
 							p->panning_envelope = new playback_envelope(panning_envelope, effect_tick_length);
 							p->panning_envelope->begin_note();
 						}
@@ -174,11 +188,19 @@ namespace MultiPLAY
 							delete p->pitch_envelope;
 							p->pitch_envelope = nullptr;
 						}
-						if (pitch_envelope.enabled)
+						if (pitch_envelope_override_on || (pitch_envelope.enabled && !pitch_envelope_override_off))
 						{
+							p->enable_pitch_envelope = true;
 							p->pitch_envelope = new playback_envelope(pitch_envelope, effect_tick_length);
 							p->pitch_envelope->begin_note();
 						}
+
+						p->new_note_action = this->new_note_action;
+						p->duplicate_note_check = this->duplicate_note_check;
+						p->duplicate_note_action = this->duplicate_note_action;
+
+						p->samples_this_note = 0;
+						p->envelope_offset = 0;
 					}
 					else
 					{
@@ -205,21 +227,11 @@ namespace MultiPLAY
 					}
 				}
 
-				p->new_note_action = this->new_note_action;
-				p->duplicate_note_check = this->duplicate_note_check;
-				p->duplicate_note_action = this->duplicate_note_action;
-
-				c->cur_sample->begin_new_note(r, p, &c->cur_sample_context, effect_tick_length, false, znote, false);
+				c->cur_sample->begin_new_note(r, p, &c->cur_sample_context, effect_tick_length, false, znote);
 				c->samples_per_second = c->cur_sample_context->samples_per_second;
 				c->default_volume = c->cur_sample_context->default_volume;
 				c->num_samples = c->cur_sample_context->num_samples;
 			}
-		}
-
-		if (p != nullptr)
-		{
-			p->samples_this_note = 0;
-			p->envelope_offset = 0;
 		}
 	}
 

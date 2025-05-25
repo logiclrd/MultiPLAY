@@ -111,17 +111,31 @@ namespace MultiPLAY
 			initialize_sample_scale();
 		}
 
-		virtual void begin_new_note(row *r = nullptr, channel *p = nullptr, sample_context **c = nullptr, double effect_tick_length = 0, bool top_level = true, int */*znote*/ = nullptr, bool is_primary = true)
+		virtual void begin_new_note(row *r = nullptr, channel *p = nullptr, sample_context **c = nullptr, double effect_tick_length = 0, bool update_channel = true, int */*znote*/ = nullptr)
 		{
 			if (c == nullptr)
 				throw "need sample context";
 
-			if ((p != nullptr) && is_primary)
+			if (p && update_channel)
 			{
-				if (r != nullptr)
+				if (r)
 					p->occlude_note(this, r->znote);
 
 				p->current_sample = this;
+
+				if (p->volume_envelope)
+					delete p->volume_envelope;
+				if (p->panning_envelope)
+					delete p->panning_envelope;
+				if (p->pitch_envelope)
+					delete p->pitch_envelope;
+
+				p->volume_envelope = nullptr;
+				p->panning_envelope = nullptr;
+				p->pitch_envelope = nullptr;
+
+				p->samples_this_note = 0;
+				p->envelope_offset = 0;
 			}
 
 			if (*c)
@@ -146,19 +160,6 @@ namespace MultiPLAY
 			context.default_volume = default_volume;
 			context.num_samples = num_samples;
 			context.vibrato_sweep_ticks = (long)round(vibrato_sweep_frames * effect_tick_length);
-
-			if (p)
-			{
-				if (top_level)
-				{
-					p->volume_envelope = nullptr;
-					p->panning_envelope = nullptr;
-					p->pitch_envelope = nullptr;
-				}
-
-				p->samples_this_note = 0;
-				p->envelope_offset = 0;
-			}
 		}
 
 		virtual void exit_sustain_loop(sample_context *c)

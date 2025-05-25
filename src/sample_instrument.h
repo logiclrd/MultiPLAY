@@ -56,7 +56,7 @@ namespace MultiPLAY
 		virtual sample *get_root_sample(int inote);
 
 		virtual const pan_value &get_default_pan(const pan_value &channel_default);
-		virtual void begin_new_note(row *r = nullptr, channel *p = nullptr, sample_context **context = nullptr, double effect_tick_length = 0, bool top_level = true, int *znote = nullptr, bool is_primary = true);
+		virtual void begin_new_note(row *r = nullptr, channel *p = nullptr, sample_context **context = nullptr, double effect_tick_length = 0, bool update_channel = true, int *znote = nullptr);
 		virtual void kill_note(sample_context *c = nullptr);
 		virtual void exit_sustain_loop(sample_context *c = nullptr);
 		virtual bool past_end(unsigned int sample, double offset, sample_context *c = nullptr);

@@ -269,12 +269,12 @@ namespace MultiPLAY
 				double t_vibrato = (vibrato_cycle_offset + t) * vibrato_cycle_frequency;
 				double t_offset = t_vibrato - floor(t_vibrato);
 				double value;
-				
+
 				if (linear_slides)
 					value = lg(note_frequency);
 				else
 					value = 14317056.0 / note_frequency;
-				
+
 				switch (vibrato_waveform)
 				{
 					case Waveform::Triangle:
@@ -303,7 +303,7 @@ namespace MultiPLAY
 					value = 1;
 
 				double this_note_frequency;
-				
+
 				if (linear_slides)
 					this_note_frequency = p2(value);
 				else
@@ -325,7 +325,7 @@ namespace MultiPLAY
 			double t_panbrello = (panbrello_cycle_offset + t) * panbrello_cycle_frequency;
 			double t_offset = t_panbrello - floor(t_panbrello);
 			double value = panbrello_middle;
-			
+
 			switch (panbrello_waveform)
 			{
 				case Waveform::Triangle:

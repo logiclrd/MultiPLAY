@@ -1298,8 +1298,8 @@ namespace MultiPLAY
 
 				if (primary_is_tone_portamento || secondary_is_tone_portamento)
 				{
-					int primary_multiplier = (row.effect.type == EffectType::MOD) ? 4 : 1;
-					int secondary_multiplier = (row.secondary_effect.type == EffectType::MOD) ? 4 : 1;
+					int primary_multiplier = (row.effect.type < EffectType::XM) ? 4 : 1;
+					int secondary_multiplier = (row.secondary_effect.type < EffectType::XM) ? 4 : 1;
 
 					portamento_speed = 0;
 

@@ -12,6 +12,10 @@ MultiPLAY supports several formats, including the more common "module" or tracke
 
 Probably the best-known tracker, Impulse Tracker, created by Jeffrey Lim, creates `*.it` files. Impulse Tracker is, intractably, a DOS program written in x86 assembler, but in recent years, a completely open-source cross-platform rewrite that aims to be a clone of the interface and features was created: <a href="https://schismtracker.org">Schism Tracker</a> by Storlek, Mrs. Brisby and Paper. MultiPLAY can play `*.it` files.
 
+### Fast Tracker 2
+
+The first tracker (as far as I know) with support for _instruments_, which can map different notes to different samples, leverage dynamic channels to support dynamic note off handling (the last note can be configured to linger for a bit even after another note starts), and probably most importantly supports envelopes for controlling the volume, panning and pitch. Apart from instruments, Fast Tracker 2 had more in common with MultiTracker than Scream Tracker, though it was released several years later. MultiPLAY can play `*.xm` files.
+
 ### Scream Tracker
 
 The inspiration for Impulse Tracker in the first place was the first major break-away from the first generation Amiga trackers, Scream Tracker, which was created by Sammi Tammilehto (Psi) of the Future Crew. MultiPLAY can play `*.s3m` files, the format created by ScreamTracker 3.
@@ -23,6 +27,10 @@ The demoscene group Renaissance created a format and player that could handle re
 ### Amiga Modules
 
 The original gangster of music modules, the `*.mod` file, was introduced with Ultimate Soundtracker for the Amiga by Karsten Obarski in 1987. MultiPLAY can play `*.mod` files.
+
+### UMX Containers
+
+The Unreal game engine supports using mod files in various formats to provide background music to games. It introduced a file format `*.umx` which is a container format. It doesn't actually specify how music is stored, it just wraps a MOD, S3M or IT file. MultiPLAY can play `*.umx` files.
 
 ### PLAY Strings
 

@@ -78,6 +78,9 @@ namespace MultiPLAY
 		memset(&tone_offset[0], 0, sizeof(tone_offset));
 
 		num_samples = 0;
+
+		new_note_action = NewNoteAction::Cut;
+		duplicate_note_check = DuplicateCheck::Off;
 	}
 
 	/*virtual*/ void sample_instrument::detect_false_looping()

@@ -327,7 +327,7 @@ namespace MultiPLAY
 			template <typename SampleType>
 			vector<SampleType *> decode_sample_data() const
 			{
-				bool looks_like_adpcm = 
+				bool looks_like_adpcm =
 					((header.flags & XMSampleFlags::SampleSize16bit) == 0) &&
 					(header.sample_encoding == XMSampleEncoding::ADPCM);
 
@@ -1180,7 +1180,7 @@ namespace MultiPLAY
 			}
 
 			cerr << setw(0) << ' ';
-			
+
 			if (note.effect_type <= 36)
 			{
 				cerr << ' ';

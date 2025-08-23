@@ -300,7 +300,7 @@ namespace MultiPLAY
 						num_consecutive_empty++;
 					else
 						num_consecutive_empty = 0;
-					
+
 					if ((num_consecutive_empty < 3) || (num_consecutive_empty == 10))
 						cout << line << endl;
 				}

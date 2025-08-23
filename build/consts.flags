@@ -15,7 +15,7 @@ else
 CXXCOMPATIBILITY = 
 endif
 
-OPTIMIZE := -Ofast -march=native -frename-registers -funroll-loops -fno-signed-zeros -fno-trapping-math -Wno-ignored-optimization-argument -Wno-comment -Wno-switch
+OPTIMIZE := -Ofast -march=native -frename-registers -funroll-loops -fno-signed-zeros -ffast-math -Wno-ignored-optimization-argument -Wno-comment -Wno-switch
 DEBUG := -g -DDEBUG -Wno-comment -Wno-switch
 SDL_CXX := -DSDL -DSDL_DEFAULT
 SDL_LD := -lSDL2

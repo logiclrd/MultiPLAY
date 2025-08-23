@@ -10,7 +10,7 @@
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/bin/debug/MultiPLAY",
-			"args": ["-module", "/code/MultiPLAY/Samples/mods/tight to me.it"],
+			"args": ["-module", "/code/MultiPLAY/Samples/mods/ramagard.s3m"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],
@@ -30,6 +30,32 @@
 				}
 			],
 			"preLaunchTask": "Build Debug"
+		},
+		{
+			"name": "(gdb) Launch (Release)",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/bin/release/MultiPLAY",
+			"args": ["-module", "/code/MultiPLAY/Samples/mods/war.s3m"],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			//"externalConsole": true,
+			"MIMode": "gdb",
+			"setupCommands":
+			[
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				},
+				{
+					"description": "Set Disassembly Flavor to Intel",
+					"text": "-gdb-set disassembly-flavor intel",
+					"ignoreFailures": true
+				}
+			],
+			"preLaunchTask": "Build Release"
 		}
 	]
 }

@@ -1390,13 +1390,16 @@ namespace MultiPLAY
 				}
 
 				if (row.secondary_effect.present)
-					apply_effect(row, row.secondary_effect, calculate_portamento_end_t, portamento_target);
+					apply_effect(row, row.secondary_effect, portamento_target);
 
 				if (row.effect.present)
-					apply_effect(row, row.effect, calculate_portamento_end_t, portamento_target);
+					apply_effect(row, row.effect, portamento_target);
 
 				if (calculate_portamento_end_t)
+				{
 					portamento_end_t = (portamento_target - portamento_start) / (portamento_end - portamento_start);
+					LINT_DOUBLE(portamento_end_t);
+				}
 			}
 		}
 
@@ -1408,7 +1411,7 @@ namespace MultiPLAY
 		return ChannelPlaybackState::Ongoing;
 	}
 
-	void channel_MODULE::apply_effect(row &row, effect_struct &effect, bool &calculate_portamento_end_t, double &portamento_target)
+	void channel_MODULE::apply_effect(row &row, effect_struct &effect, double &portamento_target)
 	{
 		effect_info_type &info = effect.info;
 
@@ -1480,9 +1483,6 @@ namespace MultiPLAY
 
 					delta_offset_per_tick = note_frequency / ticks_per_second;
 					LINT_POSITIVE_DOUBLE(delta_offset_per_tick);
-
-					calculate_portamento_end_t = true;
-					portamento = true;
 				}
 				else
 				{
@@ -1492,10 +1492,10 @@ namespace MultiPLAY
 						portamento_end = portamento_start + 4 * info.data * (module->speed - 1);
 
 					LINT_POSITIVE_DOUBLE(portamento_end);
-
-					portamento_end_t = 1.0;
-					portamento = true;
 				}
+
+				portamento_end_t = 1.0;
+				portamento = true;
 
 				break;
 			}
@@ -1538,9 +1538,6 @@ namespace MultiPLAY
 
 					delta_offset_per_tick = note_frequency / ticks_per_second;
 					LINT_POSITIVE_DOUBLE(delta_offset_per_tick);
-
-					calculate_portamento_end_t = true;
-					portamento = true;
 				}
 				else
 				{
@@ -1550,10 +1547,10 @@ namespace MultiPLAY
 						portamento_end = portamento_start - 4 * info.data * (module->speed - 1);
 
 					LINT_DOUBLE(portamento_end);
-
-					portamento_end_t = 1.0;
-					portamento = true;
 				}
+
+				portamento_end_t = 1.0;
+				portamento = true;
 
 				break;
 			}
@@ -1685,6 +1682,8 @@ namespace MultiPLAY
 				LINT_POSITIVE_DOUBLE(portamento_end);
 
 				portamento_end_t = (portamento_target - portamento_start) / (portamento_end - portamento_start);
+
+				LINT_DOUBLE(portamento_end_t);
 
 				portamento = true;
 

@@ -67,7 +67,7 @@ namespace MultiPLAY
 		virtual void note_fade();
 		virtual void get_playback_position(PlaybackPosition &position);
 		virtual ChannelPlaybackState::Type advance_pattern(one_sample &sample, Profile &profile);
-		void apply_effect(row &row, effect_struct &effect, bool &portamento, double &portamento_target);
+		void apply_effect(row &row, effect_struct &effect, double &portamento_target);
 		void terminate_playback();
 	};
 }

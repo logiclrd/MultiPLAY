@@ -35,7 +35,7 @@ namespace MultiPLAY
 
 		char songname[21];
 		songname[20] = 0;
-		
+
 		file->read(songname, 20);
 
 		for (int i=0; i<31; i++)
@@ -47,7 +47,7 @@ namespace MultiPLAY
 
 			file->read((char *)msb_chars, 2);
 			sample_description[i].byte_length = 2 * from_msb2_u(msb_chars);
-			
+
 			sample_description[i].finetune = char(file->get());
 			sample_description[i].volume = (unsigned char)file->get();
 
@@ -311,7 +311,7 @@ namespace MultiPLAY
 					new_pattern.row_list.push_back(rowdata);
 				}
 			}
-			
+
 			pats.push_back(new_pattern);
 		}
 
@@ -386,6 +386,7 @@ namespace MultiPLAY
 		ret->auto_loop_target = song_auto_loop_target;
 
 		ret->amiga_panning = true;
+		ret->channel_remember_note = true;
 
 		return ret;
 	}

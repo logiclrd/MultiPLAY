@@ -44,6 +44,18 @@ namespace MultiPLAY
 			short initial_speed;
 			short initial_tempo;
 			unsigned char pattern_list[256];
+
+			bool appears_valid()
+			{
+				return
+					(header_length >= 21) && (header_length <= 1000) && // arbitrary upper bound
+					(pattern_list_length >= 1) && (pattern_list_length <= 256) &&
+					(num_channels <= 64) &&
+					(num_patterns <= 256) &&
+					(num_instruments <= 128) &&
+					(initial_speed >= 0) && (initial_speed <= 31) &&
+					(initial_tempo >= 32) && (initial_tempo <= 255);
+			}
 		};
 
 		struct xm_pattern_header
@@ -619,8 +631,12 @@ namespace MultiPLAY
 
 			input->read((char *)&header, sizeof(header));
 
+			if (!header.appears_valid())
+				throw "Does not appear to be an XM file.";
+
 			input->seekg(module_start);
 			input->seekg(header.header_length, ios::cur);
+
 		}
 
 		void xm_module::load_pattern(istream *input)

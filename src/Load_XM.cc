@@ -994,6 +994,32 @@ namespace MultiPLAY
 						xm_header.panning_envelope_flags,
 						true); // signed values
 
+					// if an XM instrument doesn't specify a volume envelope, then a note-off command is supposed
+					// to simply cut the note immediately. but, if in our representation we have a looping sample
+					// and the instrument doesn't specify a volume envelope, then a note-off command turns on note
+					// fade and leaves it at that. it's very unlikely that the note fade will just happen to be
+					// set up to knock the note out in one frame. so, we need to come up with a scheme that will
+					// cause notes to cut on note-off. one way to do that is with a dummy volume envelope (which
+					// we can do because we're only in this pickle because there isn't a volume envelope to begin
+					// with) which sustains on full volume, and then after the sustain drops to 0 volume in just
+					// one frame.
+					//
+					// this is what OpenMPT does. :-)
+					if ((xm_header.volume_envelope_flags & XMEnvelopeFlags::On) == 0)
+					{
+						// because the volume envelope isn't On, convert_xm_envelope has
+						// given us a nearly pristine instrument_envelope
+						instrument->volume_envelope.enabled = true;
+						instrument->volume_envelope.looping = false;
+						instrument->volume_envelope.sustain_loop = true;
+
+						instrument->volume_envelope.node.push_back(instrument_envelope_node(0, 1.0));
+						instrument->volume_envelope.node.push_back(instrument_envelope_node(1, 0.0));
+
+						instrument->volume_envelope.sustain_loop_begin_tick = 0;
+						instrument->volume_envelope.sustain_loop_end_tick = 0;
+					}
+
 					for (int i=0; i < 96; i++)
 					{
 						unsigned mapped_sample_index = xm_header.keymap[i];

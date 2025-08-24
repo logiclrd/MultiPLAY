@@ -4,7 +4,8 @@ SOURCES = MultiPLAY.cc bit_memory_stream.cc bit_value.cc unix_break_handler.cc c
 SOURCES += effect.cc envelope.cc formatting.cc math.cc module.cc mod_finetune.cc notes.cc one_sample.cc
 SOURCES += pattern.cc progress.cc sample.cc sample_builtintype.cc sample_instrument.cc wave_file.cc
 SOURCES += wave_header.cc Load_Sample.cc Load_MOD.cc Load_MTM.cc Load_S3M.cc Load_IT.cc Load_XM.cc
-SOURCES += Load_UMX.cc Channel_DYNAMIC.cc Channel_PLAY.cc Channel_MODULE.cc
+SOURCES += Load_UMX.cc Channel_DYNAMIC.cc Channel_PLAY.cc Channel_MODULE.cc OpenFile.cc
+SOURCES += charset/CP437.cc charset/UTF8.cc
 
 SOURCES += DSP.cc
 

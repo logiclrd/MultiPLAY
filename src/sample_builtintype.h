@@ -100,7 +100,7 @@ namespace MultiPLAY
 				case 1: sample_scale = global_volume / 127.5;        break;
 				case 2: sample_scale = global_volume / 32767.5;      break;
 				case 4: sample_scale = global_volume / 2147483647.5; break;
-				default: throw "could not deduce sample scale";
+				default: throw L"could not deduce sample scale";
 			}
 		}
 
@@ -114,7 +114,7 @@ namespace MultiPLAY
 		virtual void begin_new_note(row *r = nullptr, channel *p = nullptr, sample_context **c = nullptr, double effect_tick_length = 0, bool update_channel = true, int */*znote*/ = nullptr)
 		{
 			if (c == nullptr)
-				throw "need sample context";
+				throw L"need sample context";
 
 			if (p && update_channel)
 			{
@@ -169,7 +169,7 @@ namespace MultiPLAY
 			sample_builtintype_context *context_ptr = dynamic_cast<sample_builtintype_context *>(c);
 
 			if (context_ptr == nullptr)
-				throw "INTERNAL ERROR: sample/context type mismatch";
+				throw L"INTERNAL ERROR: sample/context type mismatch";
 
 			sample_builtintype_context &context = *context_ptr;
 
@@ -185,7 +185,7 @@ namespace MultiPLAY
 		virtual bool past_end(unsigned int sample, double /*offset*/, sample_context *c = nullptr)
 		{
 			if (c == nullptr)
-				throw "need context for instrument";
+				throw L"need context for instrument";
 
 			if (loop_end != LOOP_END_NO_LOOP)
 				return false;
@@ -193,7 +193,7 @@ namespace MultiPLAY
 			sample_builtintype_context *context_ptr = dynamic_cast<sample_builtintype_context *>(c);
 
 			if (context_ptr == nullptr)
-				throw "INTERNAL ERROR: sample/context type mismatch";
+				throw L"INTERNAL ERROR: sample/context type mismatch";
 
 			sample_builtintype_context &context = *context_ptr;
 
@@ -215,12 +215,12 @@ namespace MultiPLAY
 		virtual one_sample get_sample(unsigned int sample, double offset, sample_context *c = nullptr)
 		{
 			if (c == nullptr)
-				throw "need a sample context";
+				throw L"need a sample context";
 
 			sample_builtintype_context *context_ptr = dynamic_cast<sample_builtintype_context *>(c);
 
 			if (context_ptr == nullptr)
-				throw "INTERNAL ERROR: sample/context type mismatch";
+				throw L"INTERNAL ERROR: sample/context type mismatch";
 
 			sample_builtintype_context &context = *context_ptr;
 
@@ -288,7 +288,7 @@ namespace MultiPLAY
 						switch (sustain_loop_style)
 						{
 							case LoopStyle::Undefined:
-								throw "sustain_loop_style has not been initialized";
+								throw L"sustain_loop_style has not been initialized";
 
 							case LoopStyle::Forward:
 								if (new_subsequent_sample < sustain_loop_begin)
@@ -359,7 +359,7 @@ namespace MultiPLAY
 						switch (loop_style)
 						{
 							case LoopStyle::Undefined:
-								throw "loop_style has not been initialized";
+								throw L"loop_style has not been initialized";
 
 							case LoopStyle::Forward:
 								if (new_subsequent_sample < loop_begin)

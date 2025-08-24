@@ -17,6 +17,10 @@ using namespace std;
 #include "string.h"
 #include "notes.h"
 
+#include "charset/CP437.h"
+
+using namespace CharSet;
+
 namespace MultiPLAY
 {
 	namespace
@@ -218,7 +222,7 @@ namespace MultiPLAY
 				int first_byte = src->get();
 
 				if (first_byte < 0)
-					throw "Does not appear to be an XM file";
+					throw L"Does not appear to be an XM file";
 
 				if ((first_byte & 0x80) == 0)
 				{
@@ -346,7 +350,7 @@ namespace MultiPLAY
 				bool stereo = (header.flags & XMSampleFlags::Stereo) != 0;
 
 				if (looks_like_adpcm)
-					throw "Not implemented: ADPCM";
+					throw L"Not implemented: ADPCM";
 
 				vector<SampleType *> sample_channels;
 
@@ -537,7 +541,7 @@ namespace MultiPLAY
 			file->read((char *)&pattern.header, sizeof(pattern.header));
 
 			if (pattern.header.pattern_rows > 1000)
-				throw "Does not appear to be an XM file";
+				throw L"Does not appear to be an XM file";
 
 			for (int i=0; i < pattern.header.pattern_rows; i++)
 				pattern.rows.push_back(xm_pattern_row(module_header.num_channels));
@@ -563,7 +567,7 @@ namespace MultiPLAY
 			memset((void *)&instrument.header, 0, sizeof(instrument.header));
 
 			if (instrument.header.total_instrument_header_length > 10000)
-				throw "Does not appear to be an XM file";
+				throw L"Does not appear to be an XM file";
 
 			auto instrument_start = file->tellg();
 
@@ -604,7 +608,7 @@ namespace MultiPLAY
 
 					if ((sample_header.sample_loop_start > sample_header.sample_length)
 					 || (sample_header.sample_loop_length > sample_header.sample_length - sample_header.sample_loop_start))
-						throw "Does not appear to be an XM file";
+						throw L"Does not appear to be an XM file";
 
 					instrument.samples.push_back(xm_sample(sample_header));
 				}
@@ -632,7 +636,7 @@ namespace MultiPLAY
 			input->read((char *)&header, sizeof(header));
 
 			if (!header.appears_valid())
-				throw "Does not appear to be an XM file.";
+				throw L"Does not appear to be an XM file.";
 
 			input->seekg(module_start);
 			input->seekg(header.header_length, ios::cur);
@@ -813,9 +817,9 @@ namespace MultiPLAY
 				if ((flags & XMEnvelopeFlags::Loop) != 0)
 				{
 					if ((loop_start_point < 0) || (loop_start_point >= num_points))
-						throw "Does not appear to be an XM file";
+						throw L"Does not appear to be an XM file";
 					if ((loop_end_point < 0) || (loop_end_point >= num_points))
-						throw "Does not appear to be an XM file";
+						throw L"Does not appear to be an XM file";
 
 					ret.loop_begin_tick = points[loop_start_point].frame;
 					ret.loop_end_tick = points[loop_end_point].frame;
@@ -829,7 +833,7 @@ namespace MultiPLAY
 				if (ret.sustain_loop)
 				{
 					if ((sustain_point < 0) && (sustain_point >= num_points))
-						throw "Does not appear to be an XM file";
+						throw L"Does not appear to be an XM file";
 
 					ret.sustain_loop_begin_tick = points[sustain_point].frame;
 					ret.sustain_loop_end_tick = points[sustain_point].frame;
@@ -923,7 +927,7 @@ namespace MultiPLAY
 						}
 
 						default:
-							throw "Don't know how to convert this XM sample";
+							throw L"Don't know how to convert this XM sample";
 					}
 
 					// This crazy, redundant math is lifted straight out of the CelerSMS reverse-engineered format document unchanged.
@@ -1032,7 +1036,7 @@ namespace MultiPLAY
 				unsigned pattern_number = header.pattern_list[i];
 
 				if (pattern_number >= ret->patterns.size())
-					throw "Does not appear to be an XM file";
+					throw L"Does not appear to be an XM file";
 
 				ret->pattern_list.push_back(&ret->patterns[pattern_number]);
 			}
@@ -1068,7 +1072,7 @@ namespace MultiPLAY
 
 		void dump_str(const char *buffer, const char *heading, int data_length)
 		{
-			cerr << "STRING " << heading << ": [";
+			wcerr << L"STRING " << cp437_to_unicode(heading) << L": [";
 
 			bool hit_nul = false;
 
@@ -1087,64 +1091,64 @@ namespace MultiPLAY
 				if (ch > 126)
 					ch = '?';
 
-				cerr << ch;
+				wcerr << wchar_t(ch);
 			}
 
-			cerr << ']' << endl;
+			wcerr << L']' << endl;
 		}
 
 		void dump_preamble(const xm_preamble &preamble)
 		{
-			cerr << "PREAMBLE" << endl;
-			cerr << "========" << endl;
+			wcerr << L"PREAMBLE" << endl;
+			wcerr << L"========" << endl;
 
 			dump_str(preamble.id_text, "id_text", 17);
 			dump_str(preamble.module_name, "module_name", 20);
 
-			cerr << "escape character (nominally 0x1A): 0x" << hex << int(preamble.escape) << dec << endl;
+			wcerr << L"escape character (nominally 0x1A): 0x" << hex << int(preamble.escape) << dec << endl;
 
 			dump_str(preamble.tracker_name, "tracker_name", 20);
 
-			cerr << "version: " << int(preamble.version_major) << "." << int(preamble.version_minor) << endl;
-			cerr << endl;
+			wcerr << L"version: " << int(preamble.version_major) << L"." << int(preamble.version_minor) << endl;
+			wcerr << endl;
 		}
 
 		void dump_header(const xm_header &header)
 		{
-			cerr << "HEADER" << endl;
-			cerr << "======" << endl;
+			wcerr << L"HEADER" << endl;
+			wcerr << L"======" << endl;
 
-			cerr << "header_length: "  << header.header_length << endl;
-			cerr << "pattern_list_length: " << header.pattern_list_length	 << endl;
-			cerr << "restart_position: " << header.restart_position << endl;
-			cerr << "num_channels: " << header.num_channels << endl;
-			cerr << "num_patterns: " << header.num_patterns << endl;
-			cerr << "num_instruments: " << header.num_instruments << endl;
-			cerr << "frequency_table: " << header.frequency_table << " ";
+			wcerr << L"header_length: "  << header.header_length << endl;
+			wcerr << L"pattern_list_length: " << header.pattern_list_length	 << endl;
+			wcerr << L"restart_position: " << header.restart_position << endl;
+			wcerr << L"num_channels: " << header.num_channels << endl;
+			wcerr << L"num_patterns: " << header.num_patterns << endl;
+			wcerr << L"num_instruments: " << header.num_instruments << endl;
+			wcerr << L"frequency_table: " << header.frequency_table << L" ";
 
 			if (header.frequency_table == 0)
-				cerr << "Amiga";
+				wcerr << L"Amiga";
 			else if (header.frequency_table == 1)
-				cerr << "Linear";
+				wcerr << L"Linear";
 			else
-				cerr << "???";
+				wcerr << L"???";
 
-			cerr << endl;
+			wcerr << endl;
 
-			cerr << "initial_speed: " << header.initial_speed << endl;
-			cerr << "initial_tempo: " << header.initial_tempo << endl;
+			wcerr << L"initial_speed: " << header.initial_speed << endl;
+			wcerr << L"initial_tempo: " << header.initial_tempo << endl;
 
-			cerr << "pattern_list:";
+			wcerr << L"pattern_list:";
 
 			for (int i=0; i < header.pattern_list_length; i++)
-				cerr << " " << int(header.pattern_list[i]);
-			cerr << endl << endl;
+				wcerr << L" " << int(header.pattern_list[i]);
+			wcerr << endl << endl;
 		}
 
 		void dump_note(const xm_pattern_note &note)
 		{
 			if (note.note == 0)
-				cerr << "--- ";
+				wcerr << L"--- ";
 			else
 			{
 				int snote = snote_from_xnote(note.note);
@@ -1154,66 +1158,66 @@ namespace MultiPLAY
 
 				switch (note_in_octave)
 				{
-					case 0: cerr << "C-"; break;
-					case 1: cerr << "C#"; break;
-					case 2: cerr << "D-"; break;
-					case 3: cerr << "D#"; break;
-					case 4: cerr << "E-"; break;
-					case 5: cerr << "F-"; break;
-					case 6: cerr << "F#"; break;
-					case 7: cerr << "G-"; break;
-					case 8: cerr << "G#"; break;
-					case 9: cerr << "A-"; break;
-					case 10: cerr << "A#"; break;
-					case 11: cerr << "B-"; break;
+					case 0: wcerr << L"C-"; break;
+					case 1: wcerr << L"C#"; break;
+					case 2: wcerr << L"D-"; break;
+					case 3: wcerr << L"D#"; break;
+					case 4: wcerr << L"E-"; break;
+					case 5: wcerr << L"F-"; break;
+					case 6: wcerr << L"F#"; break;
+					case 7: wcerr << L"G-"; break;
+					case 8: wcerr << L"G#"; break;
+					case 9: wcerr << L"A-"; break;
+					case 10: wcerr << L"A#"; break;
+					case 11: wcerr << L"B-"; break;
 				}
 
-				cerr << octave << " ";
+				wcerr << octave << L" ";
 			}
 
-			cerr << setfill('0');
+			wcerr << setfill(L'0');
 
 			if (note.instrument > 0)
-				cerr << setw(2) << int(note.instrument) << setw(0) << " ";
+				wcerr << setw(2) << int(note.instrument) << setw(0) << L" ";
 			else
-				cerr << "-- ";
+				wcerr << L"-- ";
 
 			switch (note.command)
 			{
-				case XMNoteCommand::None: cerr << "---"; break;
+				case XMNoteCommand::None: wcerr << L"---"; break;
 
-				case XMNoteCommand::VolumeSet: cerr << ' ' << setw(2) << int(note.command_parameter); break;
-				case XMNoteCommand::VolumeSlideDown: cerr << 'v' << setw(2) << int(note.command_parameter); break;
-				case XMNoteCommand::VolumeSlideUp: cerr << '^' << setw(2) << int(note.command_parameter); break;
-				case XMNoteCommand::VolumeFineSlideDown: cerr << "⭭" << setw(2) << int(note.command_parameter); break;
-				case XMNoteCommand::VolumeFineSlideUp: cerr << "⭫" << setw(2) << int(note.command_parameter); break;
-				case XMNoteCommand::VibratoSpeed: cerr << 'w' << setw(2) << int(note.command_parameter); break;
-				case XMNoteCommand::VibratoDepth: cerr << '~' << setw(2) << int(note.command_parameter); break;
-				case XMNoteCommand::Pan: cerr << "⮂" << setw(2) << int(note.command_parameter); break;
-				case XMNoteCommand::PanSlideLeft: cerr << "«" << setw(2) << int(note.command_parameter); break;
-				case XMNoteCommand::PanSlideRight: cerr << "»" << setw(2) << int(note.command_parameter); break;
-				case XMNoteCommand::TonePortamento: cerr << "⭜" << setw(2) << int(note.command_parameter); break;
+				case XMNoteCommand::VolumeSet: wcerr << L' ' << setw(2) << int(note.command_parameter); break;
+				case XMNoteCommand::VolumeSlideDown: wcerr << L'v' << setw(2) << int(note.command_parameter); break;
+				case XMNoteCommand::VolumeSlideUp: wcerr << L'^' << setw(2) << int(note.command_parameter); break;
+				case XMNoteCommand::VolumeFineSlideDown: wcerr << L"⭭" << setw(2) << int(note.command_parameter); break;
+				case XMNoteCommand::VolumeFineSlideUp: wcerr << L"⭫" << setw(2) << int(note.command_parameter); break;
+				case XMNoteCommand::VibratoSpeed: wcerr << L'w' << setw(2) << int(note.command_parameter); break;
+				case XMNoteCommand::VibratoDepth: wcerr << L'~' << setw(2) << int(note.command_parameter); break;
+				case XMNoteCommand::Pan: wcerr << L"⮂" << setw(2) << int(note.command_parameter); break;
+				case XMNoteCommand::PanSlideLeft: wcerr << L"«" << setw(2) << int(note.command_parameter); break;
+				case XMNoteCommand::PanSlideRight: wcerr << L"»" << setw(2) << int(note.command_parameter); break;
+				case XMNoteCommand::TonePortamento: wcerr << L"⭜" << setw(2) << int(note.command_parameter); break;
 			}
 
-			cerr << setw(0) << ' ';
+			wcerr << setw(0) << L' ';
 
 			if (note.effect_type <= 36)
 			{
-				cerr << ' ';
+				wcerr << L' ';
 
 				if (note.effect_type < 16)
-					cerr << hex << int(note.effect_type);
+					wcerr << hex << int(note.effect_type);
 				else
-					cerr << char(note.effect_type - 16 + 64);
+					wcerr << char(note.effect_type - 16 + 64);
 
-				cerr << setw(2) << hex << uppercase << int(note.effect_parameter) << dec << setw(0);
+				wcerr << setw(2) << hex << uppercase << int(note.effect_parameter) << dec << setw(0);
 			}
 			else if ((note.effect_type >= 0xE0) && (note.effect_type < 0xF0))
-				cerr << setw(2) << hex << uppercase << int(note.effect_type) << int(note.effect_parameter) << dec << setw(0);
+				wcerr << setw(2) << hex << uppercase << int(note.effect_type) << int(note.effect_parameter) << dec << setw(0);
 			else
-				cerr << "----";
+				wcerr << L"----";
 
-			cerr << setfill(' ');
+			wcerr << setfill(L' ');
 		}
 
 		void dump_pattern(const xm_pattern &pattern)
@@ -1224,16 +1228,16 @@ namespace MultiPLAY
 			{
 				const xm_pattern_row &row = pattern.rows[row_number];
 
-				cerr << setw(4) << row_number << setw(0) << " | ";
+				wcerr << setw(4) << row_number << setw(0) << L" | ";
 
 				for (unsigned channel=0; channel < row.channel_notes.size(); channel++)
 				{
 					if (channel > 0)
-						cerr << "    ";
+						wcerr << L"    ";
 					dump_note(row.channel_notes[channel]);
 				}
 
-				cerr << endl;
+				wcerr << endl;
 			}
 		}
 
@@ -1242,13 +1246,14 @@ namespace MultiPLAY
 			#define ENVELOPE_COLS 80
 			#define ENVELOPE_ROWS 15
 
-			char picture[ENVELOPE_ROWS * ENVELOPE_COLS];
+			wchar_t picture[ENVELOPE_ROWS * ENVELOPE_COLS];
 
-			memset(picture, ' ', ENVELOPE_ROWS * ENVELOPE_COLS);
+			for (int i=0; i < ENVELOPE_ROWS * ENVELOPE_COLS; i++)
+				picture[i] = L' ';
 
-			char *buf = &picture[0];
+			wchar_t *buf = &picture[0];
 
-			auto draw_dot = [buf](int x, int y) { if ((x >= 0) && (x < ENVELOPE_COLS) && (y >= 0) && (y < ENVELOPE_ROWS)) buf[y * ENVELOPE_COLS + x] = '*'; };
+			auto draw_dot = [buf](int x, int y) { if ((x >= 0) && (x < ENVELOPE_COLS) && (y >= 0) && (y < ENVELOPE_ROWS)) buf[y * ENVELOPE_COLS + x] = L'*'; };
 
 			auto swap = [](int &a, int &b) { int c = a; a = b; b = c; };
 
@@ -1301,11 +1306,11 @@ namespace MultiPLAY
 			}
 
 			for (int y=0; y < ENVELOPE_ROWS; y++)
-				cerr << string(&picture[y * ENVELOPE_COLS], ENVELOPE_COLS) << endl;
-			cerr << endl;
+				wcerr << wstring(&picture[y * ENVELOPE_COLS], ENVELOPE_COLS) << endl;
+			wcerr << endl;
 
 			for (int i=0; i < num_points; i++)
-				cerr << "[" << i << "]: " << points[i].value << " at frame " << points[i].frame << endl;
+				wcerr << L"[" << i << L"]: " << points[i].value << L" at frame " << points[i].frame << endl;
 		}
 
 		void dump_sample(const xm_sample &sample)
@@ -1313,13 +1318,14 @@ namespace MultiPLAY
 			#define WAVEFORM_COLS 140
 			#define WAVEFORM_ROWS 25
 
-			char picture[WAVEFORM_ROWS * WAVEFORM_COLS];
+			wchar_t picture[WAVEFORM_ROWS * WAVEFORM_COLS];
 
-			memset(picture, ' ', WAVEFORM_ROWS * WAVEFORM_COLS);
+			for (int i=0; i < WAVEFORM_ROWS * WAVEFORM_COLS; i++)
+				picture[i] = L' ';
 
-			char *buf = &picture[0];
+			wchar_t *buf = &picture[0];
 
-			auto draw_dot = [buf](unsigned x, unsigned y) { if ((x < WAVEFORM_COLS) && (y < WAVEFORM_ROWS)) buf[y * WAVEFORM_COLS + x] = '*'; };
+			auto draw_dot = [buf](unsigned x, unsigned y) { if ((x < WAVEFORM_COLS) && (y < WAVEFORM_ROWS)) buf[y * WAVEFORM_COLS + x] = L'*'; };
 
 			unsigned samples_in_view = sample.header.sample_length + sample.header.sample_length / 10;
 
@@ -1386,7 +1392,7 @@ namespace MultiPLAY
 			}
 
 			for (int y=0; y < WAVEFORM_ROWS; y++)
-				cerr << string(&picture[y * WAVEFORM_COLS], WAVEFORM_COLS) << endl;
+				wcerr << wstring(&picture[y * WAVEFORM_COLS], WAVEFORM_COLS) << endl;
 
 			// This crazy, redundant math is lifted straight out of the CelerSMS reverse-engineered format document unchanged.
 			double period = 10.0 * 12.0 * 16.0 * 4.0 - sample.header.relative_note_number * 16.0 * 4.0 - sample.header.fine_tune * 0.5;
@@ -1400,29 +1406,29 @@ namespace MultiPLAY
 			// frequency 4 times.
 			frequency *= 16;
 
-			cerr << "number of samples: " << sample_count << " / frequency: " << fixed << setprecision(1) << frequency << defaultfloat << " Hz" << endl;
-			cerr << endl;
+			wcerr << L"number of samples: " << sample_count << L" / frequency: " << fixed << setprecision(1) << frequency << defaultfloat << L" Hz" << endl;
+			wcerr << endl;
 		}
 
 		void dump_instrument(const xm_instrument &instrument)
 		{
 			const xm_instrument_header &header = instrument.header;
 
-			cerr << "total_instrument_header_length: " << header.total_instrument_header_length << endl;
+			wcerr << L"total_instrument_header_length: " << header.total_instrument_header_length << endl;
 
 			dump_str(header.instrument_name, "instrument_name", 22);
 
-			cerr << "instrument_type: " << int(header.instrument_type) << endl;
-			cerr << "number_of_samples: " << header.number_of_samples << endl;
+			wcerr << L"instrument_type: " << int(header.instrument_type) << endl;
+			wcerr << L"number_of_samples: " << header.number_of_samples << endl;
 
 			if (header.number_of_samples > 0)
 			{
 				const xm_sample_set_header &header2 = instrument.sample_set_header;
 
-				cerr << endl;
-				cerr << "sample_set_header_length: " << header2.sample_set_header_length << endl;
+				wcerr << endl;
+				wcerr << L"sample_set_header_length: " << header2.sample_set_header_length << endl;
 
-				cerr << "keymap:" << endl;
+				wcerr << L"keymap:" << endl;
 
 				int last_change = 0;
 
@@ -1430,64 +1436,64 @@ namespace MultiPLAY
 				{
 					if (header2.keymap[i] != header2.keymap[i - 1])
 					{
-						cerr << "  " << last_change;
+						wcerr << L"  " << last_change;
 
 						if (i - 1 > i)
-							cerr << " - " << (i - 1);
+							wcerr << L" - " << (i - 1);
 
-						cerr << ": " << header2.keymap[i - 1] << endl;
+						wcerr << L": " << header2.keymap[i - 1] << endl;
 
 						last_change = i;
 					}
 				}
 
-				cerr << "  " << last_change;
+				wcerr << L"  " << last_change;
 
 				if (last_change < 95)
-					cerr << " - 95";
+					wcerr << L" - 95";
 
-				cerr << ": " << header2.keymap[95] << endl;
+				wcerr << L": " << header2.keymap[95] << endl;
 
 				if (header2.num_volume_envelope_points == 0)
-					cerr << "volume envelope: none" << endl;
+					wcerr << L"volume envelope: none" << endl;
 				else
 				{
-					cerr << "volume envelope:" << endl;
+					wcerr << L"volume envelope:" << endl;
 
 					dump_envelope(header2.num_volume_envelope_points, header2.volume_envelope_points);
 				}
 
 				if (header2.num_panning_envelope_points == 0)
-					cerr << "panning envelope: none" << endl;
+					wcerr << L"panning envelope: none" << endl;
 				else
 				{
-					cerr << "panning envelope:" << endl;
+					wcerr << L"panning envelope:" << endl;
 
 					dump_envelope(header2.num_panning_envelope_points, header2.panning_envelope_points);
 				}
 
-				cerr << "volume sustain point: " << int(header2.volume_sustain_point) << endl;
-				cerr << "volume loop start point: " << int(header2.volume_loop_start_point) << endl;
-				cerr << "volume loop end point: " << int(header2.volume_loop_end_point) << endl;
-				cerr << "panning sustain point: " << int(header2.panning_sustain_point) << endl;
-				cerr << "panning loop start point: " << int(header2.panning_loop_start_point) << endl;
-				cerr << "panning loop end point: " << int(header2.panning_loop_end_point) << endl;
+				wcerr << L"volume sustain point: " << int(header2.volume_sustain_point) << endl;
+				wcerr << L"volume loop start point: " << int(header2.volume_loop_start_point) << endl;
+				wcerr << L"volume loop end point: " << int(header2.volume_loop_end_point) << endl;
+				wcerr << L"panning sustain point: " << int(header2.panning_sustain_point) << endl;
+				wcerr << L"panning loop start point: " << int(header2.panning_loop_start_point) << endl;
+				wcerr << L"panning loop end point: " << int(header2.panning_loop_end_point) << endl;
 
-				cerr << "volume envelope flags: " << XMEnvelopeFlags::ToString(header2.volume_envelope_flags) << endl;
-				cerr << "panning envelope flags: " << XMEnvelopeFlags::ToString(header2.panning_envelope_flags) << endl;
+				wcerr << L"volume envelope flags: " << XMEnvelopeFlags::ToString(header2.volume_envelope_flags) << endl;
+				wcerr << L"panning envelope flags: " << XMEnvelopeFlags::ToString(header2.panning_envelope_flags) << endl;
 
-				cerr << "vibrato type: " << int(header2.vibrato_type) << endl;
-				cerr << "vibrato sweep: " << int(header2.vibrato_sweep) << endl;
-				cerr << "vibrato depth: " << int(header2.vibrato_depth) << endl;
-				cerr << "vibrato rate: " << int(header2.vibrato_rate) << endl;
+				wcerr << L"vibrato type: " << int(header2.vibrato_type) << endl;
+				wcerr << L"vibrato sweep: " << int(header2.vibrato_sweep) << endl;
+				wcerr << L"vibrato depth: " << int(header2.vibrato_depth) << endl;
+				wcerr << L"vibrato rate: " << int(header2.vibrato_rate) << endl;
 
-				cerr << "fade out: " << int(header2.fade_out) << endl;
+				wcerr << L"fade out: " << int(header2.fade_out) << endl;
 
 				for (size_t sample_index = 0, l = instrument.samples.size(); sample_index < l; sample_index++)
 				{
-					cerr << endl;
+					wcerr << endl;
 
-					cerr << "sample #" << sample_index << ":" << endl;
+					wcerr << L"sample #" << sample_index << L":" << endl;
 
 					dump_sample(instrument.samples[sample_index]);
 				}
@@ -1501,22 +1507,22 @@ namespace MultiPLAY
 
 			for (size_t i=0; i < module.patterns.size(); i++)
 			{
-				cerr << "PATTERN " << i << endl;
-				cerr << "===========" << endl;
+				wcerr << L"PATTERN " << i << endl;
+				wcerr << L"===========" << endl;
 
 				dump_pattern(module.patterns[i]);
 
-				cerr << endl;
+				wcerr << endl;
 			}
 
 			for (size_t i=0; i < module.instruments.size(); i++)
 			{
-				cerr << "INSTRUMENT " << hex << uppercase << (i + 1) << nouppercase << dec << endl;
-				cerr << "============= (" << i << ")" << endl;
+				wcerr << L"INSTRUMENT " << hex << uppercase << (i + 1) << nouppercase << dec << endl;
+				wcerr << L"============= (" << i << L")" << endl;
 
 				dump_instrument(module.instruments[i]);
 
-				cerr << endl;
+				wcerr << endl;
 			}
 		}
 	}

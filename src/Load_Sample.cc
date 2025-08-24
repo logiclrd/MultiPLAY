@@ -36,14 +36,14 @@ namespace MultiPLAY
 			case SampleFileType::WAV:
 				if (string(magic) != "RIFF")
 				{
-					cerr << "Warning: WAV file does not have the expected RIFF header" << endl;
+					wcerr << L"Warning: WAV file does not have the expected RIFF header" << endl;
 					memcpy(magic, "RIFF", 4);
 				}
 				break;
 			case SampleFileType::AIFF:
 				if (string(magic) != "FORM")
 				{
-					cerr << "Warning: AIFF file does not have the expected FORM header" << endl;
+					wcerr << L"Warning: AIFF file does not have the expected FORM header" << endl;
 					memcpy(magic, "FORM", 4);
 				}
 				break;
@@ -70,7 +70,7 @@ namespace MultiPLAY
 					chunk.raw.chunkSize = unsigned(from_lsb4(lsb_bytes));
 
 					if (!file->good())
-						throw "unexpected end-of-file";
+						throw L"unexpected end-of-file";
 
 					if (chunk.chunkID() == "fmt ")
 					{
@@ -103,15 +103,15 @@ namespace MultiPLAY
 					}
 
 					if (!file->good())
-						throw "unexpected end-of-file";
+						throw L"unexpected end-of-file";
 
 					if (chunk.chunkID() == "data")
 					{
 						if (!have_format_chunk)
-							throw "did not find a valid fmt chunk before data";
+							throw L"did not find a valid fmt chunk before data";
 
 						if (format_chunk.wFormatTag != 1)
-							throw "unknown file encoding";
+							throw L"unknown file encoding";
 
 						if (format_chunk.wBitsPerSample <= 8)
 						{
@@ -252,13 +252,13 @@ namespace MultiPLAY
 							return smp;
 						}
 
-						throw "format was not recognized";
+						throw L"format was not recognized";
 					}
 				}
-				throw "no data chunk was found";
+				throw L"no data chunk was found";
 			}
 			else
-				throw "RIFF type is not WAVE";
+				throw L"RIFF type is not WAVE";
 		}
 		else if ((filetype_hint != SampleFileType::RAW) && (string(magic, 4) == "FORM")) // then it's probably an AIFF format file
 		{
@@ -282,7 +282,7 @@ namespace MultiPLAY
 					chunk.raw.chunkSize = unsigned(from_msb4(msb_bytes));
 
 					if (!file->good())
-						throw "unexpected end-of-file";
+						throw L"unexpected end-of-file";
 
 					if (chunk.chunkID() == "COMM")
 					{
@@ -302,25 +302,25 @@ namespace MultiPLAY
 						chunk.common.sampleSize = from_msb2(msb_bytes);
 
 						file->read((char *)&chunk.common.sampleRate.data[0], 10);
-						
+
 						common_chunk = chunk.common;
 						have_common_chunk = true;
 					}
 
 					if (!file->good())
-						throw "unexpected end-of-file";
+						throw L"unexpected end-of-file";
 
 					if (chunk.chunkID() == "SSND")
 					{
 						if (!have_common_chunk)
-							throw "did not find a valid COMM chunk before SSND";
+							throw L"did not find a valid COMM chunk before SSND";
 
 						file->read((char *)&msb_bytes[0], 4);
 						chunk.ssnd.offset = unsigned(from_msb4(msb_bytes));
 
 						file->read((char *)&msb_bytes[0], 4);
 						chunk.ssnd.blockSize = unsigned(from_msb4(msb_bytes));
-						
+
 						if (common_chunk.sampleSize <= 8)
 						{
 							sample_builtintype<signed char> *smp;
@@ -452,7 +452,7 @@ namespace MultiPLAY
 
 						if (common_chunk.sampleSize > 32)
 						{
-							cerr << "Warning: AIFF sample size is greater than 32 bits (non-standard)" << endl;
+							wcerr << L"Warning: AIFF sample size is greater than 32 bits (non-standard)" << endl;
 
 							sample_builtintype<signed long> *smp;
 
@@ -484,7 +484,7 @@ namespace MultiPLAY
 							return smp;
 						}
 
-						throw "format was not recognized";
+						throw L"format was not recognized";
 					}
 				}
 			}
@@ -555,7 +555,7 @@ namespace MultiPLAY
 			else if ((diff_16bit < diff_8bit) && (diff_16bit < diff_16bit_msb))
 			{
 				if (length & 1)
-					cerr << "Warning: sample data looks 16-bit, but byte length is not even" << endl;
+					wcerr << L"Warning: sample data looks 16-bit, but byte length is not even" << endl;
 
 				length >>= 1;
 
@@ -604,7 +604,7 @@ namespace MultiPLAY
 			else if ((diff_16bit_msb < diff_8bit) && (diff_16bit_msb < diff_16bit))
 			{
 				if (length & 1)
-					cerr << "Warning: sample data looks 16-bit, but byte length is not even" << endl;
+					wcerr << L"Warning: sample data looks 16-bit, but byte length is not even" << endl;
 
 				length >>= 1;
 
@@ -658,6 +658,6 @@ namespace MultiPLAY
 			}
 		}
 
-		throw "format was not recognized";
+		throw L"format was not recognized";
 	}
 }

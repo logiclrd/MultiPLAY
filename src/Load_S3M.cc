@@ -198,13 +198,13 @@ namespace MultiPLAY
 		int sig = file->get();
 
 		if (sig != 0x1A)
-			cerr << "Warning: missing 1A signature at byte 28" << endl;
-			//throw "invalid file format";
+			wcerr << L"Warning: missing 1A signature at byte 28" << endl;
+			//throw L"invalid file format";
 
 		int type = file->get();
 
 		if (type != 16)
-			throw "unknown file type";
+			throw L"unknown file type";
 
 		file->ignore(2);
 
@@ -233,9 +233,9 @@ namespace MultiPLAY
 
 		char magic[4];
 		file->read(magic, 4);
-		
+
 		if (string(magic, 4) != "SCRM")
-			throw "invalid file format (missing 'SCRM' near start of file)";
+			throw L"invalid file format (missing 'SCRM' near start of file)";
 
 		s3m_settings settings;
 
@@ -253,14 +253,14 @@ namespace MultiPLAY
 		file->ignore(2);
 
 		if (int(file->tellg()) != 64)
-			throw "internal error: not at the right place in the file";
+			throw L"internal error: not at the right place in the file";
 
 		s3m_channel_description file_channels[32];
 		for (int i=0; i<32; i++)
 			file_channels[i].value = char(file->get());
 
 		//if (pattern_list_length & 1)
-		//  throw "pattern list length is not even";
+		//  throw L"pattern list length is not even";
 
 		ArrayAllocator<unsigned char> pattern_list_index_allocator(pattern_list_length);
 		unsigned char *pattern_list_index = pattern_list_index_allocator.getArray();
@@ -352,7 +352,7 @@ namespace MultiPLAY
 			file->read(sample_magic, 4);
 
 			if (string(sample_magic, 4) != "SCRS")
-				throw "invalid sample format";
+				throw L"invalid sample format";
 
 			file->seekg(file_base_offset + parapointer * 16, ios::beg);
 
@@ -366,7 +366,7 @@ namespace MultiPLAY
 				{
 					unsigned short *data = new unsigned short[length];
 					unsigned short *data_right = data;
-					
+
 					if (sample_flags.stereo())
 					{
 						data_right = new unsigned short[length];

@@ -1,3 +1,4 @@
+#include <clocale>
 #include <csignal>
 #include <cstring>
 #include <sstream>
@@ -56,6 +57,12 @@ using namespace Telephony;
 #include "Channel_PLAY.h"
 #include "Channel_MODULE.h"
 
+#include "OpenFile.h"
+
+#include "charset/UTF8.h"
+
+using namespace CharSet;
+
 namespace MultiPLAY
 {
 	volatile bool shutting_down = false, shutdown_complete = false;
@@ -84,10 +91,10 @@ namespace MultiPLAY
 {
 	namespace
 	{
-		string get_extension_from_filename(const string &filename)
+		wstring get_extension_from_filename(const wstring &filename)
 		{
-			size_t offset = filename.find_last_of('.');
-			string extension(filename.substr(offset + 1));
+			size_t offset = filename.find_last_of(L'.');
+			wstring extension(filename.substr(offset + 1));
 
 			make_lowercase(extension);
 
@@ -95,38 +102,38 @@ namespace MultiPLAY
 		}
 	}
 
-	module_struct *load_module(const string &filename)
+	module_struct *load_module(const wstring &filename)
 	{
-		ifstream input(filename.c_str(), ios::binary);
+		ifstream input = File::OpenRead(filename);
 		module_struct *module;
 
 		if (!input.is_open())
-			throw "Failed to open file";
+			throw L"Failed to open file";
 
-		string extension = get_extension_from_filename(filename);
+		wstring extension = get_extension_from_filename(filename);
 
 		try
 		{
-			if (extension == "mod")
+			if (extension == L"mod")
 				module = load_mod(&input);
-			else if (extension == "mud")
+			else if (extension == L"mud")
 				module = load_mod(&input, true);
-			else if (extension == "mtm")
+			else if (extension == L"mtm")
 				module = load_mtm(&input);
-			else if (extension == "s3m")
-				module = load_s3m(&input);
-			else if (extension == "it")
-				module = load_it(&input);
-			else if (extension == "shit")
-				module = load_it(&input, true);
-			else if (extension == "xm")
+			else if (extension == L"xm")
 				module = load_xm(&input);
-			else if (extension == "umx")
+			else if (extension == L"s3m")
+				module = load_s3m(&input);
+			else if (extension == L"it")
+				module = load_it(&input);
+			else if (extension == L"shit")
+				module = load_it(&input, true);
+			else if (extension == L"umx")
 				module = load_umx(&input);
 			else
-				throw "unrecognized file extension";
+				throw L"unrecognized file extension";
 		}
-		catch (const char *e)
+		catch (const wchar_t *e)
 		{
 			input.close();
 			throw e;
@@ -160,54 +167,55 @@ namespace MultiPLAY
 		};
 	};
 
-	void show_usage(char *cmd_name)
+	void show_usage(const wchar_t *cmd_name)
 	{
-		string indentws(strlen(cmd_name), char(32));
+		wstring indentws(wcslen(cmd_name), wchar_t(32));
+
 		//       12345678901234567890123456789012345678901234567890123456789012345678901234567890
-		cerr << "usage: " << cmd_name << " [-play_overlap -play_no_overlap -play <PLAY files>] [-samples <sample files>]" << endl
-				<< "       " << indentws << " [-module_start_pattern <pattern order number>] [-module <S3M filenames>]" << endl
-				<< "       " << indentws << " [-frame-based_portamento] [-anticlick] [-max_time <seconds>]" << endl
-				<< "       " << indentws << " [-max_ticks <ticks>] [-output <output_file>] [-output_per_pattern_row]" << endl
-				<< "       " << indentws << " [-amplify <factor>] [-compress] {-stereo | -mono} " << endl
-				<< "       " << indentws << " {-lsb | -msb | -system_byte_order}" << endl
-				<< "       " << indentws << " { {-8 | -16} [-unsigned] | {-32 | -64} | [-ulaw] | [-alaw] }" << endl
-				<< "       " << indentws << " [-sample_rate <samples_per_sec>] [-looping]" << endl
-				<< "       " << indentws
+		wcerr << L"usage: " << cmd_name << L" [-play_overlap -play_no_overlap -play <PLAY files>] [-samples <sample files>]" << endl
+		      << L"       " << indentws << L" [-module_start_pattern <pattern order number>] [-module <S3M filenames>]" << endl
+		      << L"       " << indentws << L" [-frame-based_portamento] [-anticlick] [-max_time <seconds>]" << endl
+		      << L"       " << indentws << L" [-max_ticks <ticks>] [-output <output_file>] [-output_per_pattern_row]" << endl
+		      << L"       " << indentws << L" [-amplify <factor>] [-compress] {-stereo | -mono} " << endl
+		      << L"       " << indentws << L" {-lsb | -msb | -system_byte_order}" << endl
+		      << L"       " << indentws << L" { {-8 | -16} [-unsigned] | {-32 | -64} | [-ulaw] | [-alaw] }" << endl
+		      << L"       " << indentws << L" [-sample_rate <samples_per_sec>] [-looping]" << endl
+		      << L"       " << indentws
 	#ifdef DIRECTX
-																 << " [-directx]"
+		                                << L" [-directx]"
 	#endif
 	#ifdef SDL
-																									<< " [-sdl]"
+		                                                  << L" [-sdl]"
 	#endif
-																															 << endl
+		                                                                << endl
 				<< endl
-				<< "If a module start pattern number is specified, it applies to any -module" << endl
-				<< "specified after." << endl
+				<< L"If a module start pattern number is specified, it applies to any -module" << endl
+				<< L"specified after." << endl
 				<< endl
-				<< "8- and 16-bit sample sizes are integers, -32 and -64 are floating-point (IEEE" << endl
-				<< "standard). The default output filename is 'output.wav'. The default byte order" << endl
-				<< "is system; -lsb and -msb force Intel and Motorola endianness, respectively." << endl
-				<< "The byte order setting applies only to integer output (8- and 16-bit samples)." << endl;
+				<< L"8- and 16-bit sample sizes are integers, -32 and -64 are floating-point (IEEE" << endl
+				<< L"standard). The default output filename is 'output.wav'. The default byte order" << endl
+				<< L"is system; -lsb and -msb force Intel and Motorola endianness, respectively." << endl
+				<< L"The byte order setting applies only to integer output (8- and 16-bit samples)." << endl;
 	}
 
 	namespace
 	{
-		void expect_filenames(int &index, char *argv[], vector<string> &collection)
+		void expect_filenames(int &index, const wchar_t *argv[], vector<wstring> &collection)
 		{
 			while (argv[index])
 			{
-				if (argv[index][0] == '-')
+				if (argv[index][0] == L'-')
 					break;
 
-				if (argv[index][0] == '"')
+				if (argv[index][0] == L'"')
 				{
-					stringstream filename;
+					wstringstream filename;
 
-					string arg(&argv[index][1]);
+					wstring arg(&argv[index][1]);
 
-					size_t offset = arg.find('"');
+					size_t offset = arg.find(L'"');
 
-					if (offset != string::npos)
+					if (offset != wstring::npos)
 						filename << arg.substr(0, arg.size() - 1);
 					else
 					{
@@ -217,13 +225,13 @@ namespace MultiPLAY
 						{
 							index++;
 
-							filename << ' ';
+							filename << L' ';
 
 							arg = argv[index];
 
-							offset = arg.find('"');
+							offset = arg.find(L'"');
 
-							if (offset == string::npos)
+							if (offset == wstring::npos)
 								filename << arg;
 							else
 							{
@@ -235,7 +243,7 @@ namespace MultiPLAY
 					collection.push_back(filename.str());
 				}
 				else
-					collection.push_back(string(argv[index++]));
+					collection.push_back(wstring(argv[index++]));
 			}
 			index--;
 		}
@@ -243,42 +251,42 @@ namespace MultiPLAY
 		ofstream output;
 		int output_file_number = 0;
 		bool output_per_pattern_row = false;
-		string output_extension;
+		wstring output_extension;
 		wave_header wav_file_header;
 
-		void start_new_output_file(const char *name)
+		void start_new_output_file(const wchar_t *name)
 		{
 			if (output_per_pattern_row)
 			{
 				if (output.is_open())
 				{
-					stringstream ss;
+					wstringstream ss;
 
-					ss << "dump_" << setw(4) << setfill('0') << output_file_number++ << '_' << name << "." << output_extension;
+					ss << L"dump_" << setw(4) << setfill(L'0') << output_file_number++ << '_' << name << "." << output_extension;
 
 					wav_file_header.finalize();
 
 					output.close();
-					output.open(ss.str(), ios::binary | ios::trunc);
+					output = File::OpenWrite(ss.str(), ios::binary | ios::trunc);
 
 					wav_file_header.begin(&output);
 				}
 			}
 		}
 
-		bool is_empty(const string &str)
+		bool is_empty(const wstring &str)
 		{
-			return trim(str) == "";
+			return trim(str) == L"";
 		}
 
 		void output_module_summary(const module_struct *module)
 		{
-			string header_line = string("\"") + module->name + "\" (" + module->filename + ")";
+			wstring header_line = wstring(L"\"") + module->name + L"\" (" + module->filename + L")";
 
-			cout << header_line << endl;
-			for (string::size_type j=0, l=header_line.length(); j < l; j++)
-				cout.put('=');
-			cout << endl;
+			wcout << header_line << endl;
+			for (wstring::size_type j=0, l=header_line.length(); j < l; j++)
+				wcout.put(L'=');
+			wcout << endl;
 
 			if (module->samples.size() > 0)
 			{
@@ -292,9 +300,9 @@ namespace MultiPLAY
 
 				int num_consecutive_empty = 0;
 
-				for (vector<string>::size_type j=0; j <= last_specified_sample_name_index; j++)
+				for (vector<wstring>::size_type j=0; j <= last_specified_sample_name_index; j++)
 				{
-					const string &line = info_text[j];
+					const wstring &line = info_text[j];
 
 					if (is_empty(line))
 						num_consecutive_empty++;
@@ -302,15 +310,15 @@ namespace MultiPLAY
 						num_consecutive_empty = 0;
 
 					if ((num_consecutive_empty < 3) || (num_consecutive_empty == 10))
-						cout << line << endl;
+						wcout << line << endl;
 				}
 			}
 
-			cout << endl;
+			wcout << endl;
 		}
 	}
 
-	extern void notify_new_pattern_row_started(const char *name)
+	extern void notify_new_pattern_row_started(const wchar_t *name)
 	{
 		start_new_output_file(name);
 	}
@@ -318,11 +326,11 @@ namespace MultiPLAY
 
 using namespace MultiPLAY;
 
-int main(int argc, char *argv[])
+int wmain(int argc, const wchar_t *argv[])
 {
 	double max_time = -1.0;
 	long max_ticks = -1;
-	string output_filename("output.wav");
+	wstring output_filename(L"output.wav");
 	bool output_file = false;
 	int bits = 16;
 	bool unsigned_samples = false, ulaw = false, alaw = false;
@@ -330,7 +338,7 @@ int main(int argc, char *argv[])
 	bool stereo_output = true;
 	bool looping = false;
 	unsigned int module_start_pattern;
-	vector<string> play_filenames, play_sample_filenames, module_filenames;
+	vector<wstring> play_filenames, play_sample_filenames, module_filenames;
 	vector<unsigned int> module_start_patterns;
 	vector<bool> play_overlap_notes;
 	vector<module_struct *> modules;
@@ -355,22 +363,22 @@ int main(int argc, char *argv[])
 
 	for (int i=1; i<argc; i++)
 	{
-		string arg(argv[i]);
+		wstring arg(argv[i]);
 
-		if ((arg == "-?") || (arg == "-h") || (arg == "-help") || (arg == "--help"))
+		if ((arg == L"-?") || (arg == L"-h") || (arg == L"-help") || (arg == L"--help"))
 		{
 			show_usage(argv[0]);
 			return 0;
 		}
-		else if (arg == "-play_overlap")
+		else if (arg == L"-play_overlap")
 			next_play_overlap_notes = true;
-		else if (arg == "-play_no_overlap")
+		else if (arg == L"-play_no_overlap")
 			next_play_overlap_notes = false;
-		else if (arg == "-play")
+		else if (arg == L"-play")
 		{
 			i++;
 			if (i >= argc)
-				cerr << argv[0] << ": missing argument for parameter -play" << endl;
+				wcerr << argv[0] << L": missing argument for parameter -play" << endl;
 			else
 			{
 				expect_filenames(i, argv, play_filenames);
@@ -379,27 +387,27 @@ int main(int argc, char *argv[])
 					play_overlap_notes.push_back(next_play_overlap_notes);
 			}
 		}
-		else if ((arg == "-sample") || (arg == "-samples"))
+		else if ((arg == L"-sample") || (arg == L"-samples"))
 		{
 			i++;
 			if (i >= argc)
-				cerr << argv[0] << ": missing argument for parameter " << arg << endl;
+				wcerr << argv[0] << L": missing argument for parameter " << arg << endl;
 			else
 				expect_filenames(i, argv, play_sample_filenames);
 		}
-		else if (arg == "-module_start_pattern")
+		else if (arg == L"-module_start_pattern")
 		{
 			i++;
 			if (i >= argc)
-				cerr << argv[0] << ": missing argument for parameter " << arg << endl;
+				wcerr << argv[0] << L": missing argument for parameter " << arg << endl;
 			else
-				module_start_pattern = strtoul(argv[i], nullptr, 10);
+				module_start_pattern = wcstoul(argv[i], nullptr, 10);
 		}
-		else if ((arg == "-module") || (arg == "-modules"))
+		else if ((arg == L"-module") || (arg == L"-modules"))
 		{
 			i++;
 			if (i >= argc)
-				cerr << argv[0] << ": missing argument for parameter " << arg << endl;
+				wcerr << argv[0] << L": missing argument for parameter " << arg << endl;
 			else
 			{
 				expect_filenames(i, argv, module_filenames);
@@ -408,107 +416,107 @@ int main(int argc, char *argv[])
 					module_start_patterns.push_back(module_start_pattern);
 			}
 		}
-		else if (arg == "-frame-based_portamento")
+		else if (arg == L"-frame-based_portamento")
 			smooth_portamento_effect = false;
-		else if (arg == "-anticlick")
+		else if (arg == L"-anticlick")
 			anticlick = true;
-		else if (arg == "-trace")
+		else if (arg == L"-trace")
 			trace_mod = true;
-		else if (arg == "-max_seconds")
+		else if (arg == L"-max_seconds")
 		{
 			i++;
 			if (i >= argc)
-				cerr << argv[0] << ": missing argument for parameter -max_seconds" << endl;
+				wcerr << argv[0] << L": missing argument for parameter -max_seconds" << endl;
 			else
-				max_time = atof(argv[i]);
+				max_time = wcstod(argv[i], NULL);
 		}
-		else if (arg == "-max_ticks")
+		else if (arg == L"-max_ticks")
 		{
 			i++;
 			if (i >= argc)
-				cerr << argv[0] << ": missing argument for parameter -max_ticks" << endl;
+				wcerr << argv[0] << L": missing argument for parameter -max_ticks" << endl;
 			else
-				max_ticks = atol(argv[i]);
+				max_ticks = wcstol(argv[i], NULL, 10);
 		}
-		else if (arg == "-output")
+		else if (arg == L"-output")
 		{
 			i++;
 			if (i >= argc)
-				cerr << argv[0] << ": missing argument for parameter -output" << endl;
+				wcerr << argv[0] << L": missing argument for parameter -output" << endl;
 			else
 			{
 				output_file = true;
 				output_filename = argv[i];
 			}
 		}
-		else if (arg == "-output_per_pattern_row")
+		else if (arg == L"-output_per_pattern_row")
 			output_per_pattern_row = true;
-		else if (arg == "-looping")
+		else if (arg == L"-looping")
 			looping = true;
-		else if (arg == "-msb")
+		else if (arg == L"-msb")
 			msb_output = true, lsb_output = false;
-		else if (arg == "-lsb")
+		else if (arg == L"-lsb")
 		{
 			msb_output = false;
 			lsb_output = true;
 		}
-		else if (arg == "-system_byte_order")
+		else if (arg == L"-system_byte_order")
 		{
 			msb_output = false;
 			lsb_output = false;
 		}
-		else if (arg == "-stereo")
+		else if (arg == L"-stereo")
 			stereo_output = true;
-		else if (arg == "-mono")
+		else if (arg == L"-mono")
 			stereo_output = false;
-		else if (arg == "-8")
+		else if (arg == L"-8")
 			bits = 8;
-		else if (arg == "-16")
+		else if (arg == L"-16")
 			bits = 16;
-		else if (arg == "-32")
+		else if (arg == L"-32")
 			bits = 32;
-		else if (arg == "-64")
+		else if (arg == L"-64")
 			bits = 64;
-		else if (arg == "-ulaw")
+		else if (arg == L"-ulaw")
 			ulaw = true, alaw = false;
-		else if (arg == "-alaw")
+		else if (arg == L"-alaw")
 			alaw = true, ulaw = false;
-		else if (arg == "-unsigned")
+		else if (arg == L"-unsigned")
 			unsigned_samples = true;
-		else if (arg == "-sample_rate")
+		else if (arg == L"-sample_rate")
 		{
 			i++;
 			if (i >= argc)
-				cerr << argv[0] << ": missing argument for parameter -samplerate" << endl;
+				wcerr << argv[0] << L": missing argument for parameter -samplerate" << endl;
 			else
-				ticks_per_second = abs(atoi(argv[i]));
+				ticks_per_second = abs(wcstol(argv[i], NULL, 10));
 		}
-		else if (arg == "-amplify")
+		else if (arg == L"-amplify")
 		{
 			i++;
 			if (i >= argc)
-				cerr << argv[0] << ": missing argument for parameter -amplify" << endl;
+				wcerr << argv[0] << L": missing argument for parameter -amplify" << endl;
 			else
 				amplify = true,
-				amplify_by = atof(argv[i]);
+				amplify_by = wcstod(argv[i], NULL);
 		}
-		else if (arg == "-compress")
+		else if (arg == L"-compress")
 			compress = true;
 #ifdef DIRECTX
-		else if (arg == "-directx")
+		else if (arg == L"-directx")
 			direct_output_type = direct_output::directx;
 #endif
 #ifdef SDL
-		else if (arg == "-sdl")
+		else if (arg == L"-sdl")
 			direct_output_type = direct_output::sdl;
 #endif
 		else
-			cerr << argv[0] << ": unrecognized command-line parameter: " << arg << endl;
+			wcerr << argv[0] << L": unrecognized command-line parameter: " << arg << endl;
 	}
 
 	if (play_filenames.size() + module_filenames.size() == 0)
 	{
-		cerr << argv[0] << ": nothing to play!" << endl << endl;
+		wcerr << argv[0] << L": nothing to play!" << endl << endl;
 		show_usage(argv[0]);
 		return 0;
 	}
@@ -517,7 +525,7 @@ int main(int argc, char *argv[])
 
 	output_extension = get_extension_from_filename(output_filename);
 
-	if (output_extension == "wav")
+	if (output_extension == L"wav")
 	{
 		if (bits == 8)
 			unsigned_samples = true;
@@ -525,7 +533,7 @@ int main(int argc, char *argv[])
 		{
 			if (unsigned_samples)
 			{
-				cerr << "ignoring -unsigned because 16-bit WAV files always use signed samples" << endl;
+				wcerr << L"ignoring -unsigned because 16-bit WAV files always use signed samples" << endl;
 				unsigned_samples = false;
 			}
 		}
@@ -538,7 +546,7 @@ int main(int argc, char *argv[])
 
 	try
 	{
-		for (vector<string>::size_type i=0; i < module_filenames.size(); i++)
+		for (vector<wstring>::size_type i=0; i < module_filenames.size(); i++)
 		{
 			module_struct *module;
 
@@ -546,9 +554,9 @@ int main(int argc, char *argv[])
 			{
 				module = load_module(module_filenames[i]);
 			}
-			catch (const char *message)
+			catch (const wchar_t *message)
 			{
-				cerr << argv[0] << ": unable to load module file " << module_filenames[i] << ": " << message << endl;
+				wcerr << argv[0] << L": unable to load module file " << module_filenames[i] << ": " << message << endl;
 				continue;
 			}
 
@@ -577,23 +585,23 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		for (vector<string>::size_type i=0; i < play_filenames.size(); i++)
+		for (vector<wstring>::size_type i=0; i < play_filenames.size(); i++)
 		{
-			ifstream *file = new ifstream(play_filenames[i].c_str(), ios::binary);
+			ifstream *file = File::OpenReadPtr(play_filenames[i]);
 			if (!file->is_open())
 			{
 				delete file;
-				cerr << argv[0] << ": unable to open input file: " << play_filenames[i] << endl;
+				wcerr << argv[0] << L": unable to open input file: " << play_filenames[i] << endl;
 			}
 			else
 				channels.push_back(new channel_PLAY(file, looping, play_overlap_notes[i]));
 		}
 
-		for (vector<string>::size_type i=0; i < play_sample_filenames.size(); i++)
+		for (vector<wstring>::size_type i=0; i < play_sample_filenames.size(); i++)
 		{
-			ifstream file(play_sample_filenames[i].c_str(), ios::binary);
+			ifstream file = File::OpenRead(play_sample_filenames[i]);
 			if (!file.is_open())
-				cerr << argv[0] << ": unable to open sample file: " << play_sample_filenames[i] << endl;
+				wcerr << argv[0] << L": unable to open sample file: " << play_sample_filenames[i] << endl;
 			else
 			{
 				MultiPLAY::sample *this_sample;
@@ -602,9 +610,9 @@ int main(int argc, char *argv[])
 				{
 					this_sample = sample_from_file(&file);
 				}
-				catch (const char *error)
+				catch (const wchar_t *error)
 				{
-					cerr << argv[0] << ": unable to load sample file: " << play_sample_filenames[i] << " (" << error << ")" << endl;
+					wcerr << argv[0] << L": unable to load sample file: " << play_sample_filenames[i] << " (" << error << ")" << endl;
 					continue;
 				}
 				samples.push_back(this_sample);
@@ -623,12 +631,12 @@ int main(int argc, char *argv[])
 				init_ulaw_alaw();
 			}
 			else
-				cerr << argv[0] << ": " << (ulaw ? "u" : "A") << "-Law can't be used with direct output systems (they expect PCM)" << endl;
+				wcerr << argv[0] << L": " << (ulaw ? L"u" : L"A") << L"-Law can't be used with direct output systems (they expect PCM)" << endl;
 		}
 
 		if ((bits > 16) && unsigned_samples)
 		{
-			cerr << argv[0] << ": cannot use unsigned samples with floating-point output (32 and 64 bit precision)" << endl;
+			wcerr << argv[0] << L": cannot use unsigned samples with floating-point output (32 and 64 bit precision)" << endl;
 			return 1;
 		}
 
@@ -650,16 +658,16 @@ int main(int argc, char *argv[])
 					direct_output_type == direct_output::directx;
 					goto retry_output;
 	#else
-					cerr << argv[0] << ": no output specified, use -output to write a raw PCM or aLaw/uLaw file" << endl;
+					wcerr << argv[0] << L": no output specified, use -output to write a raw PCM or aLaw/uLaw file" << endl;
 					return 1;
 	#endif
 				}
 
-				output.open(output_filename.c_str(), ios::binary);
+				output = File::OpenWrite(output_filename.c_str());
 
 				if (!output.is_open())
 				{
-					cerr << argv[0] << ": unable to open output file: " << output_filename << endl;
+					wcerr << argv[0] << L": unable to open output file: " << output_filename << endl;
 					return 1;
 				}
 
@@ -700,7 +708,7 @@ int main(int argc, char *argv[])
 		{
 			module_struct *module = *i;
 
-			cerr << "Rendering " << module->filename << ":" << endl
+			wcerr << "Rendering " << module->filename << ":" << endl
 				<< "  \"" << trim(module->name) << "\"" << endl
 				<< "  " << module->num_channels << " channels" << endl;
 		}
@@ -708,40 +716,40 @@ int main(int argc, char *argv[])
 		switch (direct_output_type)
 		{
 			case direct_output::none:
-				cerr << "Output to: " << output_filename << endl;
+				wcerr << "Output to: " << output_filename << endl;
 				break;
 	#ifdef DIRECTX
 			case direct_output::directx:
-				cerr << "Direct output: DirectX" << endl;
+				wcerr << "Direct output: DirectX" << endl;
 				break;
 	#endif
 	#ifdef SDL
 			case direct_output::sdl:
-				cerr << "Direct output: SDL" << endl;
+				wcerr << "Direct output: SDL" << endl;
 				break;
 	#endif
 		}
 
-		cerr << "  " << output_channels << " output channels" << endl
+		wcerr << "  " << output_channels << " output channels" << endl
 			<< "  " << ticks_per_second << " samples per second" << endl
 			<< "  " << bits << " bits per sample";
 
 		if (bits > 16)
-			cerr << " (floating-point)";
+			wcerr << " (floating-point)";
 
 		if (unsigned_samples)
-			cerr << " (unsigned)";
+			wcerr << " (unsigned)";
 
-		cerr << endl;
+		wcerr << endl;
 
 		if (ulaw)
-			cerr << "  mu-Law sample encoding" << endl;
+			wcerr << "  mu-Law sample encoding" << endl;
 
 		if (looping)
-			cerr << "  looping" << endl;
+			wcerr << "  looping" << endl;
 
 		if (max_ticks > 0)
-			cerr << "  time limit " << max_ticks << " samples (" << (double(max_ticks) / ticks_per_second) << " seconds)" << endl;
+			wcerr << "  time limit " << max_ticks << " samples (" << (double(max_ticks) / ticks_per_second) << " seconds)" << endl;
 
 		current_absolute_tick_number = 0;
 
@@ -820,7 +828,7 @@ int main(int argc, char *argv[])
 				}
 
 				if (overdriven)
-					cerr << "Warning: overdriven output was detected. Output has been compressed." << endl;
+					wcerr << "Warning: overdriven output was detected. Output has been compressed." << endl;
 			}
 
 			profile.push_back("send to direct output");
@@ -936,54 +944,54 @@ int main(int argc, char *argv[])
 					profile.push_back("render status line");
 
 					// Wall time
-					cerr << '[' << setfill('0')
-						<< setw(2) << playback_time.Hour << setw(0) << ':'
-						<< setw(2) << playback_time.Minute << setw(0) << ':'
+					wcerr << L'[' << setfill(L'0')
+						<< setw(2) << playback_time.Hour << setw(0) << L':'
+						<< setw(2) << playback_time.Minute << setw(0) << L':'
 						<< setw(2) << playback_time.Second << setw(0)
-						<< "] ";
+						<< L"] ";
 
 					// Position per the channel
-					for (string::size_type i=0; playback_position.FormatString[i] != '\0'; i++)
+					for (wstring::size_type i=0; playback_position.FormatString[i] != '\0'; i++)
 					{
 						if (playback_position.FormatString[i] != '{')
-							cerr << playback_position.FormatString[i];
+							wcerr << playback_position.FormatString[i];
 						else
 						{
 							auto field_name_start = ++i;
 
-							while (playback_position.FormatString[i] != '}')
+							while (playback_position.FormatString[i] != L'}')
 								i++;
 
 							auto field_name_length = i - field_name_start;
 
-							string field_name(&playback_position.FormatString[field_name_start], field_name_length);
+							wstring field_name(&playback_position.FormatString[field_name_start], field_name_length);
 
-							string::size_type width_start = field_name.find(':');
+							wstring::size_type width_start = field_name.find(L':');
 
 							int width = 0;
 
-							if (width_start != string::npos)
+							if (width_start != wstring::npos)
 							{
-								width = atoi(&field_name[width_start + 1]);
+								width = wcstol(&field_name[width_start + 1], NULL, 10);
 								field_name.erase(width_start);
 							}
 
 							int value = playback_position.get_field(field_name);
 
 							if (width)
-								cerr << setw(width);
-							cerr << value;
+								wcerr << setw(width);
+							wcerr << value;
 							if (width)
-								cerr << setw(0);
+								wcerr << setw(0);
 
 							last_rendered_playback_position_fields.set_field(field_name, 1);
 						}
 					}
 
-#define BACKSPACES "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
+#define BACKSPACES L"\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b"
 
-					cerr << " -- dynamic channels: " << ancillary_channels.size()
-						<< "       " << BACKSPACES;
+					wcerr << L" -- dynamic channels: " << ancillary_channels.size()
+						<< L"       " << BACKSPACES;
 				}
 
 				last_rendered_playback_time = playback_time;
@@ -1025,15 +1033,37 @@ int main(int argc, char *argv[])
 	#endif
 		}
 
-		cerr << endl;
+		wcerr << endl;
 	}
-	catch (const char *message)
+	catch (const wchar_t *message)
 	{
-		cerr << endl;
-		cerr << "CRASH: " << message << endl;
+		wcerr << endl;
+		wcerr << L"CRASH: " << message << endl;
 	}
 
 	shutdown_complete = true;
 
 	return 0;
 }
+
+#ifndef WIN32
+int main(int argc, char *argv[])
+{
+	setlocale(LC_ALL, "en_US.UTF-8");
+
+	wcout.imbue(locale("en_US.UTF-8"));
+
+	vector<wstring> args;
+	vector<const wchar_t *> wargv(argc + 1);
+
+	args.reserve(argc);
+
+	for (int i=0; i < argc; i++)
+		args.push_back(utf8_to_unicode(argv[i]));
+
+	for (int i=0; i < argc; i++)
+		wargv[i] = args[i].c_str();
+
+	return wmain(argc, &wargv[0]);
+}
+#endif

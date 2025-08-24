@@ -59,7 +59,7 @@ namespace MultiPLAY
 		}
 
 		if (!file->good())
-			throw "File does not appear to be a MOD file";
+			throw L"File does not appear to be a MOD file";
 
 		unsigned int num_samples = 31, num_channels;
 
@@ -113,7 +113,7 @@ namespace MultiPLAY
 				goto reinterpret;
 			}
 			else
-				throw "unable to deduce MOD file format";
+				throw L"unable to deduce MOD file format";
 		}
 
 		unsigned max_pattern_index = 0;
@@ -142,7 +142,7 @@ namespace MultiPLAY
 		unsigned num_patterns = bytes_left_over / pattern_bytes;
 
 		if (num_patterns > 255)
-			throw "Does not appear to be a MOD file";
+			throw L"Does not appear to be a MOD file";
 
 		if ((bytes_left_over % pattern_bytes) == 0)
 		{
@@ -150,41 +150,41 @@ namespace MultiPLAY
 			{
 				if (mud)
 				{
-					cerr << "Ignoring the fact that there appear to be unused patterns in this MOD file." << endl
-							<< "Using the largest pattern index in the order list to calculate the number of" << endl
-							<< "patterns." << endl;
+					wcerr << L"Ignoring the fact that there appear to be unused patterns in this MOD file." << endl
+					      << L"Using the largest pattern index in the order list to calculate the number of" << endl
+					      << L"patterns." << endl;
 
 					num_patterns = 1 + max_pattern_index;
 				}
 				else
-					cerr << "Note: There appear to be unused patterns in this MOD file. The loader will" << endl
-							<< "      assume that this is the case. If the song sounds funny, try renaming the" << endl
-							<< "      file to the extension MUD instead of MOD. The loader will then use the" << endl
-							<< "      largest pattern index in the order list as an indicator of the number of" << endl
-							<< "      patterns." << endl;
+					wcerr << L"Note: There appear to be unused patterns in this MOD file. The loader will" << endl
+					      << L"      assume that this is the case. If the song sounds funny, try renaming the" << endl
+					      << L"      file to the extension MUD instead of MOD. The loader will then use the" << endl
+					      << L"      largest pattern index in the order list as an indicator of the number of" << endl
+					      << L"      patterns." << endl;
 			}
 		}
 		else
 		{
 			if (num_patterns <= max_pattern_index)
-				cerr << "Warning: This file appears to be damaged. Some samples might not sound right." << endl;
+				wcerr << L"Warning: This file appears to be damaged. Some samples might not sound right." << endl;
 			else if (num_patterns > 1 + max_pattern_index)
 			{
 				if (mud)
 				{
-					cerr << "Warning: There appears to be garbage at the end of this file." << endl
-							<< "Ignoring the fact that there appear to be unused patterns in this MOD file." << endl
-							<< "Using the largest pattern index in the order list to determine the number of" << endl
-							<< "patterns." << endl;
+					wcerr << L"Warning: There appears to be garbage at the end of this file." << endl
+					      << L"Ignoring the fact that there appear to be unused patterns in this MOD file." << endl
+					      << L"Using the largest pattern index in the order list to determine the number of" << endl
+					      << L"patterns." << endl;
 
 					num_patterns = 1 + max_pattern_index;
 				}
 				else
-					cerr << "Warning: There appears to be garbage at the end of this file. If you want the" << endl
-							<< "         largest possible amount of this file to be interpreted as pattern data" << endl
-							<< "         rename the file to the extension MUD instead of MOD. The loader will" << endl
-							<< "         then use the largest pattern index in the order list to determine the" << endl
-							<< "         number of patterns." << endl;
+					wcerr << L"Warning: There appears to be garbage at the end of this file. If you want the" << endl
+					      << L"         largest possible amount of this file to be interpreted as pattern data" << endl
+					      << L"         rename the file to the extension MUD instead of MOD. The loader will" << endl
+					      << L"         then use the largest pattern index in the order list to determine the" << endl
+					      << L"         number of patterns." << endl;
 			}
 		}
 

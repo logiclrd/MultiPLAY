@@ -75,7 +75,7 @@ namespace MultiPLAY
 	void wave_header::begin(std::ofstream *new_output)
 	{
 		if (in_progress)
-			throw "already writing a wave file header";
+			throw L"already writing a wave file header";
 
 		if (enabled)
 		{

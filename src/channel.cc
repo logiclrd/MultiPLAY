@@ -369,7 +369,7 @@ namespace MultiPLAY
 		position.RowCount = 0;
 		position.Offset = offset_major;
 		position.OffsetCount = ticks_total;
-		position.FormatString = "{Offset}/{OffsetCount}";
+		position.FormatString = L"{Offset}/{OffsetCount}";
 	}
 
 	one_sample &channel::calculate_next_tick_core()
@@ -541,7 +541,7 @@ namespace MultiPLAY
 							// Repeat the calculation for use in a debug session.
 							frequency = delta_offset_per_tick * ticks_per_second;
 							exponent = lg(frequency);
-							
+
 							exponent += current_sample->vibrato_depth * sin(TWO_PI * samples_this_note * current_sample->vibrato_cycle_frequency);
 
 							frequency = p2(exponent);
@@ -642,7 +642,7 @@ namespace MultiPLAY
 			looping(looping),
 			enabled(enabled)
 	{
-		identity = "UNINITIALIZED";
+		identity = L"UNINITIALIZED";
 
 		init_fields();
 	}
@@ -654,7 +654,7 @@ namespace MultiPLAY
 			looping(looping),
 			enabled(enabled)
 	{
-		identity = "UNINITIALIZED";
+		identity = L"UNINITIALIZED";
 
 		init_fields();
 	}

@@ -10,7 +10,7 @@ namespace MultiPLAY
 {
 	BOOL __stdcall win32_break_handler(DWORD ctrl_code)
 	{
-		cerr << "Caught Break...shutting down." << endl;
+		wcerr << L"Caught Break...shutting down." << endl;
 		start_shutdown();
 		if (ctrl_code == CTRL_CLOSE_EVENT)
 			while (!shutdown_complete)

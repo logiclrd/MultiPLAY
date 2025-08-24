@@ -11,14 +11,14 @@ namespace MultiPLAY
 		int Pattern, PatternCount;
 		int Row, RowCount;
 		long Offset, OffsetCount;
-		const char *FormatString;
+		const wchar_t *FormatString;
 
 		PlaybackPosition();
 
 		void clear();
 		bool is_changed(const PlaybackPosition &reference, const PlaybackPosition &relevant_fields);
-		int get_field(const std::string &field_name);
-		void set_field(const std::string &field_name, int value);
+		int get_field(const std::wstring &field_name);
+		void set_field(const std::wstring &field_name, int value);
 	};
 
 	struct PlaybackTime

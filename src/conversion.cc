@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <algorithm>
+#include <cwctype>
 #include <string>
 
 using namespace std;
@@ -48,23 +49,23 @@ namespace MultiPLAY
 		return in[3] | (in[2] << 8) | (in[1] << 16) | (in[0] << 24);
 	}
 
-	extern string &make_lowercase(string &s)
+	extern wstring &make_lowercase(wstring &s)
 	{
-		transform(s.begin(), s.end(), s.begin(), std::function<int(int)>(::tolower));
+		transform(s.begin(), s.end(), s.begin(), std::function<int(int)>(::towlower));
 		return s;
 	}
 
-	extern string trim(string in)
+	extern wstring trim(wstring in)
 	{
-		auto start = in.find_first_not_of(" \t\n");
+		auto start = in.find_first_not_of(L" \t\n");
 
-		if (start == string::npos)
-			return "";
+		if (start == wstring::npos)
+			return L"";
 		else
 		{
-			auto end = in.find_last_not_of(" \t\n");
+			auto end = in.find_last_not_of(L" \t\n");
 
-			if (end == string::npos)
+			if (end == wstring::npos)
 				return in.substr(start);
 			else
 				return in.substr(start, end - start + 1);

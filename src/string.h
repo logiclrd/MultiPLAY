@@ -1,8 +1,24 @@
 #ifndef STRING_H
 #define STRING_H
 
-#include <algorithm>
 #include <string>
+
+#include "charset/CP437.h"
+
+namespace
+{
+	inline void assign_string_from_structure_field(wstring &dest, const char *src, int src_size)
+	{
+		std::string bytes(src, src_size);
+
+		std::string::size_type term = bytes.find('\0');
+
+		if (term != std::string::npos)
+			bytes.erase(term);
+
+		dest = CharSet::cp437_to_unicode(bytes);
+	}
+}
 
 // This macro assumes that src is a char[N] embedded in the middle
 // of a structure, and that it may be null-terminated, but it might
@@ -19,13 +35,7 @@
 // whose target equals the desired item. If it reaches end, then it
 // simply returns end. This is perfect for our use case.
 
-#define ASSIGN_STRING_FROM_STRUCTURE_FIELD(dest, src)    \
-	do                                                     \
-	{                                                      \
-		auto b = std::begin(src);                            \
-		auto e = b + sizeof(src);                            \
-                                                         \
-		dest.assign(b, std::find(b, e, '\0'));               \
-	} while (0)
+#define ASSIGN_STRING_FROM_STRUCTURE_FIELD(dest, src)   \
+        assign_string_from_structure_field(dest, src, sizeof(src))
 
 #endif // STRING_H

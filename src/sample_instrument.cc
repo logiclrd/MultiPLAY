@@ -50,7 +50,7 @@ namespace MultiPLAY
 		sample_instrument_context *target = dynamic_cast<sample_instrument_context *>(other);
 
 		if (target == nullptr)
-			throw "Copy sample context to wrong type";
+			throw L"Copy sample context to wrong type";
 
 		sample_context::copy_to(target);
 
@@ -109,7 +109,7 @@ namespace MultiPLAY
 		int *znote/* = nullptr*/)
 	{
 		if (context == nullptr)
-			throw "need context for instrument";
+			throw L"need context for instrument";
 
 		if ((p != nullptr) && update_channel)
 		{
@@ -245,12 +245,12 @@ namespace MultiPLAY
 	/*virtual*/ void sample_instrument::kill_note(sample_context *c/* = nullptr*/)
 	{
 		if (c == nullptr)
-			throw "need context for instrument";
+			throw L"need context for instrument";
 
 		sample_instrument_context *context_ptr = dynamic_cast<sample_instrument_context *>(c);
 
 		if (context_ptr == nullptr)
-			throw "INTERNAL ERROR: sample/context type mismatch";
+			throw L"INTERNAL ERROR: sample/context type mismatch";
 
 		sample_instrument_context &context = *context_ptr;
 
@@ -264,12 +264,12 @@ namespace MultiPLAY
 	/*virtual*/ void sample_instrument::exit_sustain_loop(sample_context *c/* = nullptr*/)
 	{
 		if (c == nullptr)
-			throw "need context for instrument";
+			throw L"need context for instrument";
 
 		sample_instrument_context *context_ptr = dynamic_cast<sample_instrument_context *>(c);
 
 		if (context_ptr == nullptr)
-			throw "INTERNAL ERROR: sample/context type mismatch";
+			throw L"INTERNAL ERROR: sample/context type mismatch";
 
 		sample_instrument_context &context = *context_ptr;
 
@@ -284,12 +284,12 @@ namespace MultiPLAY
 	/*virtual*/ bool sample_instrument::past_end(unsigned int sample, double offset, sample_context *c/* = nullptr*/)
 	{
 		if (c == nullptr)
-			throw "need context for instrument";
+			throw L"need context for instrument";
 
 		sample_instrument_context *context_ptr = dynamic_cast<sample_instrument_context *>(c);
 
 		if (context_ptr == nullptr)
-			throw "INTERNAL ERROR: sample/context type mismatch";
+			throw L"INTERNAL ERROR: sample/context type mismatch";
 
 		sample_instrument_context &context = *context_ptr;
 
@@ -310,12 +310,12 @@ namespace MultiPLAY
 	/*virtual*/ one_sample sample_instrument::get_sample(unsigned int sample, double offset, sample_context *c/* = nullptr*/)
 	{
 		if (c == nullptr)
-			throw "need context for instrument";
+			throw L"need context for instrument";
 
 		sample_instrument_context *context_ptr = dynamic_cast<sample_instrument_context *>(c);
 
 		if (context_ptr == nullptr)
-			throw "INTERNAL ERROR: sample/context type mismatch";
+			throw L"INTERNAL ERROR: sample/context type mismatch";
 
 		sample_instrument_context &context = *context_ptr;
 

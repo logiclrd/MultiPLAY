@@ -55,7 +55,7 @@ namespace MultiPLAY
 	struct sample
 	{
 		int index;
-		string name;
+		wstring name;
 
 		double global_volume;
 		double fade_out;

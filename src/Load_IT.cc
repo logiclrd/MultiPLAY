@@ -114,7 +114,7 @@ namespace MultiPLAY
 			double global_volume;
 			int default_pan;
 			bool use_default_pan;
-			
+
 			unsigned char pitch_pan_center;
 			unsigned char pitch_pan_separation;
 
@@ -159,7 +159,7 @@ namespace MultiPLAY
 			file->read(magic, 4);
 
 			if (string(magic, 4) != "IMPI")
-				throw "invalid instrument (missing 'IMPI' at start of header)";
+				throw L"invalid instrument (missing 'IMPI' at start of header)";
 
 			char dos_filename[13];
 			file->read(dos_filename, 13);
@@ -167,7 +167,7 @@ namespace MultiPLAY
 			if (dos_filename[12] != 0)
 			{
 				dos_filename[12] = 0;
-				cerr << "Warning: DOS filename not properly null-terminated in instrument #" << i << endl;
+				wcerr << L"Warning: DOS filename not properly null-terminated in instrument #" << i << endl;
 			}
 
 			it_instrument_flags instrument_flags;
@@ -328,7 +328,7 @@ namespace MultiPLAY
 			file->read(magic, 4);
 
 			if (string(magic, 4) != "IMPI")
-				throw "invalid instrument (missing 'IMPI' at start of header)";
+				throw L"invalid instrument (missing 'IMPI' at start of header)";
 
 			char dos_filename[13];
 			file->read(dos_filename, 13);
@@ -336,7 +336,7 @@ namespace MultiPLAY
 			if (dos_filename[12] != 0)
 			{
 				dos_filename[12] = 0;
-				cerr << "Warning: DOS filename not properly null-terminated in instrument #" << i << endl;
+				wcerr << L"Warning: DOS filename not properly null-terminated in instrument #" << i << endl;
 			}
 
 			char new_note_action = char(file->get());
@@ -480,7 +480,7 @@ namespace MultiPLAY
 					sample_bias = signed_samples ? 0 : -32768;
 					break;
 				default:
-					throw "bits_per_sample is not 8 or 16";
+					throw L"bits_per_sample is not 8 or 16";
 			}
 
 			T *ret = new T[sample_length];
@@ -571,7 +571,7 @@ namespace MultiPLAY
 						}
 					}
 					else
-						throw "invalid bit width";
+						throw L"invalid bit width";
 
 					/* now expand value to signed byte */
 					if (bit_width < 32)
@@ -650,7 +650,7 @@ namespace MultiPLAY
 			file->read(magic, 4);
 			if (string(magic, 4) != "IMPS")
 			{
-				cerr << "Warning: sample #" << i << " does not have a valid header" << endl;
+				wcerr << L"Warning: sample #" << i << L" does not have a valid header" << endl;
 				return new sample_builtintype<signed char>(i, 1, 1.0);
 			}
 
@@ -660,7 +660,7 @@ namespace MultiPLAY
 			if (dos_filename[12] != 0)
 			{
 				dos_filename[12] = 0;
-				cerr << "Warning: DOS filename not properly null-terminated in sample #" << i << endl;
+				wcerr << L"Warning: DOS filename not properly null-terminated in sample #" << i << endl;
 			}
 
 			unsigned char global_volume = (unsigned char)file->get();
@@ -747,7 +747,7 @@ namespace MultiPLAY
 			{
 				if (flags.stereo())
 				{
-					cerr << "Unable to load sample #" << i << ": compression on stereo samples is not defined" << endl;
+					wcerr << L"Unable to load sample #" << i << L": compression on stereo samples is not defined" << endl;
 					return new sample_builtintype<signed char>(i, 1, 1.0);
 				}
 
@@ -758,9 +758,9 @@ namespace MultiPLAY
 					{
 						data = load_it_sample_compressed<signed short>(file, sample_length, conversion.two_level_delta_values(), conversion.signed_samples());
 					}
-					catch (const char *msg)
+					catch (const wchar_t *msg)
 					{
-						cerr << "Unable to load sample #" << i << ": cannot decode compressed format (" << msg << ")" << endl;
+						wcerr << L"Unable to load sample #" << i << L": cannot decode compressed format (" << msg << L")" << endl;
 						return new sample_builtintype<signed char>(i, 1, 1.0);
 					}
 
@@ -777,9 +777,9 @@ namespace MultiPLAY
 					{
 						data = load_it_sample_compressed<signed char>(file, sample_length, conversion.two_level_delta_values(), conversion.signed_samples());
 					}
-					catch (const char *msg)
+					catch (const wchar_t *msg)
 					{
-						cerr << "Unable to load sample #" << i << ": cannot decode compressed format (" << msg << ")" << endl;
+						wcerr << L"Unable to load sample #" << i << L": cannot decode compressed format (" << msg << L")" << endl;
 						return new sample_builtintype<signed char>(i, 1, 1.0);
 					}
 
@@ -950,7 +950,7 @@ namespace MultiPLAY
 			unsigned pattern_rows = from_lsb2_u(lsb_data);
 
 			if (pattern_rows > IT_MAX_PATTERN_ROWS)
-				throw "Does not appear to be a valid .IT file";
+				throw L"Does not appear to be a valid .IT file";
 
 			file->ignore(4);
 
@@ -1154,7 +1154,7 @@ namespace MultiPLAY
 		file->read(magic, 4);
 
 		if (string(magic, 4) != "IMPM")
-			throw "invalid file format (missing 'IMPM' at start of file)";
+			throw L"invalid file format (missing 'IMPM' at start of file)";
 
 		char songname[26];
 		file->read(songname, 26);
@@ -1178,7 +1178,7 @@ namespace MultiPLAY
 		if ((num_instruments > IT_MAX_INSTRUMENTS)
 		 || (num_samples > IT_MAX_SAMPLES)
 		 || (num_patterns > IT_MAX_PATTERNS))
-			throw "Does not appear to be a valid .IT file";
+			throw L"Does not appear to be a valid .IT file";
 
 		it_created_with_tracker cwt;
 
@@ -1239,12 +1239,12 @@ namespace MultiPLAY
 			}
 
 			if (!okay)
-				cerr << "WARNING: File has " << order_list_length << " order table entries, but the IT format only allows up to " << IT_MAX_ORDERS << "." << endl;
+				wcerr << L"WARNING: File has " << order_list_length << L" order table entries, but the IT format only allows up to " << IT_MAX_ORDERS << L"." << endl;
 
 			order_list_length = IT_MAX_ORDERS;
 			order_table.erase(order_table.begin() + order_list_length, order_table.end());
 		}
-		
+
 		vector<unsigned int> instrument_offset(num_instruments);
 		vector<unsigned int> sample_header_offset(num_samples);
 		vector<unsigned int> pattern_offset(num_patterns);
@@ -1270,7 +1270,7 @@ namespace MultiPLAY
 			unsigned actual_offset = (unsigned)file->tellg();
 
 			if (expected_offset != actual_offset)
-				throw "internal error (file offset is not what it should be)";
+				throw L"internal error (file offset is not what it should be)";
 		}
 
 		vector<it_instrument_description> insts;
@@ -1305,7 +1305,7 @@ namespace MultiPLAY
 			for (unsigned i=0; i<num_instruments; i++)
 			{
 				it_instrument_description &id = insts[i];
-				
+
 				sample_instrument *is = new sample_instrument(int(i));
 
 				is->set_global_volume(id.global_volume);
@@ -1353,17 +1353,17 @@ namespace MultiPLAY
 		vector<pattern> pats;
 		bool has_note_events[MAX_MODULE_CHANNELS] = { false }; // entire struct to 0
 
-		cerr << "Loading " << num_patterns << " patterns" << endl;
-		cerr << '.' << string(num_patterns, '-') << '.' << endl << ' ';
+		wcerr << L"Loading " << num_patterns << L" patterns" << endl;
+		wcerr << L'.' << wstring(num_patterns, L'-') << L'.' << endl << L' ';
 		for (unsigned i=0; i<num_patterns; i++)
 		{
 			pattern pat((int)i);
 
 			if (pattern_offset[i] == 0)
-				cerr << ' ';
+				wcerr << L' ';
 			else
 			{
-				cerr << '.';
+				wcerr << L'.';
 
 				file->seekg(file_base_offset + pattern_offset[i]);
 
@@ -1372,7 +1372,7 @@ namespace MultiPLAY
 
 			pats.push_back(pat);
 		}
-		cerr << endl << endl;
+		wcerr << endl << endl;
 
 		module_struct *ret = new module_struct();
 

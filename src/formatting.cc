@@ -8,71 +8,75 @@ using namespace std;
 
 #include "module.h"
 
+#include "charset/UTF8.h"
+
+using namespace CharSet;
+
 namespace MultiPLAY
 {
-	void format_pattern_note(ostream &d, const row &row)
+	void format_pattern_note(wostream &d, const row &row)
 	{
 		//                                     .- escaped for trigraph avoidance
-		d << string("C-C#D-D#E-F-F#G-G#A-A#B-?\?==^^--").substr((row.snote & 15) * 2, 2)
-			<< char((row.snote >= 0) ? (48 + (row.snote >> 4)) : '-') << " ";
+		d << wstring(L"C-C#D-D#E-F-F#G-G#A-A#B-?\?==^^--").substr((row.snote & 15) * 2, 2)
+			<< wchar_t((row.snote >= 0) ? (48 + (row.snote >> 4)) : L'-') << L" ";
 
 		if (row.instrument == nullptr)
-			d << "-- ";
+			d << L"-- ";
 		else
-			d << setfill('0') << setw(2) << row.instrument->index << " ";
+			d << setfill(L'0') << setw(2) << row.instrument->index << L" ";
 		if (row.volume >= 0)
 		{
 			if (row.volume > 64)
-				d << "vXX";
+				d << L"vXX";
 			else
-				d << "v" << setfill('0') << setw(2) << row.volume;
+				d << L"v" << setfill(L'0') << setw(2) << row.volume;
 			if (row.secondary_effect.present)
-				d << "*";
+				d << L"*";
 			else
-				d << " ";
+				d << L" ";
 		}
 		else if (row.secondary_effect.present)
 		{
 			d << char(row.secondary_effect.command)
-				<< hex << uppercase << setfill('0') << setw(2) << int(row.secondary_effect.info.data) << nouppercase << dec
-				<< " ";
+				<< hex << uppercase << setfill(L'0') << setw(2) << int(row.secondary_effect.info.data) << nouppercase << dec
+				<< L" ";
 		}
 		else
-			d << "--- ";
+			d << L"--- ";
 		if (row.effect.present)
 			d << char(row.effect.command)
-				<< hex << uppercase << setfill('0') << setw(2) << int(row.effect.info.data) << nouppercase << dec;
+				<< hex << uppercase << setfill(L'0') << setw(2) << int(row.effect.info.data) << nouppercase << dec;
 		else
-			d << "---";
+			d << L"---";
 	}
 
-	void format_pattern_row(ostream &d, unsigned int row_number, const vector<row> &row_data, bool endl/* = true*/)
+	void format_pattern_row(wostream &d, unsigned int row_number, const vector<row> &row_data, bool endl/* = true*/)
 	{
-		d << setw(3) << row_number << setw(0) << " | ";
+		d << setw(3) << row_number << setw(0) << L" | ";
 
 		for (unsigned channel = 0; channel < row_data.size(); channel++)
 		{
 			format_pattern_note(d, row_data[channel]);
-			d << "    ";
+			d << L"    ";
 		}
 
 		d << endl;
 	}
 
-	void format_pattern(ostream &d, const pattern *pattern_ptr)
+	void format_pattern(wostream &d, const pattern *pattern_ptr)
 	{
 		if (pattern_ptr == nullptr)
 		{
-			d << "NULL POINTER" << endl;
+			d << L"NULL POINTER" << endl;
 			return;
 		}
 
 		const pattern &pattern = *pattern_ptr;
 
 		if (pattern.is_skip_marker)
-			d << "+++" << endl;
+			d << L"+++" << endl;
 		else if (pattern.is_end_marker)
-			d << "---" << endl;
+			d << L"---" << endl;
 		else
 		{
 			for (unsigned row_number = 0; row_number < pattern.row_list.size(); row_number++)
@@ -80,34 +84,34 @@ namespace MultiPLAY
 		}
 	}
 
-	extern void format_sample(ostream &d, const sample *sample)
+	extern void format_sample(wostream &d, const sample *sample)
 	{
 		if (sample == nullptr)
-			d << "NULL POINTER" << endl;
+			d << L"NULL POINTER" << endl;
 		else
-			d << sample->num_samples << " @" << sample->samples_per_second << "Hz" << endl;
+			d << sample->num_samples << L" @" << sample->samples_per_second << L"Hz" << endl;
 	}
 
-	extern void format_module(ostream &d, const module_struct *mod)
+	extern void format_module(wostream &d, const module_struct *mod)
 	{
 		if (mod == nullptr)
-			d << "NULL" << endl;
+			d << L"NUL" << endl;
 		else
 		{
-			d << "filename: " << mod->filename << endl;
-			d << "name: " << mod->name << endl;
+			d << L"filename: " << mod->filename << endl;
+			d << L"name: " << mod->name << endl;
 
-			d << "pattern: " << mod->patterns.size() << endl;
+			d << L"pattern: " << mod->patterns.size() << endl;
 			for (size_t i = 0, l = mod->patterns.size(); i < l; i++)
 			{
-				d << "[" << i << "]:" << endl;
+				d << L"[" << i << L"]:" << endl;
 				format_pattern(d, &mod->patterns[i]);
 			}
 
-			d << "pattern list: " << mod->pattern_list_length << endl;
+			d << L"pattern list: " << mod->pattern_list_length << endl;
 			for (size_t i = 0, l  = unsigned(mod->pattern_list_length); i < l; i++)
 			{
-				d << "[" << i << "]: ";
+				d << L"[" << i << L"]: ";
 
 				bool found = false;
 
@@ -115,39 +119,39 @@ namespace MultiPLAY
 				{
 					if (mod->pattern_list[i] == &mod->patterns[j])
 					{
-						d << "&pattern[" << j << "]" << endl;
+						d << L"&pattern[" << j << L"]" << endl;
 						found = true;
 						break;
 					}
 				}
 
 				if (!found)
-					d << "UNKNOWN POINTER" << endl;
+					d << L"UNKNOWN POINTER" << endl;
 			}
 
-			d << "samples: " << mod->samples.size() << endl;
+			d << L"samples: " << mod->samples.size() << endl;
 			for (size_t i = 0, l = mod->samples.size(); i < l; i++)
 			{
-				d << "[" << i << "]: ";
+				d << L"[" << i << L"]: ";
 				format_sample(d, mod->samples[i]);
 			}
 
-			d << "sample_info: " << mod->sample_info.size() << endl;
+			d << L"sample_info: " << mod->sample_info.size() << endl;
 			for (size_t i = 0, l = mod->sample_info.size(); i < l; i++)
-				d << "[" << i << "]: vibrato_speed == " << mod->sample_info[i].vibrato_speed << ", vibrato_depth == " << mod->sample_info[i].vibrato_depth << endl;
+				d << L"[" << i << L"]: vibrato_speed == " << mod->sample_info[i].vibrato_speed << L", vibrato_depth == " << mod->sample_info[i].vibrato_depth << endl;
 
-			d << "channel_enabled: ";
+			d << L"channel_enabled: ";
 			for (unsigned i = 0; i < MAX_MODULE_CHANNELS; i++)
 				d << int(mod->channel_enabled[i]);
 			d << endl;
 
-			d << "channel_map:" << endl;
+			d << L"channel_map:" << endl;
 			for (unsigned i = 0; i < MAX_MODULE_CHANNELS; i++)
-				d << "[" << i << "]: " << mod->channel_map[i] << endl;
+				d << L"[" << i << L"]: " << mod->channel_map[i] << endl;
 
-			d << "pattern_loop:" << endl;
+			d << L"pattern_loop:" << endl;
 			for (unsigned i = 0; i < MAX_MODULE_CHANNELS; i++)
-				d << "[" << i << "]: " << mod->pattern_loop[i].need_repetitions << " at " << mod->pattern_loop[i].row << " with count " << mod->pattern_loop[i].repetitions << endl;
+				d << L"[" << i << L"]: " << mod->pattern_loop[i].need_repetitions << L" at " << mod->pattern_loop[i].row << L" with count " << mod->pattern_loop[i].repetitions << endl;
 		}
 	}
 
@@ -158,12 +162,16 @@ namespace MultiPLAY
 
 	extern void dump_module_to_next_file(module_struct *mod)
 	{
+		wstringstream dump_buffer;
+
+		format_module(dump_buffer, mod);
+
 		stringstream ss;
 
-		ss << "dump_" << dump_file_index++ << ".txt";
+		ss << L"dump_" << dump_file_index++ << L".txt";
 
-		ofstream d(ss.str());
+		ofstream file(ss.str());
 
-		format_module(d, mod);
+		file << unicode_to_utf8(dump_buffer.str());
 	}
 }

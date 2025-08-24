@@ -28,7 +28,7 @@ namespace MultiPLAY
 
 	struct channel
 	{
-		std::string identity;
+		std::wstring identity;
 
 		bool enabled, finished;
 		double offset, delta_offset_per_tick;

@@ -17,7 +17,7 @@ namespace MultiPLAY
 			Square,   // _|‾|_|‾|_|‾|_|‾|_|‾
 
 			Sawtooth, // /|/|/|/|/|/|/|/|/|/
-			
+
 			RampDown, // |\|\|\|\|\|\|\|\|\|
 
 			Triangle, // /\/\/\/\/\/\/\/\/\/
@@ -47,7 +47,7 @@ namespace MultiPLAY
 	extern module_struct *load_module(const std::string &filename);
 
 	extern void show_usage(char *cmd_name);
-	extern void notify_new_pattern_row_started(const char *name);
+	extern void notify_new_pattern_row_started(const wchar_t *name);
 	extern void start_shutdown();
 
 	extern volatile bool shutdown_complete;

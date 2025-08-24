@@ -108,7 +108,7 @@ namespace MultiPLAY
 					sample_scale[1] = exp((s3m_pan_value - 8) / 8.0);
 				else
 					sample_scale[1] = 1.0;
-					
+
 				for (int i=2; i<num_scales; i++)
 					sample_scale[i] = 0.0;
 			}
@@ -121,9 +121,9 @@ namespace MultiPLAY
 				if (amiga_pan_value == 0xA4)
 					to_surround_sound();
 				else
-					cerr << "Amiga pan of value "
-						<< setfill('0') << setw(2) << hex << uppercase << amiga_pan_value << nouppercase << dec
-						<< " is not defined" << endl;
+					wcerr << L"Amiga pan of value "
+						<< setfill(L'0') << setw(2) << hex << uppercase << amiga_pan_value << nouppercase << dec
+						<< L" is not defined" << endl;
 			}
 			else if (num_scales == 0)
 				sample_scale[1] = 1.0;
@@ -206,7 +206,7 @@ namespace MultiPLAY
 		inline one_sample(int num_channels = MAX_CHANNELS)
 		{
 			if (num_channels > MAX_CHANNELS)
-				throw "Too many channels in one_sample initialization";
+				throw L"Too many channels in one_sample initialization";
 
 			num_samples = num_channels;
 			while (num_channels--)
@@ -276,7 +276,7 @@ namespace MultiPLAY
 
 			return *this;
 		}
-		
+
 		inline one_sample &scale(double scale_value)
 		{
 			return *this *= scale_value;;
@@ -285,7 +285,7 @@ namespace MultiPLAY
 		inline one_sample &operator +=(const one_sample &other)
 		{
 			if (num_samples != other.num_samples)
-				throw "Trying to add a sample with an incorrect number of channels";
+				throw L"Trying to add a sample with an incorrect number of channels";
 
 			for (int i=0; i<num_samples; i++)
 				sample[i] += other.sample[i];
@@ -304,7 +304,7 @@ namespace MultiPLAY
 		inline one_sample &operator *=(const pan_value &other)
 		{
 			if (num_samples != other.num_scales)
-				throw "Trying to pan a sample with an incorrect number of channels";
+				throw L"Trying to pan a sample with an incorrect number of channels";
 
 			for (int i=0; i<num_samples; i++)
 				sample[i] *= other.sample_scale[i];
@@ -373,7 +373,7 @@ namespace MultiPLAY
 
 		for (int i=0; i<pan.num_scales; i++)
 			ret.sample[i] = pan.sample_scale[i] * sample_value;
-		
+
 		return ret;
 	}
 
@@ -396,7 +396,7 @@ namespace MultiPLAY
 
 		for (int i=0; i<pan.num_scales; i++)
 			ret.sample[i] = pan.sample_scale[i] * ret.sample[i];
-		
+
 		return ret;
 	}
 }

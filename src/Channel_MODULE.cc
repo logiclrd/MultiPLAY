@@ -24,9 +24,9 @@ namespace MultiPLAY
 		  channel_number(module->channel_map[channel_number]),
 		  module(module)
 	{
-		stringstream ss;
+		wstringstream ss;
 
-		ss << "module_" << module->filename << "_" << channel_number;
+		ss << L"module_" << module->filename << L"_" << channel_number;
 
 		this->identity = ss.str();
 
@@ -115,7 +115,7 @@ namespace MultiPLAY
 		position.RowCount = int(module->pattern_list[module->current_pattern]->row_list.size());
 		position.Offset = offset_major;
 		position.OffsetCount = ticks_total;
-		position.FormatString = "order {Order}/{OrderCount} - {Pattern}:{Row:2}";
+		position.FormatString = L"order {Order}/{OrderCount} - {Pattern}:{Row:2}";
 	}
 
 	void channel_MODULE::terminate_playback()
@@ -672,9 +672,9 @@ namespace MultiPLAY
 				}
 			}
 
-			stringstream ss;
+			wstringstream ss;
 
-			ss << module->current_pattern << ':' << setw(3) << setfill('0') << module->current_row;
+			ss << module->current_pattern << L':' << setw(3) << setfill(L'0') << module->current_row;
 
 			notify_new_pattern_row_started(ss.str().c_str());
 		}
@@ -843,7 +843,7 @@ namespace MultiPLAY
 						if (module->xm_module)
 							envelope_offset = (long)(info.data * module->ticks_per_frame);
 						else
-							cerr << "Ignoring XM-specific effect Effect::SetEnvelopePosition in non-XM module" << endl;
+							wcerr << L"Ignoring XM-specific effect Effect::SetEnvelopePosition in non-XM module" << endl;
 
 						break;
 					}
@@ -867,17 +867,17 @@ namespace MultiPLAY
 			{
 				if (channel_number == 0)
 				{
-					cerr << endl;
+					wcerr << endl;
 					if (module->current_row == 0)
-						cerr << string(9 + 18 * module->num_channels, '-') << endl;
+						wcerr << wstring(9 + 18 * module->num_channels, L'-') << endl;
 
-					cerr << setfill(' ') << setw(3) << module->current_pattern << ":"
-								<< setfill('0') << setw(req_digits(int(module->pattern_list[module->current_pattern]->row_list.size()))) << module->current_row << " | ";
+					wcerr << setfill(L' ') << setw(3) << module->current_pattern << L":"
+								<< setfill(L'0') << setw(req_digits(int(module->pattern_list[module->current_pattern]->row_list.size()))) << module->current_row << L" | ";
 				}
 
-				format_pattern_note(cerr, row);
+				format_pattern_note(wcerr, row);
 
-				cerr << "    ";
+				wcerr << L"    ";
 			}
 
 			if (row.volume >= 0)
@@ -1726,8 +1726,8 @@ namespace MultiPLAY
 					}
 				}
 				else
-					cerr << "Ignoring pre-IT command: " << row.effect.command
-						<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
+					wcerr << L"Ignoring pre-IT command: " << row.effect.command
+						<< setfill(L'0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
 
 				break;
 			}
@@ -1847,12 +1847,12 @@ namespace MultiPLAY
 						else if (extended_effect_info->low_nybble == 1)
 							portamento_glissando = true;
 						else
-							cerr << "Invalid parameter value: S3M command S1"
-								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << ")" << endl;
+							wcerr << L"Invalid parameter value: S3M command S1"
+								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << L")" << endl;
 						break;
 					case ExtendedEffect::SetFineTune: // 0x2
 						if (current_sample == nullptr)
-							cerr << "No instrument for set finetune effect" << endl;
+							wcerr << L"No instrument for set finetune effect" << endl;
 						else
 						{
 							double before_finetune = current_sample->samples_per_second;
@@ -1886,7 +1886,7 @@ namespace MultiPLAY
 							vibrato_retrig = true;
 
 						if (extended_effect_info->low_nybble & 0x8)
-							cerr << "Warning: bit 3 ignored in effect S3"
+							wcerr << L"Warning: bit 3 ignored in effect S3"
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 						break;
 					case ExtendedEffect::SetTremoloWaveform: // 0x4
@@ -1904,7 +1904,7 @@ namespace MultiPLAY
 							tremolo_retrig = true;
 
 						if (extended_effect_info->low_nybble & 0x8)
-							cerr << "Warning: bit 3 ignored in effect S4"
+							wcerr << L"Warning: bit 3 ignored in effect S4"
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 						break;
 					case ExtendedEffect::SetPanbrelloWaveform: // 0x5
@@ -1924,11 +1924,11 @@ namespace MultiPLAY
 								panbrello_retrig = true;
 
 							if (extended_effect_info->low_nybble & 0x8)
-								cerr << "Warning: bit 3 ignored in effect S5"
+								wcerr << L"Warning: bit 3 ignored in effect S5"
 									<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 						}
 						else
-							cerr << "Ignoring pre-IT command: S5"
+							wcerr << L"Ignoring pre-IT command: S5"
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 						break;
 					case ExtendedEffect::ConfigureNote: // 0x7, past note cut/off/fade, temporary new note action
@@ -1999,12 +1999,12 @@ namespace MultiPLAY
 									}
 									break;
 								default:
-									cerr << "Warning: argument meaning unspecified in effect S7"
+									wcerr << L"Warning: argument meaning unspecified in effect S7"
 										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 							}
 						}
 						else
-							cerr << "Ignoring pre-IT command: S7"
+							wcerr << L"Ignoring pre-IT command: S7"
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 						break;
 					case ExtendedEffect::RoughPanning: // 0x8
@@ -2020,12 +2020,12 @@ namespace MultiPLAY
 									panning.to_surround_sound();
 									break;
 								default:
-									cerr << "Warning: argument meaning unspecified in effect S9"
+									wcerr << L"Warning: argument meaning unspecified in effect S9"
 										<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 							}
 						}
 						else
-							cerr << "Ignoring pre-IT command: S7"
+							wcerr << L"Ignoring pre-IT command: S7"
 								<< hex << uppercase << extended_effect_info->low_nybble << nouppercase << dec << endl;
 						break;
 					case ExtendedEffect::Panning:
@@ -2061,8 +2061,8 @@ namespace MultiPLAY
 						}
 						break;
 					default:
-						cerr << "Unimplemented S3M/IT command: " << row.effect.command
-							<< setfill('0') << setw(2) << hex << uppercase << int(extended_effect_info->data) << nouppercase << dec << endl;
+						wcerr << L"Unimplemented S3M/IT command: " << row.effect.command
+							<< setfill(L'0') << setw(2) << hex << uppercase << int(extended_effect_info->data) << nouppercase << dec << endl;
 				}
 
 				break;
@@ -2144,15 +2144,15 @@ namespace MultiPLAY
 					panbrello = true;
 				}
 				else
-					cerr << "Ignoring " << EffectType::ToString(row.effect.type) << " command: " << row.effect.command
-						<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
+					wcerr << L"Ignoring " << EffectType::ToString(row.effect.type) << L" command: " << row.effect.command
+						<< setfill(L'0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
 
 				break;
 			}
 
 			default:
-				cerr << "Unimplemented " << EffectType::ToString(row.effect.type) << " command: " << row.effect.command
-					<< setfill('0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
+				wcerr << L"Unimplemented " << EffectType::ToString(row.effect.type) << L" command: " << row.effect.command
+					<< setfill(L'0') << setw(2) << hex << uppercase << int(info.data) << nouppercase << dec << endl;
 		}
 	}
 }

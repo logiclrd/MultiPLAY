@@ -23,7 +23,7 @@ namespace MultiPLAY
 	{
 		struct mtm_sample_description
 		{
-			string sample_name;
+			wstring sample_name;
 			unsigned long byte_length, loop_start, loop_end;
 			unsigned char finetune;
 			unsigned char default_volume;
@@ -62,9 +62,9 @@ namespace MultiPLAY
 		char magic[4];
 		file->read(magic, 3);
 		magic[3] = 0;
-		
+
 		if (string(magic) != "MTM")
-			throw "invalid file format (missing 'MTM' at start of file)";
+			throw L"invalid file format (missing 'MTM' at start of file)";
 
 		unsigned char version;
 		file->read((char *)&version, 1);
@@ -242,7 +242,7 @@ namespace MultiPLAY
 
 				if (sample_description[i].byte_length & 1)
 				{
-					cerr << "Warning: 16-bit MTM sample length is not even" << endl;
+					wcerr << L"Warning: 16-bit MTM sample length is not even" << endl;
 					file->ignore(1);
 				}
 			}
@@ -295,11 +295,11 @@ namespace MultiPLAY
 				if (track[j])
 					channel_used[j] = true;
 			}
-	
+
 			for (unsigned j=0; j<64; j++)
 			{
 				vector<row> rowdata(32);
-				
+
 				for (unsigned k=0; k<32; k++)
 					if (track[k])
 					{

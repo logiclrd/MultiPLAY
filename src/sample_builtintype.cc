@@ -15,7 +15,7 @@ namespace MultiPLAY
 		sample_builtintype_context *target = dynamic_cast<sample_builtintype_context *>(other);
 
 		if (target == nullptr)
-			throw "Copy sample context to wrong type";
+			throw L"Copy sample context to wrong type";
 
 		sample_context::copy_to(target);
 

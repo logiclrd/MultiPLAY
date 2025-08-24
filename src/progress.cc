@@ -43,45 +43,45 @@ namespace MultiPLAY
 		return false;
 	}
 
-	int PlaybackPosition::get_field(const string &field_name)
+	int PlaybackPosition::get_field(const wstring &field_name)
 	{
-		if (field_name == "Order")
+		if (field_name == L"Order")
 			return Order;
-		if (field_name == "OrderCount")
+		if (field_name == L"OrderCount")
 			return OrderCount;
-		if (field_name == "Pattern")
+		if (field_name == L"Pattern")
 			return Pattern;
-		if (field_name == "PatternCount")
+		if (field_name == L"PatternCount")
 			return PatternCount;
-		if (field_name == "Row")
+		if (field_name == L"Row")
 			return Row;
-		if (field_name == "RowCount")
+		if (field_name == L"RowCount")
 			return RowCount;
-		if (field_name == "Offset")
+		if (field_name == L"Offset")
 			return Offset;
-		if (field_name == "OffsetCount")
+		if (field_name == L"OffsetCount")
 			return OffsetCount;
 
 		return -1;
 	}
 
-	void PlaybackPosition::set_field(const string &field_name, int value)
+	void PlaybackPosition::set_field(const wstring &field_name, int value)
 	{
-		if (field_name == "Order")
+		if (field_name == L"Order")
 			Order = value;
-		if (field_name == "OrderCount")
+		if (field_name == L"OrderCount")
 			OrderCount = value;
-		if (field_name == "Pattern")
+		if (field_name == L"Pattern")
 			Pattern = value;
-		if (field_name == "PatternCount")
+		if (field_name == L"PatternCount")
 			PatternCount = value;
-		if (field_name == "Row")
+		if (field_name == L"Row")
 			Row = value;
-		if (field_name == "RowCount")
+		if (field_name == L"RowCount")
 			RowCount = value;
-		if (field_name == "Offset")
+		if (field_name == L"Offset")
 			Offset = value;
-		if (field_name == "OffsetCount")
+		if (field_name == L"OffsetCount")
 			OffsetCount = value;
 	}
 

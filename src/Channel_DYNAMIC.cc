@@ -24,9 +24,9 @@ namespace MultiPLAY
 		: channel(spawner->panning, false, true),
 			parent_channel(spawner)
 	{
-		stringstream ss;
+		wstringstream ss;
 
-		ss << "dynamic_" << (next_dynamic_channel_id++);
+		ss << L"dynamic_" << (next_dynamic_channel_id++);
 
 		this->identity = ss.str();
 
@@ -90,7 +90,7 @@ namespace MultiPLAY
 		position.RowCount = 0;
 		position.Offset = offset_major;
 		position.OffsetCount = ticks_total;
-		position.FormatString = "{Offset}/{OffsetCount}";
+		position.FormatString = L"{Offset}/{OffsetCount}";
 	}
 
 	channel_DYNAMIC::~channel_DYNAMIC()

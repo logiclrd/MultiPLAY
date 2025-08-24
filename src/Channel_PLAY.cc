@@ -27,9 +27,9 @@ namespace MultiPLAY
 		: channel(looping, true),
 			in(input)
 	{
-		stringstream ss;
+		wstringstream ss;
 
-		ss << "play_" << (next_play_channel_id++);
+		ss << L"play_" << (next_play_channel_id++);
 
 		this->identity = ss.str();
 
@@ -61,7 +61,7 @@ namespace MultiPLAY
 		position.RowCount = 0;
 		position.Offset = in_offset;
 		position.OffsetCount = in_length;
-		position.FormatString = "{Offset}/{OffsetCount}";
+		position.FormatString = L"{Offset}/{OffsetCount}";
 	}
 
 	int channel_PLAY::pull_char()
@@ -209,12 +209,12 @@ namespace MultiPLAY
 					octave = expect_int();
 					if (octave < 0)
 					{
-						cerr << "Warning: Syntax error in input: O" << octave << endl;
+						wcerr << L"Warning: Syntax error in input: O" << octave << endl;
 						octave = 0;
 					}
 					if (octave > 6)
 					{
-						cerr << "Warning: Syntax error in input: O" << octave << endl;
+						wcerr << L"Warning: Syntax error in input: O" << octave << endl;
 						octave = 6;
 					}
 					break;
@@ -234,7 +234,7 @@ namespace MultiPLAY
 					duration_scale = expect_duration(&this_note_length_denominator);
 					if (note_length_denominator && (this_note_length_denominator == 0))
 					{
-						cerr << "Warning: invalid note length denominator " << this_note_length_denominator << endl;
+						wcerr << L"Warning: invalid note length denominator " << this_note_length_denominator << endl;
 						this_note_length_denominator = note_length_denominator;
 					}
 
@@ -260,12 +260,12 @@ namespace MultiPLAY
 					this_note_length_denominator = note_length_denominator;
 					if (znote < 0)
 					{
-						cerr << "Warning: Syntax error in input: N" << znote << endl;
+						wcerr << L"Warning: Syntax error in input: N" << znote << endl;
 						znote = 0;
 					}
 					if (octave > 84)
 					{
-						cerr << "Warning: Syntax error in input: N" << znote << endl;
+						wcerr << L"Warning: Syntax error in input: N" << znote << endl;
 						znote = 84;
 					}
 					if ((znote != 0) && (current_waveform == Waveform::Sample) && (current_sample != nullptr))
@@ -279,13 +279,13 @@ namespace MultiPLAY
 					{
 						if ((note_length_denominator < 0) || (current_waveform != Waveform::Sample))
 						{
-							cerr << "Warning: Invalid note length specified: 1/" << note_length_denominator << endl;
+							wcerr << L"Warning: Invalid note length specified: 1/" << note_length_denominator << endl;
 							note_length_denominator = 1;
 						}
 					}
 					else if (note_length_denominator > 64)
 					{
-						cerr << "Warning: Invalid note length specified: 1/" << note_length_denominator << endl;
+						wcerr << L"Warning: Invalid note length specified: 1/" << note_length_denominator << endl;
 						note_length_denominator = 64;
 					}
 					break;
@@ -320,10 +320,10 @@ namespace MultiPLAY
 						case 'B':
 						case 'f':
 						case 'F':
-							cerr << "Warning: Ignoring input: M" << char(toupper(ch)) << endl;
+							wcerr << L"Warning: Ignoring input: M" << wchar_t(toupper(ch)) << endl;
 							break;
 						default:
-							cerr << "Warning: Syntax error in input: M" << char(toupper(ch)) << endl;
+							wcerr << "Warning: Syntax error in input: M" << wchar_t(toupper(ch)) << endl;
 					}
 					break;
 				case 'p':
@@ -332,12 +332,12 @@ namespace MultiPLAY
 					duration_scale = expect_duration();
 					if (rests < 1)
 					{
-						cerr << "Warning: Syntax error in input: P" << rests << endl;
+						wcerr << L"Warning: Syntax error in input: P" << rests << endl;
 						rests = 1;
 					}
 					if (rests > 64)
 					{
-						cerr << "Warning: Syntax error in input: P" << rests << endl;
+						wcerr << L"Warning: Syntax error in input: P" << rests << endl;
 						rests = 64;
 					}
 					this_note_length_denominator = rests;
@@ -348,12 +348,12 @@ namespace MultiPLAY
 					tempo = expect_int();
 					if (tempo < 32)
 					{
-						cerr << "Warning: Syntax error in input: T" << tempo << endl;
+						wcerr << L"Warning: Syntax error in input: T" << tempo << endl;
 						tempo = 32;
 					}
 					if (tempo > 255)
 					{
-						cerr << "Warning: Syntax error in input: T" << tempo << endl;
+						wcerr << L"Warning: Syntax error in input: T" << tempo << endl;
 						tempo = 255;
 					}
 					break;
@@ -405,7 +405,7 @@ namespace MultiPLAY
 							unsigned sample_number = unsigned(expect_int());
 
 							if (sample_number >= samples.size())
-								cerr << "Warning: Sample number " << sample_number << " out of range" << endl;
+								wcerr << L"Warning: Sample number " << sample_number << L" out of range" << endl;
 							else
 							{
 								current_sample = samples[sample_number];
@@ -413,11 +413,11 @@ namespace MultiPLAY
 									current_sample_context = nullptr;
 								current_waveform = Waveform::Sample;
 							}
-							
+
 							break;
 						}
 						default:
-							cerr << "Warning: Syntax error in input: W" << char(toupper(ch)) << endl;
+							wcerr << L"Warning: Syntax error in input: W" << wchar_t(toupper(ch)) << endl;
 					}
 					break;
 			}

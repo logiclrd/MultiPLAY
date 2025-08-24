@@ -33,7 +33,7 @@ namespace MultiPLAY
 			char b = char(file.get());
 
 			bool is_signed = (b & 0x80) != 0;
-			
+
 			int result = b & 0x3F;
 			int shift = 6;
 
@@ -101,12 +101,12 @@ namespace MultiPLAY
 			file.read(header_bytes, 36);
 
 			if (file.gcount() != 36)
-				throw "Partial read";
+				throw L"Partial read";
 
 			unsigned int signature = *(unsigned int *)&header_bytes[0];
 
 			if (signature != 0x9E2A83C1u)
-				throw "Signature not present, are you sure this is a UMX file?";
+				throw L"Signature not present, are you sure this is a UMX file?";
 
 			int package_version = *(int *)&header_bytes[4];
 
@@ -198,7 +198,7 @@ namespace MultiPLAY
 		module_struct *load_umx_impl(std::ifstream &file)
 		{
 			if (!umx_dig_to_export(file))
-				throw "Package does not contain a Music directory";
+				throw L"Package does not contain a Music directory";
 
 			char signature[30];
 
@@ -207,8 +207,8 @@ namespace MultiPLAY
 			file.read(signature, 30);
 
 			if (file.gcount() != 30)
-				throw "Partial read";
-			
+				throw L"Partial read";
+
 			file.seekg(start);
 
 			if ((signature[0] == 'M') && (signature[1] == 'T') && (signature[2] == 'M'))
@@ -226,7 +226,7 @@ namespace MultiPLAY
 			}
 			catch (...)
 			{
-				throw "Couldn't figure out what kind of file the UMX contains";
+				throw L"Couldn't figure out what kind of file the UMX contains";
 			}
 		}
 	}

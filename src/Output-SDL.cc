@@ -106,7 +106,7 @@ namespace MultiPLAY
 				bytes_available = sdl_buffer_size;
 			if ((bytes_available < len) && (!sdl_shutting_down))
 			{
-				cerr << "(SDL) Audio buffer underrun (sorry, decode couldn't keep up with the playback)" << endl;
+				wcerr << L"(SDL) Audio buffer underrun (sorry, decode couldn't keep up with the playback)" << endl;
 				::SDL_PauseAudio(1);
 				sdl_playing = false;
 				::SDL_CondSignal(sdl_buffer_available_event);
@@ -236,7 +236,7 @@ namespace MultiPLAY
 	{
 		if (::SDL_Init(SDL_INIT_AUDIO))
 		{
-			cerr << "SDL failed to initialize." << endl;
+			wcerr << L"SDL failed to initialize." << endl;
 			return 1;
 		}
 
@@ -252,12 +252,12 @@ namespace MultiPLAY
 				desired.format = AUDIO_S16SYS;
 				break;
 			default:
-				cerr << "The SDL module does not support " << bits << "-bit samples." << endl;
+				wcerr << L"The SDL module does not support " << bits << L"-bit samples." << endl;
 				return 1;
 		}
 		if (channels > 2)
 		{
-			cerr << "The SDL module does not support more than 2 output channels." << endl;
+			wcerr << L"The SDL module does not support more than 2 output channels." << endl;
 			return 1;
 		}
 		desired.channels = (Uint8)channels;
@@ -267,7 +267,7 @@ namespace MultiPLAY
 
 		if (::SDL_OpenAudio(&desired, &sdl_audio_spec) == -1)
 		{
-			cerr << "SDL Audio failed to initialize" << endl;
+			wcerr << L"SDL Audio failed to initialize" << endl;
 			return 1;
 		}
 
@@ -283,8 +283,8 @@ namespace MultiPLAY
 		 && sdl_finished_event
 		 && sdl_buffer_lock)
 			return 0;
-		
-		cerr << "Failed to create SDL synchronization construct." << endl;
+
+		wcerr << L"Failed to create SDL synchronization construct." << endl;
 		return 1;
 	}
 
@@ -311,16 +311,16 @@ namespace MultiPLAY
 				case AUDIO_U16LSB:
 	#endif
 					unsigned short u16;
-					
+
 					u16 = static_cast<unsigned short>(32768 + s * 32767);
-					
+
 					emit_sdl_byte(u16 & 0xFF);
 					emit_sdl_byte(u16 >> 8);
 
 					break;
 				case AUDIO_U16MSB:
 					u16 = static_cast<unsigned short>(32768 + s * 32767);
-					
+
 					emit_sdl_byte(u16 >> 8);
 					emit_sdl_byte(u16 & 0xFF);
 
@@ -331,10 +331,10 @@ namespace MultiPLAY
 	#endif
 					signed short s16;
 					unsigned short *pu16;
-					
+
 					s16 = short(s * 32767);
 					pu16 = (unsigned short *)&s16;
-					
+
 					emit_sdl_byte((*pu16) & 0xFF);
 					emit_sdl_byte((*pu16) >> 8);
 
@@ -363,7 +363,7 @@ namespace MultiPLAY
 				sdl_mutex_lock lock(sdl_silly_lock);
 				::SDL_CondWait(sdl_finished_event, sdl_silly_lock);
 			} // ~sdl_mutex_lock
-			
+
 			sdl_playing = false;
 		}
 

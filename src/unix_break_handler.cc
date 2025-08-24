@@ -13,7 +13,7 @@ namespace MultiPLAY
 	{
 		void unix_break_handler(int)
 		{
-			cerr << "Caught Break...shutting down." << endl;
+			wcerr << L"Caught Break...shutting down." << endl;
 			start_shutdown();
 		}
 	}

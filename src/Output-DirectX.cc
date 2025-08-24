@@ -84,7 +84,7 @@ namespace MultiPLAY
 					WaitForSingleObject(dsNotifyEvent, INFINITE);
 				}
 				if (play_cursor_buffer_index == ((directx_buffer_index - 1) & 3))
-					cerr << "(DirectX) broken record detected (insufficient CPU time)" << endl;
+					wcerr << L"(DirectX) broken record detected (insufficient CPU time)" << endl;
 			}
 			else
 			{
@@ -116,30 +116,30 @@ namespace MultiPLAY
 	{
 		if ((bits != 8) && (bits != 16))
 		{
-			cerr << "DirectSound output can only use 8- or 16-bit samples" << endl;
+			wcerr << L"DirectSound output can only use 8- or 16-bit samples" << endl;
 			return 1;
 		}
 
 		if (channels > 2)
 		{
-			cerr << "DirectSound output for more than 2 channels not implemented" << endl;
+			wcerr << L"DirectSound output for more than 2 channels not implemented" << endl;
 			return 1;
 		}
 
 		if (FAILED(DirectSoundCreate8(nullptr, &dsHandle, nullptr)))
 		{
-			cerr << "Unable to initialize DirectSound" << endl;
+			wcerr << L"Unable to initialize DirectSound" << endl;
 			return 1;
 		}
 
 		if (FAILED(dsHandle->SetCooperativeLevel(or(GetForegroundWindow(), GetDesktopWindow()), DSSCL_PRIORITY)))
 		{
-			cerr << "Unable to set DirectSound cooperative level" << endl;
+			wcerr << L"Unable to set DirectSound cooperative level" << endl;
 			return 1;
 		}
 
 		directx_channels = channels;
-		directx_sample_bits = bits;                                                   
+		directx_sample_bits = bits;
 		directx_quarter_buffer_size = samples_per_sec * channels * ((bits + 7) / 8) / 4;
 		if (4 * directx_quarter_buffer_size < DSBSIZE_MIN)
 			directx_quarter_buffer_size = DSBSIZE_MIN >> 2;
@@ -172,7 +172,7 @@ namespace MultiPLAY
 
 		if (FAILED(dsHandle->CreateSoundBuffer(&bufferDesc, &dsBuffer, nullptr)))
 		{
-			cerr << "Unable to create output buffer" << endl;
+			wcerr << L"Unable to create output buffer" << endl;
 			return 1;
 		}
 
@@ -192,19 +192,19 @@ namespace MultiPLAY
 
 		if (FAILED(dsBuffer->QueryInterface(IID_IDirectSoundNotify8, (LPVOID *)&bufferNotify)))
 		{
-			cerr << "Unable to create notification point object for output buffer" << endl;
+			wcerr << L"Unable to create notification point object for output buffer" << endl;
 			return 1;
 		}
 
 		if (FAILED(bufferNotify->SetNotificationPositions(4, positionNotify)))
 		{
-			cerr << "Unable to set position notifies for output buffer" << endl;
+			wcerr << L"Unable to set position notifies for output buffer" << endl;
 			return 1;
 		}
 
 		bufferNotify->Release();
 
-		cerr << "DirectX initialized!" << endl;
+		wcerr << L"DirectX initialized!" << endl;
 		return 0;
 	}
 

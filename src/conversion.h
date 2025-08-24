@@ -14,8 +14,8 @@ namespace MultiPLAY
 	extern unsigned short from_msb2_u(unsigned char in[2]);
 	extern int from_msb4(unsigned char in[4]);
 
-	extern std::string &make_lowercase(std::string &s);
-	extern std::string trim(std::string in);
+	extern std::wstring &make_lowercase(std::wstring &s);
+	extern std::wstring trim(std::wstring in);
 }
 
 #endif // CONVERSION_H

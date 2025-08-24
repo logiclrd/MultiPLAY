@@ -19,8 +19,8 @@ namespace MultiPLAY
 
 	struct module_struct
 	{
-		std::string filename, name;
-		std::vector<std::string> information_text;
+		std::wstring filename, name;
+		std::vector<std::wstring> information_text;
 		std::vector<pattern> patterns;
 		unsigned int pattern_list_length; // Populated after load by the main driver.
 		std::vector<pattern *> pattern_list;

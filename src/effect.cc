@@ -124,7 +124,7 @@ namespace MultiPLAY
 				if (r)
 					r->volume = info;
 				else
-					cerr << "Warning: had to discard a MOD set volume effect" << endl;
+					wcerr << L"Warning: had to discard a MOD set volume effect" << endl;
 
 				present = false; // no further processing required
 				return;
@@ -281,10 +281,10 @@ namespace MultiPLAY
 						return false;
 				}
 			default:
-				throw "internal error";
+				throw L"internal error";
 		}
 	}
-		
+
 	bool effect_struct::isnt(Effect::Type effect, signed char high_nybble/* = -1*/, signed char low_nybble/* = -1*/)
 	{
 		if (!present)

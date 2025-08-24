@@ -134,7 +134,7 @@ namespace MultiPLAY
 
 			c->inote = inote;
 			c->cur_sample = ((inote >= 0) && (inote < 120)) ? note_sample[inote] : nullptr;
-			c->num_samples = c->cur_sample->num_samples;
+			c->num_samples = (c->cur_sample != nullptr) ? c->cur_sample->num_samples : 0;
 			c->cur_sample_context = nullptr;
 			c->effect_tick_length = effect_tick_length;
 			(*znote) += tone_offset[inote];

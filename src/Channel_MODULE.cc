@@ -1840,6 +1840,7 @@ namespace MultiPLAY
 					// ignore song-wide commands
 					case ExtendedEffect::FinePatternDelay: // 0x6
 					case ExtendedEffect::PatternLoop:      // 0xB
+					case ExtendedEffect::PatternDelay:     // 0xF
 						break;
 					case ExtendedEffect::GlissandoControl: // 0x1
 						if (extended_effect_info->low_nybble == 0)

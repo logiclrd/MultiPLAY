@@ -91,25 +91,26 @@ namespace MultiPLAY
 		};
 	}
 
-namespace NoteConfiguration
-{
-	enum Type
+	namespace NoteConfiguration
 	{
-		CurrentNotes_NoteCut = 0,
-		CurrentNotes_NoteOff = 1,
-		CurrentNotes_NoteFade = 2,
-		NewNote_NoteCut = 3,
-		NewNote_Continue = 4,
-		NewNote_NoteOff = 5,
-		NewNote_NoteFade = 6,
-		VolumeEnvelope_Disable = 7,
-		VolumeEnvelope_Enable = 8,
-		PanningEnvelope_Disable = 9,
-		PanningEnvelope_Enable = 10,
-		PitchEnvelope_Disable = 11,
-		PitchEnvelope_Enable = 12,
-	};
-}
+		enum Type
+		{
+			CurrentNotes_NoteCut = 0,
+			CurrentNotes_NoteOff = 1,
+			CurrentNotes_NoteFade = 2,
+			NewNote_NoteCut = 3,
+			NewNote_Continue = 4,
+			NewNote_NoteOff = 5,
+			NewNote_NoteFade = 6,
+			VolumeEnvelope_Disable = 7,
+			VolumeEnvelope_Enable = 8,
+			PanningEnvelope_Disable = 9,
+			PanningEnvelope_Enable = 10,
+			PitchEnvelope_Disable = 11,
+			PitchEnvelope_Enable = 12,
+		};
+	}
+
 	namespace MODEffect
 	{
 		enum Type : unsigned char
